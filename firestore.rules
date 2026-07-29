@@ -1,0 +1,178 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function textoValido(texto, max) {
+      return texto is string && texto.size() <= max;
+    }
+
+    // Perfil de club: visible solo para usuarios con sesión iniciada (no lectura
+    // pública anónima, porque aquí vive el teléfono/email de cada coordinador).
+    // Cada uno solo puede escribir el suyo.
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && textoValido(request.resource.data.clubName, 60)
+        && textoValido(request.resource.data.telefono, 20);
+    }
+
+    // Calendario de jornadas de temporada: cada coordinador gestiona el suyo,
+    // visible para cualquier usuario con sesión (para el cuadrante y los filtros).
+    match /jornadas/{jornadaId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && textoValido(request.resource.data.label, 40);
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+    }
+
+    // Equipos: visibles para cualquier usuario con sesión (necesario para el
+    // buscador), escritura solo del dueño.
+    match /teams/{teamId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && textoValido(request.resource.data.clubName, 60)
+        && textoValido(request.resource.data.identificador, 30);
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.ownerUid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && textoValido(request.resource.data.identificador, 30);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+    }
+
+    // Historial de acciones sobre los partidos — un registro de auditoría de
+    // solo-añadir: cada uno anota sus propias acciones, nadie puede editar ni
+    // borrar una entrada ya escrita (para que sirva de verdad como constancia).
+    match /historial/{entradaId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.quienUid == request.auth.uid
+        && textoValido(request.resource.data.accion, 100);
+      allow update, delete: if false;
+    }
+
+    // Huecos de disponibilidad / partidos.
+    // Regla general: la identidad del hueco (de quién es, y a qué equipo
+    // pertenece) NUNCA puede cambiar en una actualización, la toque quien la
+    // toque — evita que una reserva o un cierre "de paso" reasigne el hueco.
+    match /slots/{slotId} {
+      allow read: if request.auth != null;
+
+      // Solo el coordinador puede publicar disponibilidad de un equipo propio,
+      // y siempre empieza como 'libre' o 'no_disponible'.
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status in ['libre', 'no_disponible'];
+
+      allow update: if request.auth != null
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.teamId == resource.data.teamId
+        && (
+          // 1) El dueño marca disponible/no-disponible (reescritura completa vía
+          //    setDisponibilidad) — SOLO si no hay ya algo en marcha con otro club.
+          //    Si ya está pendiente/pactado/confirmado, este camino queda cerrado
+          //    y hay que pasar por las acciones concretas de abajo.
+          (request.auth.uid == resource.data.ownerUid
+            && resource.data.status in ['libre', 'no_disponible']
+            && request.resource.data.status in ['libre', 'no_disponible']) ||
+
+          // 2) El dueño rechaza una solicitud pendiente → vuelve a libre.
+          (request.auth.uid == resource.data.ownerUid
+            && resource.data.status == 'pendiente'
+            && request.resource.data.status == 'libre'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail']
+               )) ||
+
+          // 3) El dueño acepta una solicitud pendiente, decidiendo si se juega en
+          //    su campo o en el del rival — en ambos casos queda "pactado" al
+          //    momento, sin necesitar todavía el día/hora/campo exactos.
+          (request.auth.uid == resource.data.ownerUid
+            && resource.data.status == 'pendiente'
+            && request.resource.data.status == 'pactado'
+            && request.resource.data.sede in ['local', 'visitante']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'sede'])) ||
+
+          // 4) El dueño fija día/hora/campo cuando se pactó jugar EN SU campo.
+          (request.auth.uid == resource.data.ownerUid
+            && resource.data.status == 'pactado'
+            && resource.data.sede == 'local'
+            && request.resource.data.status == 'confirmado'
+            && textoValido(request.resource.data.campoExacto, 60)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'diaExacto', 'horaExacta', 'campoExacto']
+               )) ||
+
+          // 5) Cualquier otro usuario autenticado reserva un hueco LIBRE.
+          (resource.data.status == 'libre'
+            && request.resource.data.status == 'pendiente'
+            && request.resource.data.requestedByUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail']
+               )) ||
+
+          // 6) El club que reservó, si se decidió que juega en SU campo (sede
+          //    visitante), cierra el partido con día/hora/campo exactos.
+          (resource.data.status == 'pactado'
+            && resource.data.sede == 'visitante'
+            && resource.data.requestedByUid == request.auth.uid
+            && request.resource.data.status == 'confirmado'
+            && textoValido(request.resource.data.campoExacto, 60)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'diaExacto', 'horaExacta', 'campoExacto']
+               )) ||
+
+          // 7) Proponer cancelar un partido pactado/confirmado — cualquiera de
+          //    las dos partes puede proponerlo, pero el estado no cambia todavía,
+          //    solo queda marcado quién lo ha propuesto.
+          (resource.data.status in ['pactado', 'confirmado']
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && resource.data.get('cancelacionPropuestaPor', null) == null
+            && request.resource.data.cancelacionPropuestaPor == request.auth.uid
+            && request.resource.data.status == resource.data.status
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cancelacionPropuestaPor'])) ||
+
+          // 8) Rechazar la propuesta de cancelación (o retirar la tuya propia) —
+          //    el partido se queda exactamente como estaba, solo se borra la marca.
+          (resource.data.get('cancelacionPropuestaPor', null) != null
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && request.resource.data.cancelacionPropuestaPor == null
+            && request.resource.data.status == resource.data.status
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cancelacionPropuestaPor'])) ||
+
+          // 9) Aceptar la cancelación propuesta por LA OTRA parte (no puedes
+          //    aceptar tu propia propuesta) — aquí sí se libera el hueco de verdad.
+          (resource.data.get('cancelacionPropuestaPor', null) != null
+            && resource.data.cancelacionPropuestaPor != request.auth.uid
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && request.resource.data.status == 'libre'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'sede', 'diaExacto', 'horaExacta', 'campoExacto', 'cancelacionPropuestaPor',
+                  'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail']
+               )) ||
+
+          // 10) Liberación AUTOMÁTICA cuando el equipo implicado se ha borrado —
+          //     aquí no hace falta acuerdo mutuo (la otra parte ya no existe para
+          //     poder aceptar nada), pero se exige dejar constancia con el aviso.
+          (resource.data.status in ['pendiente', 'pactado', 'confirmado']
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && request.resource.data.status == 'libre'
+            && request.resource.data.avisoEquipoBorrado == true
+            && textoValido(request.resource.data.avisoTexto, 200)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'sede', 'diaExacto', 'horaExacta', 'campoExacto', 'cancelacionPropuestaPor',
+                  'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail',
+                  'avisoEquipoBorrado', 'avisoTexto']
+               )) ||
+
+          // 11) Descartar el aviso de "equipo borrado" una vez leído — solo el
+          //     dueño del hueco, y solo toca esos dos campos.
+          (request.auth.uid == resource.data.ownerUid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avisoEquipoBorrado', 'avisoTexto']))
+        );
+
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+    }
+  }
+}
