@@ -283,6 +283,13 @@ export default function CuadranteView({
                         <div>
                           <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` ${t.identificador}` : ""}</div>
                           <div className="cl-mono" style={{ fontSize: "11px", color: "#888" }}>{t.categoria} · {t.nivel}</div>
+                          {modo === "propio" && (allSlots || []).filter((s) =>
+                            s.requestedByTeamId === t.id && ["pendiente", "pactado", "confirmado"].includes(s.status)
+                          ).map((s) => (
+                            <div key={s.id} style={{ fontSize: "10px", color: "var(--clay)", fontWeight: 700, marginTop: "2px" }}>
+                              ⚠️ Comprometido fuera: vs {s.clubName} ({s.jornadaLabel})
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </td>
@@ -291,12 +298,21 @@ export default function CuadranteView({
                       const c = contenidoCelda(s, modo);
                       const clicable = puedeExpandir(s) || (modo === "ajeno" && s?.status === "libre");
                       const activa = celdaAbierta === `${t.id}:${j.id}`;
+                      const hayCancelacionPendiente = modo === "propio" && s?.cancelacionPropuestaPor;
                       return (
                         <td
                           key={j.id}
                           onClick={() => clicable && setCeldaAbierta(activa ? null : `${t.id}:${j.id}`)}
-                          style={{ background: CELL_BG[s?.status || "vacio"], textAlign: "center", cursor: clicable ? "pointer" : "default", outline: activa ? "2px solid var(--pitch)" : "none" }}
+                          style={{
+                            background: hayCancelacionPendiente ? "#FBD5D0" : CELL_BG[s?.status || "vacio"],
+                            textAlign: "center",
+                            cursor: clicable ? "pointer" : "default",
+                            outline: activa ? "2px solid var(--pitch)" : hayCancelacionPendiente ? "2px solid var(--clay)" : "none",
+                          }}
                         >
+                          {hayCancelacionPendiente && (
+                            <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--clay)" }}>⚠️ CANCELACIÓN</div>
+                          )}
                           <div style={{ fontSize: "12px", fontWeight: c.texto ? 600 : 400 }}>{c.texto}</div>
                           {c.sub && <div className="cl-mono" style={{ fontSize: "10px", color: "#666" }}>{c.sub}</div>}
                         </td>
