@@ -60,6 +60,7 @@ export default function App() {
         onLogout={logout}
         avisos={mySlots.filter((s) =>
           s.status === "pendiente" ||
+          (s.status === "pactado" && !s.sede) ||
           (s.status === "pactado" && s.sede === "local") ||
           (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid)
         ).length}

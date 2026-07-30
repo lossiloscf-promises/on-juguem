@@ -82,6 +82,17 @@ export const groupColor = (grupo) => GROUP_COLORS[grupo] || "#2F6D5C";
 export const formatoDeGrupo = (grupo) =>
   AGE_GROUPS_BY_FORMATO["Fútbol 11"].includes(grupo) ? "Fútbol 11" : "Fútbol 8";
 
+// Un único sitio con el color y el nombre de cada estado de un hueco/partido,
+// para que todo (cuadrante, tarjetas, exportaciones) use siempre lo mismo.
+export const ESTADO_INFO = {
+  libre: { label: "Libre", color: "#FFE58A" },
+  no_disponible: { label: "No disponible", color: "#E4E4E0" },
+  pendiente: { label: "Pendiente", color: "#FFD8A8" },
+  pactado: { label: "Pactado", color: "#BFDBFE" },
+  confirmado: { label: "Cerrado", color: "#B7E4C7" },
+};
+export const COLOR_CANCELACION_PENDIENTE = "#FFC9C0";
+
 // Fases del calendario de temporada, usadas para agrupar las columnas del cuadrante.
 export const FASES = ["Pretemporada", "Postemporada"];
 

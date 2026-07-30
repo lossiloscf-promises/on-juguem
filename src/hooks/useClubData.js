@@ -372,32 +372,31 @@ export async function rejectRequest(slotId) {
   registrarHistorial(slotId, "Solicitud rechazada");
 }
 
-// El coordinador (dueño del hueco) acepta y propone jugar EN SU CAMPO.
-// Igual que aceptarFueraCasa: queda "pactado" al momento. El día/hora/campo
-// exactos se fijan después (aunque sea el mismo dueño quien los sabrá,
-// puede tardar en decidirlo hasta la semana del partido) con cerrarComoLocal.
-export async function aceptarEnCasa(slotId) {
+// El coordinador acepta la solicitud — el partido queda PACTADO al momento,
+// sin necesitar decidir todavía dónde se juega. Eso se decide después con
+// decidirJugarEnCasa/decidirJugarFuera, cuando os venga bien.
+export async function aceptarPartido(slotId) {
   await updateDoc(doc(db, "slots", slotId), {
     status: "pactado",
-    sede: "local",
+    sede: null,
   });
-  registrarHistorial(slotId, "Aceptado — se juega en el campo del anfitrión");
+  registrarHistorial(slotId, "Solicitud aceptada — pactado, falta decidir dónde se juega");
 }
 
-// El coordinador acepta pero propone jugar EN CAMPO DEL RIVAL.
-// Queda "pactado" (el partido está cerrado en cuanto a que se va a jugar),
-// pero falta que el rival diga día/hora/campo exactos, porque es él quien lo sabe.
-export async function aceptarFueraCasa(slotId) {
-  await updateDoc(doc(db, "slots", slotId), {
-    status: "pactado",
-    sede: "visitante",
-  });
-  registrarHistorial(slotId, "Aceptado — se juega en el campo del rival");
+// Ya con el partido pactado, el dueño decide dónde se juega.
+export async function decidirJugarEnCasa(slotId) {
+  await updateDoc(doc(db, "slots", slotId), { sede: "local" });
+  registrarHistorial(slotId, "Decidido — se juega en el campo del anfitrión");
+}
+
+export async function decidirJugarFuera(slotId) {
+  await updateDoc(doc(db, "slots", slotId), { sede: "visitante" });
+  registrarHistorial(slotId, "Decidido — se juega en el campo del rival");
 }
 
 // El club que reservó (y va a hacer de local porque se decidió jugar en su campo)
 // cierra el partido con el día, hora y campo exactos. También pasa por la
-// transacción atómica, por la misma razón que aceptarEnCasa.
+// transacción atómica, por la misma razón que cerrarComoLocal.
 export async function cerrarComoVisitante(slotId, { diaExacto, horaExacta, campoExacto, grupo, teamId }, allSlots) {
   return cerrarPartidoAtomico(slotId, { diaExacto, horaExacta, campoExacto, grupo }, allSlots, teamId);
 }

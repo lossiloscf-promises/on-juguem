@@ -1,15 +1,17 @@
 import { useState, Fragment } from "react";
 import * as XLSX from "xlsx";
 import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide-react";
-import { FASES, groupColor, compararEquipos, ORDEN_EDAD } from "../constants";
+import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE } from "../constants";
 import { diaCoincideConJornada, tieneJornadaCoincidente } from "../validaciones";
 import { useInstalaciones } from "../hooks/useInstalaciones";
 import {
   requestBooking,
   rejectRequest,
-  aceptarEnCasa,
-  aceptarFueraCasa,
+  aceptarPartido,
+  decidirJugarEnCasa,
+  decidirJugarFuera,
   cerrarComoLocal,
+  cerrarComoVisitante,
   proponerCancelacion,
   rechazarCancelacion,
   aceptarCancelacion,
@@ -45,11 +47,11 @@ function HistorialDelHueco({ slotId }) {
 
 const CELL_BG = {
   vacio: "transparent",
-  no_disponible: "#E4E4E0",
-  libre: "#DCEEE4",
-  pendiente: "#FBEFD9",
-  pactado: "#FBEFD9",
-  confirmado: "#CFE8D8",
+  no_disponible: ESTADO_INFO.no_disponible.color,
+  libre: ESTADO_INFO.libre.color,
+  pendiente: ESTADO_INFO.pendiente.color,
+  pactado: ESTADO_INFO.pactado.color,
+  confirmado: ESTADO_INFO.confirmado.color,
 };
 
 function contenidoCelda(slot, modo) {
@@ -62,7 +64,10 @@ function contenidoCelda(slot, modo) {
     return { texto: label, sub: "" };
   }
   if (slot.status === "pendiente") return { texto: slot.requestedByClubName, sub: "pendiente de aceptar — pincha" };
-  if (slot.status === "pactado") return { texto: slot.requestedByClubName, sub: slot.sede === "local" ? "falta cerrar día/hora — pincha" : "falta que el rival cierre" };
+  if (slot.status === "pactado") {
+    if (!slot.sede) return { texto: slot.requestedByClubName, sub: "falta decidir dónde se juega — pincha" };
+    return { texto: slot.requestedByClubName, sub: slot.sede === "local" ? "falta cerrar día/hora — pincha" : "falta que el rival cierre" };
+  }
   if (slot.status === "confirmado") return { texto: slot.requestedByClubName, sub: `${slot.diaExacto} ${slot.horaExacta} · ${slot.campoExacto}` };
   return { texto: "", sub: "" };
 }
@@ -145,6 +150,38 @@ function SelectorEquipoPropio({ grupoCelda, misEquipos, onElegir }) {
   );
 }
 
+// Cómo se muestra una celda cuando lo que hay ahí es MI PROPIA negociación
+// vista desde el otro lado (soy quien reservó, no el dueño del hueco) —
+// se usa tanto si aparece superpuesta en mi propio cuadrante (porque el hueco
+// real vive en el calendario de otro club) como si la veo entrando a "Busco
+// rival" sobre ese mismo club.
+function contenidoCeldaExterna(slot) {
+  if (slot.status === "pendiente") return { texto: `Propuesta a ${slot.clubName}`, sub: "esperando respuesta — pincha" };
+  if (slot.status === "pactado") {
+    if (!slot.sede) return { texto: `Pactado con ${slot.clubName}`, sub: "esperando dónde se juega — pincha" };
+    if (slot.sede === "visitante") return { texto: `Pactado con ${slot.clubName}`, sub: "tenéis que cerrar — pincha" };
+    return { texto: `Pactado con ${slot.clubName}`, sub: "esperando que ellos cierren — pincha" };
+  }
+  if (slot.status === "confirmado") return { texto: `Cerrado con ${slot.clubName}`, sub: `${slot.diaExacto} ${slot.horaExacta} · ${slot.campoExacto}` };
+  return { texto: "", sub: "" };
+}
+
+// Busca si un equipo mío tiene, en el calendario de OTRO club, un compromiso
+// activo para una jornada con fecha parecida a la que se está pintando ahora
+// mismo — así la celda de mi propio cuadrante puede reflejarlo en vez de
+// seguir diciendo "disponible" cuando en realidad ya está ocupado fuera.
+function buscarCompromisoExterno(allSlots, teamId, jornadaOrderDate, excluirId) {
+  if (!jornadaOrderDate) return null;
+  return (allSlots || []).find((s) => {
+    if (s.id === excluirId) return false;
+    if (s.requestedByTeamId !== teamId) return false;
+    if (!["pendiente", "pactado", "confirmado"].includes(s.status)) return false;
+    if (!s.jornadaOrderDate) return false;
+    const diff = Math.abs((new Date(s.jornadaOrderDate) - new Date(jornadaOrderDate)) / (1000 * 60 * 60 * 24));
+    return diff <= 4;
+  }) || null;
+}
+
 export function GestionCancelacion({ slot, uid, ejecutar }) {
   const soyDueño = uid === slot.ownerUid;
   // El nombre de "la otra parte" depende de desde qué lado se mire: si soy el
@@ -217,8 +254,9 @@ export default function CuadranteView({
     const datos = [...teams].sort(compararEquipos).map((t) => {
       const fila = { Equipo: `${t.grupo}${t.anyo ? " (" + t.anyo + ")" : ""} · ${t.categoria} · ${t.nivel}${t.identificador ? " · " + t.identificador : ""}` };
       jornadas.forEach((j) => {
-        const s = slotDe(t.id, j.id);
-        const c = contenidoCelda(s, modo);
+        const local = slotDe(t.id, j.id);
+        const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
+        const c = externo ? contenidoCeldaExterna(externo) : contenidoCelda(local, modo);
         fila[j.label] = c.texto + (c.sub ? ` (${c.sub})` : "");
       });
       return fila;
@@ -283,28 +321,30 @@ export default function CuadranteView({
                         <div>
                           <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` ${t.identificador}` : ""}</div>
                           <div className="cl-mono" style={{ fontSize: "11px", color: "#888" }}>{t.categoria} · {t.nivel}</div>
-                          {modo === "propio" && (allSlots || []).filter((s) =>
-                            s.requestedByTeamId === t.id && ["pendiente", "pactado", "confirmado"].includes(s.status)
-                          ).map((s) => (
-                            <div key={s.id} style={{ fontSize: "10px", color: "var(--clay)", fontWeight: 700, marginTop: "2px" }}>
-                              ⚠️ Comprometido fuera: vs {s.clubName} ({s.jornadaLabel})
-                            </div>
-                          ))}
                         </div>
                       </div>
                     </td>
                     {jornadas.map((j) => {
-                      const s = slotDe(t.id, j.id);
-                      const c = contenidoCelda(s, modo);
-                      const clicable = puedeExpandir(s) || (modo === "ajeno" && s?.status === "libre");
+                      const local = slotDe(t.id, j.id);
+                      // En mi propio cuadrante, si este equipo tiene un compromiso activo
+                      // en el calendario de OTRO club para una fecha parecida, ese
+                      // compromiso "manda" sobre lo que diga mi propio hueco local.
+                      const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
+                      // En modo ajeno, si el hueco ya es mío (yo lo reservé), se ve con
+                      // todo el detalle en vez de anonimizado como "Ocupado".
+                      const esMiNegociacionAjena = modo === "ajeno" && local?.requestedByUid === uid;
+                      const esVistaExterna = !!externo || esMiNegociacionAjena;
+                      const s = externo || local;
+                      const c = esVistaExterna ? contenidoCeldaExterna(s) : contenidoCelda(local, modo);
+                      const clicable = esVistaExterna || puedeExpandir(local) || (modo === "ajeno" && local?.status === "libre");
                       const activa = celdaAbierta === `${t.id}:${j.id}`;
-                      const hayCancelacionPendiente = modo === "propio" && s?.cancelacionPropuestaPor;
+                      const hayCancelacionPendiente = s?.cancelacionPropuestaPor;
                       return (
                         <td
                           key={j.id}
                           onClick={() => clicable && setCeldaAbierta(activa ? null : `${t.id}:${j.id}`)}
                           style={{
-                            background: hayCancelacionPendiente ? "#FBD5D0" : CELL_BG[s?.status || "vacio"],
+                            background: hayCancelacionPendiente ? COLOR_CANCELACION_PENDIENTE : CELL_BG[s?.status || "vacio"],
                             textAlign: "center",
                             cursor: clicable ? "pointer" : "default",
                             outline: activa ? "2px solid var(--pitch)" : hayCancelacionPendiente ? "2px solid var(--clay)" : "none",
@@ -320,33 +360,37 @@ export default function CuadranteView({
                     })}
                   </tr>
                   {jornadas.map((j) => {
-                    const s = slotDe(t.id, j.id);
                     if (celdaAbierta !== `${t.id}:${j.id}`) return null;
+                    const local = slotDe(t.id, j.id);
+                    const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
+                    const esMiNegociacionAjena = modo === "ajeno" && local?.requestedByUid === uid;
+                    const esVistaExterna = !!externo || esMiNegociacionAjena;
+                    const s = externo || local;
                     return (
                       <tr key={`${t.id}:${j.id}:panel`}>
                         <td colSpan={jornadas.length + 1} style={{ background: "#FAFAF7", padding: "10px" }}>
-                          {modo === "propio" && (!s || ["libre", "no_disponible"].includes(s.status)) && (
+                          {!esVistaExterna && modo === "propio" && (!local || ["libre", "no_disponible"].includes(local.status)) && (
                             <div className="cl-row">
                               <button
                                 className="cl-btn"
-                                style={{ background: s?.status === "libre" ? "var(--pitch)" : "transparent", color: s?.status === "libre" ? "white" : "var(--pitch)", border: "1.5px solid var(--pitch)" }}
+                                style={{ background: local?.status === "libre" ? "var(--pitch)" : "transparent", color: local?.status === "libre" ? "white" : "var(--pitch)", border: "1.5px solid var(--pitch)" }}
                                 onClick={() => ejecutar(async () => { await setDisponibilidad(uid, t, j, true); setCeldaAbierta(null); })}
                               >
                                 Marcar disponible
                               </button>
                               <button
                                 className="cl-btn"
-                                style={{ background: s?.status === "no_disponible" ? "#999" : "transparent", color: s?.status === "no_disponible" ? "white" : "#999", border: "1.5px solid #999" }}
+                                style={{ background: local?.status === "no_disponible" ? "#999" : "transparent", color: local?.status === "no_disponible" ? "white" : "#999", border: "1.5px solid #999" }}
                                 onClick={() => ejecutar(async () => { await setDisponibilidad(uid, t, j, false); setCeldaAbierta(null); })}
                               >
                                 Marcar no disponible
                               </button>
-                              {s && (
+                              {local && (
                                 <button
                                   className="cl-btn cl-btn-ghost"
                                   onClick={() => {
                                     if (window.confirm(`¿Quitar la jornada "${j.label}" del equipo ${t.grupo}${t.identificador ? " " + t.identificador : ""}? Este equipo no participará esa fecha (queda vacía, puedes volver a activarla cuando quieras).`)) {
-                                      ejecutar(async () => { await eliminarHuecoDeEquipo(uid, t.id, j.id, s.status); setCeldaAbierta(null); });
+                                      ejecutar(async () => { await eliminarHuecoDeEquipo(uid, t.id, j.id, local.status); setCeldaAbierta(null); });
                                     }
                                   }}
                                 >
@@ -355,51 +399,105 @@ export default function CuadranteView({
                               )}
                             </div>
                           )}
-                          {modo === "propio" && s?.status === "pendiente" && (
+                          {!esVistaExterna && modo === "propio" && local?.status === "pendiente" && (
                             <div className="cl-row" style={{ flexWrap: "wrap" }}>
                               <span style={{ fontSize: "13px" }}>
-                                <b>{s.requestedByClubName}</b> quiere reservar este hueco
-                                {(s.requestedByTelefono || s.requestedByEmail) && (
-                                  <> · {s.requestedByTelefono} {s.requestedByEmail}</>
+                                <b>{local.requestedByClubName}</b> quiere reservar este hueco
+                                {(local.requestedByTelefono || local.requestedByEmail) && (
+                                  <> · {local.requestedByTelefono} {local.requestedByEmail}</>
                                 )}
                               </span>
-                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rejectRequest(s.id))}><X size={14} /> Rechazar</button>
-                              <button className="cl-btn cl-btn-gold" onClick={() => ejecutar(() => aceptarEnCasa(s.id))}><Home size={14} /> Jugamos en mi campo</button>
-                              <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarFueraCasa(s.id))}><Plane size={14} /> Jugamos en el suyo</button>
+                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rejectRequest(local.id))}><X size={14} /> Rechazar</button>
+                              <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarPartido(local.id))}><Check size={14} /> Aceptar</button>
                             </div>
                           )}
-                          {modo === "propio" && s?.status === "pactado" && s.sede === "local" && (
+                          {!esVistaExterna && modo === "propio" && local?.status === "pactado" && !local.sede && (
+                            <div className="cl-row" style={{ flexWrap: "wrap" }}>
+                              <span style={{ fontSize: "13px" }}>
+                                Pactado con <b>{local.requestedByClubName}</b> — ¿dónde se juega?
+                              </span>
+                              <button className="cl-btn cl-btn-gold" onClick={() => ejecutar(() => decidirJugarEnCasa(local.id))}><Home size={14} /> En mi campo</button>
+                              <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => decidirJugarFuera(local.id))}><Plane size={14} /> En el suyo</button>
+                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                            </div>
+                          )}
+                          {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "local" && (
                             <>
                               <FormularioCierreInline
-                                slot={s}
+                                slot={local}
                                 allSlots={allSlots}
                                 uid={uid}
-                                onConfirmar={(datos) => cerrarComoLocal(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
+                                onConfirmar={(datos) => cerrarComoLocal(local.id, { ...datos, grupo: local.grupo, teamId: local.teamId }, allSlots)}
                               />
-                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
                             </>
                           )}
-                          {modo === "propio" && s?.status === "pactado" && s.sede === "visitante" && (
+                          {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "visitante" && (
                             <div>
                               <p style={{ fontSize: "13px", color: "#666" }}>
-                                Pactado contra <b>{s.requestedByClubName}</b> — falta que ellos cierren día/hora/campo
+                                Pactado contra <b>{local.requestedByClubName}</b> — falta que ellos cierren día/hora/campo
                                 (juegan en su campo, así que lo deciden ellos).
                               </p>
-                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
                             </div>
                           )}
-                          {modo === "propio" && s?.status === "confirmado" && (
-                            <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                          {!esVistaExterna && modo === "propio" && local?.status === "confirmado" && (
+                            <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
                           )}
-                          {modo === "propio" && s?.avisoEquipoBorrado && (
+                          {!esVistaExterna && modo === "propio" && local?.avisoEquipoBorrado && (
                             <div style={{ marginTop: "8px", background: "#FDECEA", padding: "8px", borderRadius: "4px" }}>
-                              <p style={{ fontSize: "13px" }}>⚠️ {s.avisoTexto}</p>
-                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => descartarAviso(s.id))}>
+                              <p style={{ fontSize: "13px" }}>⚠️ {local.avisoTexto}</p>
+                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => descartarAviso(local.id))}>
                                 Entendido
                               </button>
                             </div>
                           )}
-                          {modo === "ajeno" && s?.status === "libre" && (
+
+                          {/* Mi propia negociación como quien reservó — venga superpuesta en mi
+                              propio cuadrante, o vista entrando en "Busco rival" sobre ese club. */}
+                          {esVistaExterna && s.status === "pendiente" && (
+                            <p style={{ fontSize: "13px", color: "#666" }}>
+                              Solicitud enviada a <b>{s.clubName}</b> — esperando a que acepten o rechacen.
+                            </p>
+                          )}
+                          {esVistaExterna && s.status === "pactado" && !s.sede && (
+                            <div>
+                              <p style={{ fontSize: "13px", color: "#666" }}>
+                                Pactado con <b>{s.clubName}</b> — falta que ellos decidan si se juega en su campo o en el vuestro.
+                              </p>
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                            </div>
+                          )}
+                          {esVistaExterna && s.status === "pactado" && s.sede === "visitante" && (
+                            <>
+                              <p style={{ fontSize: "13px", color: "#666" }}>Se decidió jugar en vuestro campo — cerrad día, hora y campo.</p>
+                              <FormularioCierreInline
+                                slot={s}
+                                allSlots={allSlots}
+                                uid={uid}
+                                onConfirmar={(datos) => cerrarComoVisitante(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
+                              />
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                            </>
+                          )}
+                          {esVistaExterna && s.status === "pactado" && s.sede === "local" && (
+                            <div>
+                              <p style={{ fontSize: "13px", color: "#666" }}>
+                                Pactado con <b>{s.clubName}</b> — juega en su campo, falta que ellos cierren día/hora/campo.
+                              </p>
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                            </div>
+                          )}
+                          {esVistaExterna && s.status === "confirmado" && (
+                            <div>
+                              <p style={{ fontSize: "13px", color: "#666" }}>
+                                Cerrado con <b>{s.clubName}</b> · {s.diaExacto} {s.horaExacta} · {s.campoExacto}
+                              </p>
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                            </div>
+                          )}
+
+                          {modo === "ajeno" && !esVistaExterna && local?.status === "libre" && (
                             !puedeReservar ? (
                               <p style={{ fontSize: "12px", color: "var(--clay)" }}>
                                 No puedes reservar todavía — tu club o este todavía no está verificado por un administrador.
@@ -409,7 +507,7 @@ export default function CuadranteView({
                                 grupoCelda={t.grupo}
                                 misEquipos={misEquipos || []}
                                 onElegir={(miEquipo) => ejecutar(async () => {
-                                  await requestBooking(s.id, uid, misClubName, telefono, email, miEquipo?.id);
+                                  await requestBooking(local.id, uid, misClubName, telefono, email, miEquipo?.id);
                                   setCeldaAbierta(null);
                                 })}
                               />
@@ -420,7 +518,7 @@ export default function CuadranteView({
                               </p>
                             )
                           )}
-                          {modo === "propio" && s && <HistorialDelHueco slotId={s.id} />}
+                          {s && <HistorialDelHueco slotId={s.id} />}
                         </td>
                       </tr>
                     );
