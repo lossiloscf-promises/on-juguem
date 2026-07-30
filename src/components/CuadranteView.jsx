@@ -146,13 +146,19 @@ function SelectorEquipoPropio({ grupoCelda, misEquipos, onElegir }) {
 }
 
 export function GestionCancelacion({ slot, uid, ejecutar }) {
+  const soyDueño = uid === slot.ownerUid;
+  // El nombre de "la otra parte" depende de desde qué lado se mire: si soy el
+  // dueño del hueco, la otra parte es quien reservó; si soy quien reservó, la
+  // otra parte es el dueño (dato que también llevamos guardado en el hueco).
+  const nombreOtraParte = soyDueño ? slot.requestedByClubName : slot.clubName;
+
   const propuestaPorMi = slot.cancelacionPropuestaPor === uid;
   const propuestaPorElRival = slot.cancelacionPropuestaPor && slot.cancelacionPropuestaPor !== uid;
 
   if (propuestaPorMi) {
     return (
       <div style={{ marginTop: "8px" }}>
-        <p style={{ fontSize: "12px", color: "#888" }}>Has propuesto cancelar — esperando a que {slot.requestedByClubName || "la otra parte"} lo acepte o lo rechace.</p>
+        <p style={{ fontSize: "12px", color: "#888" }}>Has propuesto cancelar — esperando a que {nombreOtraParte || "la otra parte"} lo acepte o lo rechace.</p>
         <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rechazarCancelacion(slot.id))}>
           Retirar mi propuesta
         </button>
@@ -162,7 +168,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
   if (propuestaPorElRival) {
     return (
       <div style={{ marginTop: "8px", background: "#FBEFD9", padding: "8px", borderRadius: "4px" }}>
-        <p style={{ fontSize: "13px" }}><b>{slot.requestedByClubName}</b> ha propuesto cancelar este partido.</p>
+        <p style={{ fontSize: "13px" }}><b>{nombreOtraParte}</b> ha propuesto cancelar este partido.</p>
         <div className="cl-row" style={{ marginTop: "6px" }}>
           <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarCancelacion(slot.id))}>
             <Check size={13} /> Aceptar cancelación
@@ -179,7 +185,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
       className="cl-btn cl-btn-ghost"
       style={{ marginTop: "8px" }}
       onClick={() => {
-        if (window.confirm("Vas a proponer cancelar este partido. El rival tendrá que aceptarlo para que se libere. ¿Seguro?")) {
+        if (window.confirm(`Vas a proponer cancelar este partido con ${nombreOtraParte || "el rival"}. Tendrá que aceptarlo para que se libere. ¿Seguro?`)) {
           ejecutar(() => proponerCancelacion(slot.id));
         }
       }}

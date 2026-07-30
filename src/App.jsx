@@ -58,7 +58,17 @@ export default function App() {
         loggedIn={true}
         clubName={profile.clubName}
         onLogout={logout}
-        avisos={mySlots.filter((s) => s.status === "pendiente" || (s.status === "pactado" && s.sede === "local")).length}
+        avisos={mySlots.filter((s) =>
+          s.status === "pendiente" ||
+          (s.status === "pactado" && s.sede === "local") ||
+          (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid)
+        ).length}
+        avisosClub={allSlots.filter((s) =>
+          s.requestedByUid === user.uid && (
+            (s.status === "pactado" && s.sede === "visitante") ||
+            (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid)
+          )
+        ).length}
       />
       <div className="cl-main">
         {user && !user.emailVerified && (
@@ -119,7 +129,7 @@ export default function App() {
   );
 }
 
-function Header({ role, setRole, loggedIn, clubName, onLogout, avisos }) {
+function Header({ role, setRole, loggedIn, clubName, onLogout, avisos, avisosClub }) {
   const [identidad, setIdentidad] = useState(getIdentidadActual());
 
   const cambiarIdentidad = (valor) => {
@@ -155,7 +165,10 @@ function Header({ role, setRole, loggedIn, clubName, onLogout, avisos }) {
               {avisos > 0 && <span className="cl-badge-aviso">{avisos}</span>}
             </button>
             <button className={`cl-tab ${role === "temporada" ? "active" : ""}`} onClick={() => setRole("temporada")}>PRE/POST TEMPORADA</button>
-            <button className={`cl-tab ${role === "club" ? "active" : ""}`} onClick={() => setRole("club")}>BUSCO RIVAL</button>
+            <button className={`cl-tab ${role === "club" ? "active" : ""}`} onClick={() => setRole("club")}>
+              BUSCO RIVAL
+              {avisosClub > 0 && <span className="cl-badge-aviso">{avisosClub}</span>}
+            </button>
             <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>CUADRANTE</button>
             <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>AJUSTES</button>
             <button className="cl-tab" onClick={onLogout}>SALIR</button>
