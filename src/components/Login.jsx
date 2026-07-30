@@ -1,12 +1,116 @@
 import { useState } from "react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
+import { useClubesOficiales, crearSolicitudClub } from "../hooks/useClubesOficiales";
+
+function BuscadorDeClub({ clubElegido, setClubElegido }) {
+  const clubes = useClubesOficiales();
+  const [texto, setTexto] = useState("");
+  const [mostrarLista, setMostrarLista] = useState(false);
+  const [pidiendoAlta, setPidiendoAlta] = useState(false);
+  const [nombreSolicitado, setNombreSolicitado] = useState("");
+  const [telefonoSolicitud, setTelefonoSolicitud] = useState("");
+  const [emailSolicitud, setEmailSolicitud] = useState("");
+  const [solicitudEnviada, setSolicitudEnviada] = useState(false);
+  const [errorSolicitud, setErrorSolicitud] = useState("");
+
+  const coincidencias =
+    texto.trim().length > 0
+      ? clubes.filter((c) => c.nombre.toLowerCase().includes(texto.trim().toLowerCase())).slice(0, 8)
+      : [];
+
+  const enviarSolicitud = async () => {
+    if (!nombreSolicitado.trim() || !telefonoSolicitud.trim() || !emailSolicitud.trim()) {
+      setErrorSolicitud("Rellena los tres campos.");
+      return;
+    }
+    setErrorSolicitud("");
+    try {
+      await crearSolicitudClub(nombreSolicitado, telefonoSolicitud, emailSolicitud);
+      setSolicitudEnviada(true);
+    } catch (err) {
+      setErrorSolicitud(err.message || "No se ha podido enviar la solicitud.");
+    }
+  };
+
+  if (clubElegido) {
+    return (
+      <div>
+        <label className="cl-label">TU CLUB</label>
+        <div className="cl-row" style={{ justifyContent: "space-between", background: "#EAF3EC", padding: "8px 10px", borderRadius: "4px" }}>
+          <span>✅ {clubElegido.nombre}</span>
+          <button type="button" className="cl-btn cl-btn-ghost" style={{ padding: "2px 8px" }} onClick={() => setClubElegido(null)}>
+            Cambiar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (pidiendoAlta) {
+    if (solicitudEnviada) {
+      return (
+        <p style={{ fontSize: "13px", color: "var(--pitch)" }}>
+          Hemos recibido tu solicitud — en cuanto la revisemos y añadamos vuestro club a la lista, podrás completar el registro. Te avisaremos al email que nos has dado.
+        </p>
+      );
+    }
+    return (
+      <div className="cl-ticket">
+        <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+          Dinos el nombre de tu club y un contacto, y lo añadimos a la lista para que puedas registrarte.
+        </p>
+        <input className="cl-input" placeholder="Nombre del club" value={nombreSolicitado} onChange={(e) => setNombreSolicitado(e.target.value)} maxLength={100} style={{ marginBottom: "6px" }} />
+        <input className="cl-input" placeholder="Teléfono de contacto" value={telefonoSolicitud} onChange={(e) => setTelefonoSolicitud(e.target.value)} maxLength={20} style={{ marginBottom: "6px" }} />
+        <input className="cl-input" placeholder="Email de contacto" value={emailSolicitud} onChange={(e) => setEmailSolicitud(e.target.value)} maxLength={100} style={{ marginBottom: "6px" }} />
+        {errorSolicitud && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "6px" }}>{errorSolicitud}</p>}
+        <div className="cl-row">
+          <button type="button" className="cl-btn cl-btn-primary" onClick={enviarSolicitud}>Enviar solicitud</button>
+          <button type="button" className="cl-btn cl-btn-ghost" onClick={() => setPidiendoAlta(false)}>Volver a buscar</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      <label className="cl-label">TU CLUB</label>
+      <input
+        className="cl-input"
+        placeholder="Escribe el nombre de tu club..."
+        value={texto}
+        onChange={(e) => { setTexto(e.target.value); setMostrarLista(true); }}
+        onFocus={() => setMostrarLista(true)}
+      />
+      {mostrarLista && texto.trim().length > 0 && (
+        <div className="cl-ticket" style={{ position: "absolute", zIndex: 10, width: "100%", maxHeight: "220px", overflowY: "auto", marginTop: "4px" }}>
+          {coincidencias.length > 0 ? (
+            coincidencias.map((c) => (
+              <div
+                key={c.id}
+                style={{ padding: "6px 4px", cursor: "pointer", borderBottom: "1px solid var(--line)" }}
+                onClick={() => { setClubElegido(c); setMostrarLista(false); setTexto(""); }}
+              >
+                {c.nombre} {c.localidad && <span style={{ color: "#888", fontSize: "12px" }}>· {c.localidad}</span>}
+              </div>
+            ))
+          ) : (
+            <p style={{ fontSize: "13px", color: "#888" }}>No aparece ningún club con ese nombre.</p>
+          )}
+          <button type="button" className="cl-btn cl-btn-ghost" style={{ marginTop: "6px", width: "100%", justifyContent: "center" }} onClick={() => { setPidiendoAlta(true); setMostrarLista(false); }}>
+            Mi club no está en la lista
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDuplicado }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [clubName, setClubName] = useState("");
+  const [clubElegido, setClubElegido] = useState(null);
   const [telefono, setTelefono] = useState("");
   const [aceptaPrivacidad, setAceptaPrivacidad] = useState(false);
   const [error, setError] = useState("");
@@ -18,6 +122,10 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
     e.preventDefault();
     setError("");
     setAviso("");
+    if (mode === "signup" && !clubElegido) {
+      setError("Elige tu club de la lista antes de continuar.");
+      return;
+    }
     if (mode === "signup" && !aceptaPrivacidad) {
       setError("Tienes que aceptar la política de privacidad para crear tu club.");
       return;
@@ -31,11 +139,12 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
       if (mode === "login") {
         await onLogin(email, password);
       } else {
+        const clubName = clubElegido.nombre;
         if (onComprobarDuplicado) {
           const yaExiste = await onComprobarDuplicado(clubName);
           if (yaExiste) {
             const seguir = window.confirm(
-              `Ya hay un club registrado con el nombre "${clubName}". Si no eres tú, elige un nombre algo distinto para no confundiros (ej. añadiendo la localidad). ¿Quieres seguir de todas formas?`
+              `Ya hay un club registrado con el nombre "${clubName}". Si no eres tú, contacta con el administrador. ¿Quieres seguir de todas formas?`
             );
             if (!seguir) {
               setLoading(false);
@@ -73,10 +182,7 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
       <form onSubmit={submit} className="cl-grid-2" style={{ gridTemplateColumns: "1fr", gap: "10px", marginTop: "12px" }}>
         {mode === "signup" && (
           <>
-            <div>
-              <label className="cl-label">NOMBRE DE TU CLUB</label>
-              <input className="cl-input" value={clubName} onChange={(e) => setClubName(e.target.value)} maxLength={LIMITES.clubName} required />
-            </div>
+            <BuscadorDeClub clubElegido={clubElegido} setClubElegido={setClubElegido} />
             <div>
               <label className="cl-label">TELÉFONO DE CONTACTO</label>
               <input

@@ -22,6 +22,23 @@ export const AGE_GROUPS_WITH_ANYO = ["Cadete", "Infantil", "Alevín", "Benjamín
 
 export const ANYOS = ["1er año", "2º año", "Mixto"];
 
+// Orden de mayor a menor edad, usado para mostrar equipos y columnas siempre
+// en el mismo orden lógico en toda la app (alta, cuadrante, selector de reserva...).
+export const ORDEN_EDAD = ["Amateur", "Juvenil", "Cadete", "Infantil", "Alevín", "Benjamín", "Prebenjamín", "Querubín"];
+
+// Dentro del mismo grupo de edad, el orden pedido es 2º año, luego Mixto,
+// luego 1er año (no alfabético).
+const ORDEN_ANYO = ["2º año", "Mixto", "1er año"];
+
+export function compararEquipos(a, b) {
+  const edadA = ORDEN_EDAD.indexOf(a.grupo);
+  const edadB = ORDEN_EDAD.indexOf(b.grupo);
+  if (edadA !== edadB) return edadA - edadB;
+  const anyoA = ORDEN_ANYO.indexOf(a.anyo || "");
+  const anyoB = ORDEN_ANYO.indexOf(b.anyo || "");
+  return anyoA - anyoB;
+}
+
 // Ligas/categorías disponibles según género y grupo de edad.
 export const CATEGORIAS = {
   Masculino: {
@@ -97,4 +114,17 @@ export function haySolape(horaA, grupoA, horaB, grupoB) {
   const [ia, fa] = ventanaOcupada(horaA, grupoA);
   const [ib, fb] = ventanaOcupada(horaB, grupoB);
   return ia < fb && ib < fa;
+}
+
+// Dado un partido nuevo y la lista de partidos YA existentes en el mismo
+// campo y día, decide si cabe o choca de verdad. Los partidos de Fútbol 11
+// van de uno en uno; los de Fútbol 8 caben hasta de dos en dos, pero nunca
+// mezclados con uno de Fútbol 11 en la misma franja horaria.
+export function hayConflictoDeAforo(grupoNuevo, horaNueva, existentes) {
+  const solapados = existentes.filter((e) => haySolape(horaNueva, grupoNuevo, e.horaExacta, e.grupo));
+  if (solapados.length === 0) return null;
+  const nuevoEsF8 = formatoDeGrupo(grupoNuevo) === "Fútbol 8";
+  const todosF8 = nuevoEsF8 && solapados.every((e) => formatoDeGrupo(e.grupo) === "Fútbol 8");
+  if (todosF8 && solapados.length < 2) return null; // cabe como 2º partido de F8
+  return solapados[0]; // choque real: hay F11 de por medio, o ya hay 2 F8 (aforo lleno)
 }

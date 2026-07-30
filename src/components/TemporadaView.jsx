@@ -13,6 +13,22 @@ export default function TemporadaView({ uid, jornadas, slots, teams }) {
   const [error, setError] = useState("");
   const [avisosIA, setAvisosIA] = useState(null);
   const [revisando, setRevisando] = useState(false);
+  const [rellenando, setRellenando] = useState(false);
+  const [avisoRelleno, setAvisoRelleno] = useState("");
+
+  const rellenarHuecosQueFaltan = async () => {
+    setRellenando(true);
+    setAvisoRelleno("");
+    try {
+      const combinaciones = [];
+      teams.forEach((t) => jornadas.forEach((j) => combinaciones.push({ team: t, jornada: j })));
+      await crearHuecosLibresEnBloque(uid, combinaciones);
+      setAvisoRelleno(`Revisado — ${teams.length} equipo(s) × ${jornadas.length} jornada(s). Los huecos que faltaban ya están creados como "disponible".`);
+    } catch (err) {
+      setAvisoRelleno(err.message || "No se ha podido completar.");
+    }
+    setRellenando(false);
+  };
 
   const revisarConIA = async () => {
     setRevisando(true);
@@ -93,6 +109,18 @@ export default function TemporadaView({ uid, jornadas, slots, teams }) {
 
       <div>
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>CALENDARIO DE LA TEMPORADA</h2>
+        {jornadas.length > 0 && teams && teams.length > 0 && (
+          <>
+            <button className="cl-btn cl-btn-primary" onClick={rellenarHuecosQueFaltan} disabled={rellenando} style={{ marginBottom: "8px" }}>
+              {rellenando ? "Revisando..." : "Rellenar huecos que faltan"}
+            </button>
+            <p style={{ fontSize: "11px", color: "#888", marginBottom: "10px" }}>
+              Repasa todos tus equipos y jornadas, y crea como "disponible" cualquier combinación que se haya quedado
+              sin hueco (por ejemplo, si un equipo se creó antes de que existiera alguna jornada). No toca nada de lo que ya exista.
+            </p>
+            {avisoRelleno && <p style={{ fontSize: "12px", color: "var(--pitch)", marginBottom: "10px" }}>{avisoRelleno}</p>}
+          </>
+        )}
         {jornadas.length > 0 && (
           <button className="cl-btn cl-btn-gold" onClick={revisarConIA} disabled={revisando} style={{ marginBottom: "10px" }}>
             <Sparkles size={14} /> {revisando ? "Revisando..." : "Revisar con IA"}

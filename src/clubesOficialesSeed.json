@@ -1,0 +1,1430 @@
+[
+  {
+    "nombre": "A.C. Carlet",
+    "localidad": "Carlet"
+  },
+  {
+    "nombre": "A.C. Na Rovella",
+    "localidad": "Valencia"
+  },
+  {
+    "nombre": "A.C.D. Benicense",
+    "localidad": "Benicasim"
+  },
+  {
+    "nombre": "A.C.D. Peñíscola",
+    "localidad": "Peñíscola"
+  },
+  {
+    "nombre": "A.C.I.D. At. Nazaret",
+    "localidad": ""
+  },
+  {
+    "nombre": "A.D. El Perello",
+    "localidad": ""
+  },
+  {
+    "nombre": "A.D. El Perelló",
+    "localidad": "El Perello"
+  },
+  {
+    "nombre": "Agost F.C.",
+    "localidad": "Agost"
+  },
+  {
+    "nombre": "Alaquàs C.F.S.",
+    "localidad": "Alaquàs"
+  },
+  {
+    "nombre": "Albal C.F.",
+    "localidad": "Albal"
+  },
+  {
+    "nombre": "Albalat C.F.",
+    "localidad": "Albalat Dels Sorells"
+  },
+  {
+    "nombre": "Albocácer C.F.",
+    "localidad": "Albocàsser"
+  },
+  {
+    "nombre": "Alboraya F.S.",
+    "localidad": "Alboraya"
+  },
+  {
+    "nombre": "Alboraya U.D.",
+    "localidad": "Alboraya"
+  },
+  {
+    "nombre": "Alcàsser C.F.",
+    "localidad": "Alcàsser"
+  },
+  {
+    "nombre": "Algemesi C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Algemesí C.F.",
+    "localidad": "Algemesí"
+  },
+  {
+    "nombre": "Algueña C.F.",
+    "localidad": "Algueña"
+  },
+  {
+    "nombre": "Alicante City F.C.",
+    "localidad": "Alicante"
+  },
+  {
+    "nombre": "Almusafes C.F.",
+    "localidad": "Almussafes"
+  },
+  {
+    "nombre": "Alqueries C.F.",
+    "localidad": "Alquerías del Niño Perdido"
+  },
+  {
+    "nombre": "Alzira F.S.",
+    "localidad": "Alzira"
+  },
+  {
+    "nombre": "Andiamo Vila-Real C.F.",
+    "localidad": "Vila-real"
+  },
+  {
+    "nombre": "Antiguos Alumnos Dominicos 1992 F.C.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Artana C.F.",
+    "localidad": "Artana"
+  },
+  {
+    "nombre": "Aspe U.D.",
+    "localidad": "Aspe"
+  },
+  {
+    "nombre": "At. Benejúzar",
+    "localidad": "Benejúzar"
+  },
+  {
+    "nombre": "At. Benidorm C.D.",
+    "localidad": "Benidorm"
+  },
+  {
+    "nombre": "At. Benimar C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "At. C. Albalat de la Ribera",
+    "localidad": ""
+  },
+  {
+    "nombre": "At. Ciudad Paiporta",
+    "localidad": ""
+  },
+  {
+    "nombre": "At. Del Turia C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "At. Lliria",
+    "localidad": ""
+  },
+  {
+    "nombre": "At. Macastre C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "At. Saguntino",
+    "localidad": "Sagunto"
+  },
+  {
+    "nombre": "At. Vallbonense",
+    "localidad": "Pobla De Vallbona (La)"
+  },
+  {
+    "nombre": "At. Villar C.F.",
+    "localidad": "Villar Del Arzobispo"
+  },
+  {
+    "nombre": "Athletic C.F. Xeresa",
+    "localidad": ""
+  },
+  {
+    "nombre": "Athletic Club Torrellano",
+    "localidad": "Torrellano"
+  },
+  {
+    "nombre": "Athletic La Vall C.F.",
+    "localidad": "Tavernes De La Valldigna"
+  },
+  {
+    "nombre": "Athletico Veteranos Aldaya",
+    "localidad": ""
+  },
+  {
+    "nombre": "Atl. Villar C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Atzeneta U.E.",
+    "localidad": "Atzeneta D'Albaida"
+  },
+  {
+    "nombre": "Avant Aldaia C.D.F.",
+    "localidad": "Aldaia"
+  },
+  {
+    "nombre": "Avant Paterna C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Banyeres U.E.",
+    "localidad": "Banyeres De Mariola"
+  },
+  {
+    "nombre": "Benferri C.F.",
+    "localidad": "Benferri"
+  },
+  {
+    "nombre": "Beniarbeig C.F.",
+    "localidad": "Beniarbeig"
+  },
+  {
+    "nombre": "Beniarrés C.F.",
+    "localidad": "Beniarrés"
+  },
+  {
+    "nombre": "Benigànim C.F.",
+    "localidad": "Benigànim"
+  },
+  {
+    "nombre": "Benimamet C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Benimàmet C.F.",
+    "localidad": "Valencia"
+  },
+  {
+    "nombre": "Beniparrell C.F.",
+    "localidad": "Beniparrell"
+  },
+  {
+    "nombre": "Benirredra C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Benirredrà C.F.",
+    "localidad": "Benirredrà"
+  },
+  {
+    "nombre": "Benisano C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Benisanó C.F.",
+    "localidad": "Benisanó"
+  },
+  {
+    "nombre": "Biensa C.F.",
+    "localidad": "Sagunto"
+  },
+  {
+    "nombre": "Bigastro C.F.",
+    "localidad": "Bigastro"
+  },
+  {
+    "nombre": "Bonavista C.F.",
+    "localidad": "Elche"
+  },
+  {
+    "nombre": "Burjassot C.F.",
+    "localidad": "Burjassot"
+  },
+  {
+    "nombre": "C.A.E. Bellreguard",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Acero",
+    "localidad": "Sagunto"
+  },
+  {
+    "nombre": "C.D. Albaidense",
+    "localidad": "Albaida"
+  },
+  {
+    "nombre": "C.D. Alcoyano S.A.D.",
+    "localidad": "Alcoy"
+  },
+  {
+    "nombre": "C.D. Alfarense",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Almazora",
+    "localidad": "Almazora"
+  },
+  {
+    "nombre": "C.D. Almoradí",
+    "localidad": "Almoradí"
+  },
+  {
+    "nombre": "C.D. Altea",
+    "localidad": "La Nucia"
+  },
+  {
+    "nombre": "C.D. Apolo",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. At. Museros",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Bellavista-Meliana",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Benicarló",
+    "localidad": "Benicarló"
+  },
+  {
+    "nombre": "C.D. Benicásim",
+    "localidad": "Benicasim"
+  },
+  {
+    "nombre": "C.D. Benifaio",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Benifaió",
+    "localidad": "Benifaió"
+  },
+  {
+    "nombre": "C.D. Bocairente",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Bugarra",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Burriana",
+    "localidad": "Burriana"
+  },
+  {
+    "nombre": "C.D. Buñol",
+    "localidad": "Buñol"
+  },
+  {
+    "nombre": "C.D. Camporrobles",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Casas",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Casinos",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Castellón S.A.D.",
+    "localidad": "Castellón de La Plana"
+  },
+  {
+    "nombre": "C.D. Caxton College",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Cdad.Del Turia Sta.Ana Valencia",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Chella",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Cheste",
+    "localidad": "Cheste"
+  },
+  {
+    "nombre": "C.D. Colegio Alfinach",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Colegio Ausias March",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Colegio El Vedat",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Colegio Oller",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Conde",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Contestano",
+    "localidad": "Cocentaina"
+  },
+  {
+    "nombre": "C.D. Cuenca",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Dolores",
+    "localidad": "Dolores"
+  },
+  {
+    "nombre": "C.D. Don Bosco",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Dénia",
+    "localidad": "Dénia"
+  },
+  {
+    "nombre": "C.D. El Campello",
+    "localidad": "Campello (El)"
+  },
+  {
+    "nombre": "C.D. El Rumbo",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Eldense",
+    "localidad": "Elda"
+  },
+  {
+    "nombre": "C.D. Enguera",
+    "localidad": "Enguera"
+  },
+  {
+    "nombre": "C.D. Exposición",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Juventud Manisense",
+    "localidad": "Manises"
+  },
+  {
+    "nombre": "C.D. Juventud Picanya",
+    "localidad": "Picanya"
+  },
+  {
+    "nombre": "C.D. L'Alcudia de Crespins",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. La Canal",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. La Vila F.S.",
+    "localidad": "Villajoyosa"
+  },
+  {
+    "nombre": "C.D. Llosa",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Malilla",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Massamagrell",
+    "localidad": "Massamagrell"
+  },
+  {
+    "nombre": "C.D. Monte Sion",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Murada",
+    "localidad": "Orihuela"
+  },
+  {
+    "nombre": "C.D. Olimpic",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Onda",
+    "localidad": "Onda"
+  },
+  {
+    "nombre": "C.D. Pedralba",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Racing Riba-Roja",
+    "localidad": "Riba-Roja De Túria"
+  },
+  {
+    "nombre": "C.D. Rafelguaraf",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Roda",
+    "localidad": "Castellón de La Plana"
+  },
+  {
+    "nombre": "C.D. San Lorenzo de Massamagrell",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. San Marcelino",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Sarset",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Segorbe",
+    "localidad": "Segorbe"
+  },
+  {
+    "nombre": "C.D. Serranos",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Sport Base Ontinyent",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Teresianas-Torrent",
+    "localidad": "Torrent"
+  },
+  {
+    "nombre": "C.D. Turis",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Turís",
+    "localidad": "Turís"
+  },
+  {
+    "nombre": "C.D. Utiel",
+    "localidad": "Utiel"
+  },
+  {
+    "nombre": "C.D. Veteranos de Beniganim",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Veterans Alberic C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Vinaròs F.S.",
+    "localidad": "Vinaròs"
+  },
+  {
+    "nombre": "C.D. Xeraco",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. Xàtiva (Olímpic)",
+    "localidad": "Xàtiva"
+  },
+  {
+    "nombre": "C.D. Zafranar",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D. de Futbol Canet",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D.B. Massanassa",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D.F. Jávea",
+    "localidad": "Jávea"
+  },
+  {
+    "nombre": "C.D.F.B. La Eliana",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D.J. Collvert",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.D.Veteranos Atletic de Buñol",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.E. Alberic",
+    "localidad": "Alberic"
+  },
+  {
+    "nombre": "C.E. Alberic Promeses",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.E. Benifairo de Les Valls",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.E. Carrancs El Grau",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.E. La Font D'Encarros",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.E. Pobla Llarga",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.E. Rotova",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Agullent",
+    "localidad": "Agullent"
+  },
+  {
+    "nombre": "C.F. Aielo",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Albuixech",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Alfaz del Pi",
+    "localidad": "Alfàs Del Pi (L')"
+  },
+  {
+    "nombre": "C.F. At. Bº. La Luz-Xirivella",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. At. Quart de les Valls",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Ath. Unión Catarroja",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atl. Quelmo-Manises",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atletic Turis",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atletico Carcer",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atletico Casinos",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atletico Gilet",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atletico Moncadense",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atletico Sedavi",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atletico Vallada",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Atlético Sinarcas",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Cabanyal Canyamelar",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Casas Verdes Paterna",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Castalla",
+    "localidad": "Castalla"
+  },
+  {
+    "nombre": "C.F. Castello de Les Gerres",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Chiva",
+    "localidad": "Chiva"
+  },
+  {
+    "nombre": "C.F. City Five Massanassa",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Cracks",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Cullera",
+    "localidad": "Cullera"
+  },
+  {
+    "nombre": "C.F. Dragon Force",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. E-1 Valencia",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Escuelas San Jose",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Ex-Futbolistas del Levante UD",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Faura",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Fenix Moncada",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Fundacio Vcf",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Gandia",
+    "localidad": "Gandia"
+  },
+  {
+    "nombre": "C.F. Historics de Valencia",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Independent Albuixech",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Jules School",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Juventud Chiva",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Les Alfabegues Betera",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Levante Albal",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Lliria",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Llutxent",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Los Imposibles Levante",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Losa Del Obispo",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Malvarrosa",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Mare Nostrum Pto. Sagunto",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Marines",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Miramar",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Naquera",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. No Solo Fútbol Sagunto",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Palleter Paiporta",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Promeses Sueca",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Racing D´ Algemesí-Mecavenida",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Racing Xativa",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Recambios Colon Catarroja",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Rovella Mislata",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Simat",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Sporting Alaquas",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Sporting Picassent",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Sporting Vilamarxant",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Sporting Xirivella",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Sporting de Manises",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Sporting de Picanya",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Sporting de Rocafort",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Torre Levante",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Tous",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Trujillo La Pobla Llarga",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. U. D. Ciudad de Cullera",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. U.D. Picassent",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. U.D. San Antonio de Benageber",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. U.E. Tavernes de la Valldigna",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Unió Esportiva Gandia",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Unió I Força Museros",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Venta Del Moro",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Veteranos Alzira",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Veteranos Castellonense",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Veteranos de Godella San Bartolome",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F. Vinalesa F.B.",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F.At.Beteró de Valencia",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F.B. Castello de La Ribera",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F.B. Ciutat de Valencia",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F.B. Gandia",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F.F. Maritim",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F.P. Veteranos de Almussafes",
+    "localidad": ""
+  },
+  {
+    "nombre": "C.F.U.D. Benicalap",
+    "localidad": ""
+  },
+  {
+    "nombre": "Cambridge Black Cats F.C.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Canals Promeses C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Carcaixent C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Carlet Emf C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Catarroja C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Caudete de Las Fuentes C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Ciutat d'Alzira Futbol Base",
+    "localidad": ""
+  },
+  {
+    "nombre": "Ciutat de Xátiva C.F.B.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Colegio Inter. de Levante",
+    "localidad": ""
+  },
+  {
+    "nombre": "Colegio Salgui E.D.E.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Contaudit Almassera C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Daimus C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Deutsche Schule Valencia F.C.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Discobolo-La Torre A.C.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Dptvo. La Rambleta C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "E.F. Deportes Jucar",
+    "localidad": ""
+  },
+  {
+    "nombre": "EAF Valencia C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "EMFB Manuel-L'enova",
+    "localidad": ""
+  },
+  {
+    "nombre": "El Puig C.E.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Esport Base Moixent",
+    "localidad": ""
+  },
+  {
+    "nombre": "Esportiu Beniarjo",
+    "localidad": ""
+  },
+  {
+    "nombre": "Estivella C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Evangelico C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B. A.C. Benaguasil",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B. Alfara Del Patriarca",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B. Bonrepos i Mirambell",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B. D'Alcasser",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B. Sagunto",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B. U.E. Atletic Amistat",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B.C.D. Catarroja",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.B.M. Moncada C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.C. Benaguasil",
+    "localidad": ""
+  },
+  {
+    "nombre": "F.S. Picassent",
+    "localidad": ""
+  },
+  {
+    "nombre": "Foios Atletic C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Font de la Figuera C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Godella C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Guadasuar C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Huracan Moncada C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Jupiter C.F. de Massamagrell",
+    "localidad": ""
+  },
+  {
+    "nombre": "L'Olleria C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "La Creu C.F. Pobla Farnals",
+    "localidad": ""
+  },
+  {
+    "nombre": "La Union Femenina Manises F.C.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Levante U.D.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Los Silos C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Los Silos CF - Promises Valencia",
+    "localidad": "Valencia"
+  },
+  {
+    "nombre": "Manises C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Massanassa C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Meliana C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Mislata C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Moixent C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Museros C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Olimpic de Catarroja C.D.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Olympyakos de Alcasser",
+    "localidad": ""
+  },
+  {
+    "nombre": "On The Rocks",
+    "localidad": ""
+  },
+  {
+    "nombre": "Ontinyent C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "P.D. Ayorense",
+    "localidad": ""
+  },
+  {
+    "nombre": "P.F. Veteranos Juventud",
+    "localidad": ""
+  },
+  {
+    "nombre": "Paiporta C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Patacona C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Paterna C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Penya Veterans D'Alginet",
+    "localidad": ""
+  },
+  {
+    "nombre": "Picasent C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Piles C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Racing Rafelcofer C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Racing de Paterna C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Rafelbuñol C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Rayo San Antonio de Benageber C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Real de Gandia C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Requena Racing C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Ribarroja C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Rocafort C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "S.C. Requena",
+    "localidad": ""
+  },
+  {
+    "nombre": "S.D. Sueca",
+    "localidad": ""
+  },
+  {
+    "nombre": "S.D. Vallada",
+    "localidad": ""
+  },
+  {
+    "nombre": "San Antonio de Benageber C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Sedavi C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Silla C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Sollana C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Sp. Mislata U.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Sporting Almassera C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Sporting Benimaclet C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Sueca United Football Club",
+    "localidad": ""
+  },
+  {
+    "nombre": "Tavernes Blanques C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Torrefiel Athletic C.E.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Torrent C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Aldaia C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Alginet",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Almoines",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Alzira",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Anna",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Balompie Alfafar",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Beniganim",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Benimodo",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Beniopa",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Betera",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Canals",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Carcaixent",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Carcer",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Castellar-Oliveral",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Castellonense",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Chiva Veteranos",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Esperanza",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Fonteta",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Godelleta C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Montaverner",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Oliva",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Paterna",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Portuarios-Disarp",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Puzol",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Quart de Poblet",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D. Yatova",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D.Juventud-Bº Cristo",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D.Maritimo-Cabanyal",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.D.P. Veteranos de Paiporta",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.E. Alaquas I Walter",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.E. Benifairo de La Valldigna",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.E. Genoves",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.E. La Mancomunitat",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.E. L´Alcudia",
+    "localidad": ""
+  },
+  {
+    "nombre": "U.E. Vall Dels Alcalans",
+    "localidad": ""
+  },
+  {
+    "nombre": "Union Benetuser-Fabara C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Valencia Feminas C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Veteranos C.D. Benifaio",
+    "localidad": ""
+  },
+  {
+    "nombre": "Vilamarxant C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Villalonga C.F.",
+    "localidad": ""
+  },
+  {
+    "nombre": "Xirivella C.F.",
+    "localidad": ""
+  }
+]

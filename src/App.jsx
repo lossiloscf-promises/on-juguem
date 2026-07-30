@@ -3,6 +3,7 @@ import { useAuth } from "./hooks/useAuth";
 import { useMyTeams, useMySlots, useAllSlots } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
 import { useCierreSesionPorInactividad } from "./hooks/useCierreSesionPorInactividad";
+import { getIdentidadActual, setIdentidadActual, IDENTIDADES_SUGERIDAS } from "./identidad";
 import Login from "./components/Login";
 import CoordinadorView from "./components/CoordinadorView";
 import ClubView from "./components/ClubView";
@@ -15,7 +16,7 @@ export default function App() {
   const {
     user, profile, loading, signup, login, logout,
     updateContact, recuperarContrasena, deleteAccount,
-    comprobarNombreDuplicado, reenviarVerificacion,
+    comprobarNombreDuplicado, reenviarVerificacion, verificarClub,
   } = useAuth();
   const [role, setRole] = useState("coordinador");
   const [avisoVerificacion, setAvisoVerificacion] = useState("");
@@ -90,6 +91,7 @@ export default function App() {
             allSlots={allSlots}
             misEquipos={myTeams}
             misJornadas={jornadas}
+            misVerificado={profile.verificado}
           />
         )}
         {role === "cuadrante" && (
@@ -105,9 +107,11 @@ export default function App() {
         )}
         {role === "ajustes" && (
           <AjustesView
+            uid={user.uid}
             profile={profile}
             onGuardarContacto={(datos) => updateContact(user.uid, datos)}
             onBorrarCuenta={(password) => deleteAccount(password)}
+            onVerificar={verificarClub}
           />
         )}
       </div>
@@ -116,6 +120,13 @@ export default function App() {
 }
 
 function Header({ role, setRole, loggedIn, clubName, onLogout, avisos }) {
+  const [identidad, setIdentidad] = useState(getIdentidadActual());
+
+  const cambiarIdentidad = (valor) => {
+    setIdentidad(valor);
+    setIdentidadActual(valor);
+  };
+
   return (
     <header className="cl-header">
       <div className="cl-header-inner">
@@ -124,6 +135,18 @@ function Header({ role, setRole, loggedIn, clubName, onLogout, avisos }) {
           <p className="cl-mono cl-subtitle">
             {loggedIn ? `${clubName} · amistosos sin líos de whatsapp` : "amistosos pretemporada · sin líos de whatsapp"}
           </p>
+          {loggedIn && (
+            <select
+              className="cl-input"
+              style={{ marginTop: "6px", fontSize: "12px", padding: "3px 6px", width: "auto" }}
+              value={identidad}
+              onChange={(e) => cambiarIdentidad(e.target.value)}
+              title="Quién eres — solo para que el historial sepa distinguir, si compartís el mismo login"
+            >
+              <option value="">¿Quién eres? (opcional)</option>
+              {IDENTIDADES_SUGERIDAS.map((i) => <option key={i} value={i}>{i}</option>)}
+            </select>
+          )}
         </div>
         {loggedIn && (
           <div className="cl-tabs">

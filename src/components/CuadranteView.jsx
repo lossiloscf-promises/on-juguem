@@ -1,8 +1,9 @@
 import { useState, Fragment } from "react";
 import * as XLSX from "xlsx";
 import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide-react";
-import { FASES, groupColor } from "../constants";
+import { FASES, groupColor, compararEquipos, ORDEN_EDAD } from "../constants";
 import { diaCoincideConJornada, tieneJornadaCoincidente } from "../validaciones";
+import { useInstalaciones } from "../hooks/useInstalaciones";
 import {
   requestBooking,
   rejectRequest,
@@ -15,6 +16,7 @@ import {
   descartarAviso,
   hayConflictoDeHorario,
   setDisponibilidad,
+  eliminarHuecoDeEquipo,
   useHistorialDeSlot,
 } from "../hooks/useClubData";
 
@@ -66,7 +68,8 @@ function contenidoCelda(slot, modo) {
 }
 
 // Formulario compacto para fijar día/hora/campo (reutilizado al cerrar en casa).
-function FormularioCierreInline({ slot, allSlots, onConfirmar }) {
+function FormularioCierreInline({ slot, allSlots, onConfirmar, uid }) {
+  const instalaciones = useInstalaciones(uid);
   const [dia, setDia] = useState("");
   const [hora, setHora] = useState("");
   const [campo, setCampo] = useState("");
@@ -97,7 +100,10 @@ function FormularioCierreInline({ slot, allSlots, onConfirmar }) {
     <div className="cl-row" style={{ flexWrap: "wrap" }}>
       <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
       <input type="time" className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)} />
-      <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} />
+      <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-propio" />
+      <datalist id="instalaciones-propio">
+        {instalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
+      </datalist>
       <button className="cl-btn cl-btn-primary" onClick={confirmar} disabled={guardando}>
         {guardando ? "Comprobando..." : "Cerrar partido"}
       </button>
@@ -109,12 +115,13 @@ function FormularioCierreInline({ slot, allSlots, onConfirmar }) {
 // Selector de "con cuál de mis equipos pido este hueco", con los de la misma
 // edad primero (mismo grupo, uno por encima, uno por debajo).
 function SelectorEquipoPropio({ grupoCelda, misEquipos, onElegir }) {
-  const orden = ["Amateur", "Juvenil", "Cadete", "Infantil", "Alevín", "Benjamín", "Prebenjamín", "Querubín"];
+  const orden = ORDEN_EDAD;
   const idx = orden.indexOf(grupoCelda);
   const prioridad = [orden[idx], orden[idx - 1], orden[idx + 1]].filter(Boolean);
   const ordenados = [...misEquipos].sort((a, b) => {
     const pa = prioridad.indexOf(a.grupo), pb = prioridad.indexOf(b.grupo);
-    return (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+    const diff = (pa === -1 ? 99 : pa) - (pb === -1 ? 99 : pb);
+    return diff !== 0 ? diff : compararEquipos(a, b);
   });
   const [elegido, setElegido] = useState(ordenados[0]?.id || "");
 
@@ -183,7 +190,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
 }
 export default function CuadranteView({
   clubName, teams, slots, jornadas,
-  modo = "propio", allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email,
+  modo = "propio", allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email, puedeReservar = true,
 }) {
   const [celdaAbierta, setCeldaAbierta] = useState(null);
   const [error, setError] = useState("");
@@ -201,7 +208,7 @@ export default function CuadranteView({
   };
 
   const exportarExcel = () => {
-    const datos = teams.map((t) => {
+    const datos = [...teams].sort(compararEquipos).map((t) => {
       const fila = { Equipo: `${t.grupo}${t.anyo ? " (" + t.anyo + ")" : ""} · ${t.categoria} · ${t.nivel}${t.identificador ? " · " + t.identificador : ""}` };
       jornadas.forEach((j) => {
         const s = slotDe(t.id, j.id);
@@ -261,7 +268,7 @@ export default function CuadranteView({
               </tr>
             </thead>
             <tbody>
-              {teams.map((t) => (
+              {[...teams].sort(compararEquipos).map((t) => (
                 <Fragment key={t.id}>
                   <tr key={t.id}>
                     <td style={{ position: "sticky", left: 0, background: "white", minWidth: "180px" }}>
@@ -312,6 +319,18 @@ export default function CuadranteView({
                               >
                                 Marcar no disponible
                               </button>
+                              {s && (
+                                <button
+                                  className="cl-btn cl-btn-ghost"
+                                  onClick={() => {
+                                    if (window.confirm(`¿Quitar la jornada "${j.label}" del equipo ${t.grupo}${t.identificador ? " " + t.identificador : ""}? Este equipo no participará esa fecha (queda vacía, puedes volver a activarla cuando quieras).`)) {
+                                      ejecutar(async () => { await eliminarHuecoDeEquipo(uid, t.id, j.id, s.status); setCeldaAbierta(null); });
+                                    }
+                                  }}
+                                >
+                                  Este equipo no participa esta jornada
+                                </button>
+                              )}
                             </div>
                           )}
                           {modo === "propio" && s?.status === "pendiente" && (
@@ -332,6 +351,7 @@ export default function CuadranteView({
                               <FormularioCierreInline
                                 slot={s}
                                 allSlots={allSlots}
+                                uid={uid}
                                 onConfirmar={(datos) => cerrarComoLocal(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
                               />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
@@ -358,12 +378,16 @@ export default function CuadranteView({
                             </div>
                           )}
                           {modo === "ajeno" && s?.status === "libre" && (
-                            tieneJornadaCoincidente(misJornadas, j.orderDate) ? (
+                            !puedeReservar ? (
+                              <p style={{ fontSize: "12px", color: "var(--clay)" }}>
+                                No puedes reservar todavía — tu club o este todavía no está verificado por un administrador.
+                              </p>
+                            ) : tieneJornadaCoincidente(misJornadas, j.orderDate) ? (
                               <SelectorEquipoPropio
                                 grupoCelda={t.grupo}
                                 misEquipos={misEquipos || []}
-                                onElegir={() => ejecutar(async () => {
-                                  await requestBooking(s.id, uid, misClubName, telefono, email);
+                                onElegir={(miEquipo) => ejecutar(async () => {
+                                  await requestBooking(s.id, uid, misClubName, telefono, email, miEquipo?.id);
                                   setCeldaAbierta(null);
                                 })}
                               />

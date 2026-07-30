@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ArrowLeft, Search, LayoutGrid, X } from "lucide-react";
 import { useAllTeams, cerrarComoVisitante, hayConflictoDeHorario } from "../hooks/useClubData";
+import { useClubProfile } from "../hooks/useAuth";
+import { useInstalaciones } from "../hooks/useInstalaciones";
 import { diaCoincideConJornada } from "../validaciones";
 import { useJornadas } from "../hooks/useJornadas";
 import CuadranteView, { GestionCancelacion } from "./CuadranteView";
@@ -14,7 +16,8 @@ import {
 } from "../constants";
 
 // Formulario compacto para cerrar día/hora/campo cuando juegas como visitante.
-function CierrePartido({ slot, allSlots, onCerrar }) {
+function CierrePartido({ slot, allSlots, onCerrar, uid }) {
+  const instalaciones = useInstalaciones(uid);
   const [dia, setDia] = useState("");
   const [hora, setHora] = useState("");
   const [campo, setCampo] = useState("");
@@ -45,7 +48,10 @@ function CierrePartido({ slot, allSlots, onCerrar }) {
     <div className="cl-row" style={{ flexWrap: "wrap", marginTop: "8px" }}>
       <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
       <input type="time" className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)} />
-      <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} />
+      <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-visitante" />
+      <datalist id="instalaciones-visitante">
+        {instalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
+      </datalist>
       <button className="cl-btn cl-btn-primary" onClick={confirmar} disabled={guardando}>
         {guardando ? "Comprobando..." : "Cerrar partido"}
       </button>
@@ -110,6 +116,7 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
               <CierrePartido
                 slot={s}
                 allSlots={allSlots}
+                uid={uid}
                 onCerrar={(datos) => cerrarComoVisitante(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
               />
               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
@@ -207,16 +214,25 @@ function DirectorioClubes({ clubes, onEntrar }) {
 }
 
 // --- El cuadrante de un club concreto, con las jornadas cargadas para ese club ---
-function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email, onVolver }) {
+function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email, misVerificado, onVolver }) {
   const jornadas = useJornadas(ownerUid);
   const teams = useAllTeams().filter((t) => t.ownerUid === ownerUid);
   const slots = allSlots.filter((s) => s.ownerUid === ownerUid);
+  const perfilAjeno = useClubProfile(ownerUid);
+  const puedeReservar = misVerificado && perfilAjeno?.verificado;
 
   return (
     <div>
       <button className="cl-btn cl-btn-ghost" onClick={onVolver} style={{ marginBottom: "12px" }}>
         <ArrowLeft size={14} /> Volver al directorio
       </button>
+      {!puedeReservar && (
+        <p className="cl-ticket" style={{ borderColor: "var(--gold)", fontSize: "13px" }}>
+          {!misVerificado
+            ? "Tu club todavía no está verificado — de momento puedes ver este cuadrante, pero no reservar. En cuanto un administrador confirme tu teléfono, podrás hacerlo."
+            : `${clubName} todavía no está verificado por un administrador — puedes ver su cuadrante, pero no reservar todavía.`}
+        </p>
+      )}
       <CuadranteView
         clubName={clubName}
         teams={teams}
@@ -230,6 +246,7 @@ function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas
         misClubName={misClubName}
         telefono={telefono}
         email={email}
+        puedeReservar={puedeReservar}
       />
     </div>
   );
@@ -242,9 +259,23 @@ function BusquedaPorFiltros({ uid, allSlots }) {
   const [filterGrupo, setFilterGrupo] = useState("Todos");
   const [filterCategoria, setFilterCategoria] = useState("Todas");
   const [filterFase, setFilterFase] = useState("Todas");
+  const [filterJornada, setFilterJornada] = useState("Todas");
 
   const grupoOptions = filterFormato !== "Todos" ? AGE_GROUPS_BY_FORMATO[filterFormato] : [];
   const categoriaOptions = filterGenero !== "Todos" && filterGrupo !== "Todos" ? CATEGORIAS[filterGenero][filterGrupo] : [];
+
+  // Las jornadas disponibles para elegir se calculan a partir de los huecos libres
+  // que ya cumplen el resto de filtros — así la lista no se llena de fechas que
+  // luego no van a dar ningún resultado.
+  const jornadaOptions = [...new Set(
+    allSlots
+      .filter((s) => s.ownerUid !== uid && s.status === "libre")
+      .filter((s) => filterGenero === "Todos" || s.genero === filterGenero)
+      .filter((s) => filterFormato === "Todos" || s.formato === filterFormato)
+      .filter((s) => filterGrupo === "Todos" || s.grupo === filterGrupo)
+      .filter((s) => filterFase === "Todas" || s.fase === filterFase)
+      .map((s) => s.jornadaLabel)
+  )].sort();
 
   const visible = allSlots.filter((s) => {
     if (s.ownerUid === uid) return false;
@@ -254,6 +285,7 @@ function BusquedaPorFiltros({ uid, allSlots }) {
     if (filterGrupo !== "Todos" && s.grupo !== filterGrupo) return false;
     if (filterCategoria !== "Todas" && s.categoria !== filterCategoria) return false;
     if (filterFase !== "Todas" && s.fase !== filterFase) return false;
+    if (filterJornada !== "Todas" && s.jornadaLabel !== filterJornada) return false;
     return true;
   });
 
@@ -290,9 +322,16 @@ function BusquedaPorFiltros({ uid, allSlots }) {
         </div>
         <div className="cl-field">
           <label className="cl-label">FASE</label>
-          <select className="cl-input" value={filterFase} onChange={(e) => setFilterFase(e.target.value)}>
+          <select className="cl-input" value={filterFase} onChange={(e) => { setFilterFase(e.target.value); setFilterJornada("Todas"); }}>
             <option value="Todas">Todas</option>
             {FASES.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+        <div className="cl-field">
+          <label className="cl-label">JORNADA EXACTA</label>
+          <select className="cl-input" value={filterJornada} onChange={(e) => setFilterJornada(e.target.value)}>
+            <option value="Todas">Todas</option>
+            {jornadaOptions.map((j) => <option key={j} value={j}>{j}</option>)}
           </select>
         </div>
       </div>
@@ -318,7 +357,7 @@ function BusquedaPorFiltros({ uid, allSlots }) {
   );
 }
 
-export default function ClubView({ uid, clubName, telefono, email, allSlots, misEquipos, misJornadas }) {
+export default function ClubView({ uid, clubName, telefono, email, allSlots, misEquipos, misJornadas, misVerificado }) {
   const [modoVista, setModoVista] = useState("directorio"); // directorio | filtros
   const [clubEntrado, setClubEntrado] = useState(null); // { uid, clubName } | null
   const allTeams = useAllTeams();
@@ -372,6 +411,7 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
           misClubName={clubName}
           telefono={telefono}
           email={email}
+          misVerificado={misVerificado}
           onVolver={() => setClubEntrado(null)}
         />
       ) : (

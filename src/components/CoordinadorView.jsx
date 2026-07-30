@@ -10,6 +10,7 @@ import {
   ANYOS,
   CATEGORIAS,
   NIVELES,
+  compararEquipos,
   groupColor,
 } from "../constants";
 
@@ -36,8 +37,9 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid }) {
     setGuardando(true);
     try {
       if (tieneHuecos) {
-        // Con huecos ya publicados, solo se puede tocar nivel e identificador
-        // (cambiar la categoría rompería los huecos ya publicados con datos antiguos).
+        // Con huecos ya publicados, solo se puede tocar nivel, identificador
+        // y la fecha de inicio (esta última no afecta a lo ya publicado, solo
+        // a jornadas nuevas que se creen a partir de ahora).
         await updateTeam(t.id, { nivel, identificador: identificador.trim() });
       } else {
         await updateTeam(t.id, {
@@ -279,7 +281,7 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
         <p style={{ fontSize: "13px", color: "#666", marginBottom: "10px" }}>
           Para marcar disponibilidad, gestionar solicitudes y cerrar partidos, ve a la pestaña <b>CUADRANTE</b>.
         </p>
-        {teams.map((t) => (
+        {[...teams].sort(compararEquipos).map((t) => (
           <FilaEquipoEditable
             key={t.id}
             t={t}

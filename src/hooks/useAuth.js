@@ -11,7 +11,7 @@ import {
   EmailAuthProvider,
   deleteUser,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 export function useAuth() {
@@ -45,7 +45,10 @@ export function useAuth() {
   const signup = async (email, password, clubName, telefono) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName: clubName });
-    const data = { clubName, clubNameLower: clubName.trim().toLowerCase(), email, telefono: telefono || "" };
+    const data = {
+      clubName, clubNameLower: clubName.trim().toLowerCase(), email, telefono: telefono || "",
+      verificado: false, esAdmin: false,
+    };
     await setDoc(doc(db, "users", cred.user.uid), data);
     setProfile(data);
     try {
@@ -91,10 +94,43 @@ export function useAuth() {
     await deleteUser(auth.currentUser);
   };
 
+  // Solo funciona si quien lo llama es admin (la regla del servidor lo exige,
+  // esto de aquí es solo para no mostrar el intento si no hace falta).
+  const verificarClub = async (targetUid, verificado) => {
+    await updateDoc(doc(db, "users", targetUid), { verificado });
+  };
+
   return {
     user, profile, loading,
     signup, login, logout,
     updateContact, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion,
+    verificarClub,
   };
+}
+
+// Perfil de un club concreto en tiempo real (para comprobar si está verificado
+// antes de dejar reservar, con un aviso claro en vez de un error genérico).
+export function useClubProfile(uid) {
+  const [perfil, setPerfil] = useState(null);
+  useEffect(() => {
+    if (!uid) return;
+    return onSnapshot(doc(db, "users", uid), (snap) => setPerfil(snap.exists() ? snap.data() : null));
+  }, [uid]);
+  return perfil;
+}
+
+// Lista en tiempo real de todos los clubes registrados — pensado para el
+// panel de administración (verificar teléfonos manualmente).
+export function useTodosLosClubes() {
+  const [clubes, setClubes] = useState([]);
+  useEffect(() => {
+    const q = collection(db, "users");
+    return onSnapshot(q, (snap) => {
+      const lista = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+      lista.sort((a, b) => (a.verificado === b.verificado ? 0 : a.verificado ? 1 : -1));
+      setClubes(lista);
+    });
+  }, []);
+  return clubes;
 }

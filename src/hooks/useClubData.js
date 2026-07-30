@@ -15,18 +15,37 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { haySolape } from "../constants";
+import { getIdentidadActual } from "../identidad";
+import { hayConflictoDeAforo } from "../constants";
 
 // Anota una entrada en el historial de auditoría — quién hizo qué y cuándo,
 // sobre un hueco/partido concreto. Si falla el registro (raro), no rompe la
 // acción principal: el historial es informativo, no crítico para el flujo.
 async function registrarHistorial(slotId, accion) {
   try {
+    const identidad = getIdentidadActual();
+    const nombreClub = auth.currentUser?.displayName || "";
+    // Se lee el hueco para saber quiénes son las dos partes implicadas, y
+    // guardarlo también en la propia entrada — así la regla de lectura no
+    // depende de que el hueco siga existiendo más adelante.
+    let ownerUid = null;
+    let requestedByUid = null;
+    try {
+      const slotSnap = await getDoc(doc(db, "slots", slotId));
+      if (slotSnap.exists()) {
+        ownerUid = slotSnap.data().ownerUid || null;
+        requestedByUid = slotSnap.data().requestedByUid || null;
+      }
+    } catch {
+      // si no se puede leer el hueco, se registra igualmente sin esos datos
+    }
     await addDoc(collection(db, "historial"), {
       slotId,
       accion,
       quienUid: auth.currentUser?.uid || null,
-      quienClubName: auth.currentUser?.displayName || "",
+      quienClubName: identidad ? `${nombreClub} (${identidad})` : nombreClub,
+      ownerUid,
+      requestedByUid,
       timestamp: serverTimestamp(),
     });
   } catch {
@@ -105,6 +124,9 @@ export async function crearHuecosLibresEnBloque(uid, combinaciones) {
       const ref = doc(db, "slots", id);
       const actual = await getDoc(ref);
       if (actual.exists()) return; // ya hay algo ahí, no lo tocamos
+
+      const estadoInicial = "libre";
+
       await setDoc(ref, {
         ownerUid: uid,
         teamId: team.id,
@@ -122,7 +144,7 @@ export async function crearHuecosLibresEnBloque(uid, combinaciones) {
         jornadaLabel: jornada.label,
         jornadaOrderDate: jornada.orderDate,
         fase: jornada.fase,
-        status: "libre",
+        status: estadoInicial,
         sede: null,
         diaExacto: "",
         horaExacta: "",
@@ -164,6 +186,18 @@ export async function addTeam(
 // Marca un equipo como DISPONIBLE o NO DISPONIBLE para una jornada del calendario.
 // Solo se puede tocar si todavía no hay nada pactado con nadie (si no, hay que gestionarlo
 // desde las solicitudes / el cierre del partido).
+// Quita del todo la relación equipo-jornada (la celda vuelve a quedar vacía,
+// como si nunca hubiera existido para ese equipo) — para cuando un equipo
+// simplemente no participa esa jornada. Si hay un partido en marcha, se
+// bloquea: primero hay que cancelarlo de mutuo acuerdo con el rival.
+export async function eliminarHuecoDeEquipo(uid, teamId, jornadaId, statusActual) {
+  if (!["libre", "no_disponible"].includes(statusActual)) {
+    throw new Error("Este hueco tiene un partido en marcha. Cancélalo primero (de mutuo acuerdo con el rival) antes de quitarlo del cuadrante.");
+  }
+  const id = slotDocId(teamId, jornadaId);
+  return deleteDoc(doc(db, "slots", id));
+}
+
 export async function setDisponibilidad(uid, team, jornada, disponible) {
   const id = slotDocId(team.id, jornada.id);
   const ref = doc(db, "slots", id);
@@ -297,6 +331,12 @@ export async function deleteTeam(uid, teamId, slotsPropiosDeEsteEquipo) {
     ["libre", "no_disponible"].includes(s.status)
   );
 
+  // Importante: el equipo se borra PRIMERO. Las reglas del servidor exigen
+  // que el equipo ya no exista de verdad antes de dejar liberar sus huecos
+  // automáticamente — así nadie puede fingir una baja de equipo para
+  // saltarse el acuerdo mutuo de cancelación.
+  await deleteDoc(doc(db, "teams", teamId));
+
   await Promise.all(propiosActivos.map((s) => liberarPorBajaDeEquipo(s.id, s.requestedByClubName)));
   await Promise.all(propiosInactivos.map((s) => deleteDoc(doc(db, "slots", s.id))));
 
@@ -305,19 +345,18 @@ export async function deleteTeam(uid, teamId, slotsPropiosDeEsteEquipo) {
   const comoSolicitanteSnap = await getDocs(query(collection(db, "slots"), where("requestedByUid", "==", uid)));
   const comoSolicitanteActivos = comoSolicitanteSnap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((s) => ["pendiente", "pactado", "confirmado"].includes(s.status));
+    .filter((s) => ["pendiente", "pactado", "confirmado"].includes(s.status) && s.requestedByTeamId === teamId);
   await Promise.all(comoSolicitanteActivos.map((s) => liberarPorBajaDeEquipo(s.id, s.clubName)));
-
-  return deleteDoc(doc(db, "teams", teamId));
 }
 
-export async function requestBooking(slotId, requesterUid, requesterClubName, requesterTelefono, requesterEmail) {
+export async function requestBooking(slotId, requesterUid, requesterClubName, requesterTelefono, requesterEmail, requesterTeamId) {
   await updateDoc(doc(db, "slots", slotId), {
     status: "pendiente",
     requestedByUid: requesterUid,
     requestedByClubName: requesterClubName,
     requestedByTelefono: requesterTelefono || "",
     requestedByEmail: requesterEmail || "",
+    requestedByTeamId: requesterTeamId || null,
   });
   registrarHistorial(slotId, `${requesterClubName} solicitó este hueco`);
 }
@@ -373,15 +412,14 @@ export async function cerrarComoLocal(slotId, { diaExacto, horaExacta, campoExac
 // partido ya confirmado en ese mismo campo (dejando el descanso obligatorio entre ambos).
 export function hayConflictoDeHorario(allSlots, { campoExacto, diaExacto, horaExacta, grupo }, slotIdExcluir) {
   const campoNormalizado = campoExacto.trim().toLowerCase();
-  const conflicto = allSlots.find((s) => {
+  const mismoCampoDia = allSlots.filter((s) => {
     if (s.id === slotIdExcluir) return false;
     if (s.status !== "confirmado") return false;
     if (!s.campoExacto || !s.diaExacto || !s.horaExacta) return false;
     if (s.campoExacto.trim().toLowerCase() !== campoNormalizado) return false;
-    if (s.diaExacto !== diaExacto) return false;
-    return haySolape(horaExacta, grupo, s.horaExacta, s.grupo);
+    return s.diaExacto === diaExacto;
   });
-  return conflicto || null;
+  return hayConflictoDeAforo(grupo, horaExacta, mismoCampoDia);
 }
 
 // Comprueba si este equipo YA tiene otro partido confirmado ese mismo día,
@@ -404,8 +442,15 @@ export function hayOtroPartidoMismoDia(allSlots, { teamId, diaExacto }, slotIdEx
 // a la vez, en el mismo segundo, cuelen los dos un partido que en realidad chocan.
 function candidatosDeConflicto(allSlots, datosCierre, slotIdExcluir) {
   const ids = new Set();
-  const porCampo = hayConflictoDeHorario(allSlots, datosCierre, slotIdExcluir);
-  if (porCampo) ids.add(porCampo.id);
+  const campoNormalizado = datosCierre.campoExacto.trim().toLowerCase();
+  allSlots.forEach((s) => {
+    if (s.id === slotIdExcluir) return;
+    if (s.status !== "confirmado") return;
+    if (!s.campoExacto || !s.diaExacto || !s.horaExacta) return;
+    if (s.campoExacto.trim().toLowerCase() === campoNormalizado && s.diaExacto === datosCierre.diaExacto) {
+      ids.add(s.id); // mismo campo/día: candidato a recontar el aforo, choque o no
+    }
+  });
   const porEquipo = hayOtroPartidoMismoDia(allSlots, datosCierre, slotIdExcluir);
   if (porEquipo) ids.add(porEquipo.id);
   return [...ids];
@@ -427,26 +472,28 @@ async function cerrarPartidoAtomico(slotId, datosNuevos, allSlots, teamId) {
       throw new Error("Este partido ya no existe. Puede que se haya cancelado justo ahora.");
     }
 
+    const candidatosMismoCampoDia = [];
     for (const candidatoId of candidatoIds) {
       const candidatoSnap = await transaction.get(doc(db, "slots", candidatoId));
       if (!candidatoSnap.exists()) continue;
       const c = candidatoSnap.data();
       if (c.status !== "confirmado") continue; // ya no está confirmado de verdad, no choca
 
-      const mismoCampo =
+      const mismoCampoDia =
         c.campoExacto && c.diaExacto && c.horaExacta &&
         c.campoExacto.trim().toLowerCase() === datosNuevos.campoExacto.trim().toLowerCase() &&
-        c.diaExacto === datosNuevos.diaExacto &&
-        haySolape(datosNuevos.horaExacta, datosNuevos.grupo, c.horaExacta, c.grupo);
+        c.diaExacto === datosNuevos.diaExacto;
+      if (mismoCampoDia) candidatosMismoCampoDia.push(c);
 
       const mismoEquipoMismoDia = c.teamId === teamId && c.diaExacto === datosNuevos.diaExacto;
-
-      if (mismoCampo) {
-        throw new Error(`Justo se ha confirmado otro partido en ese campo a las ${c.horaExacta}. Elige otra hora.`);
-      }
       if (mismoEquipoMismoDia) {
         throw new Error("Justo se ha confirmado otro partido de este mismo equipo ese día. Elige otra jornada u otro equipo.");
       }
+    }
+
+    const choqueDeAforo = hayConflictoDeAforo(datosNuevos.grupo, datosNuevos.horaExacta, candidatosMismoCampoDia);
+    if (choqueDeAforo) {
+      throw new Error(`Justo se ha confirmado otro partido en ese campo a las ${choqueDeAforo.horaExacta}. Elige otra hora.`);
     }
 
     transaction.update(slotRef, {
@@ -458,11 +505,16 @@ async function cerrarPartidoAtomico(slotId, datosNuevos, allSlots, teamId) {
     });
 
     const historialRef = doc(collection(db, "historial"));
+    const identidadCierre = getIdentidadActual();
+    const nombreClubCierre = auth.currentUser?.displayName || "";
+    const datosSlot = slotSnap.data();
     transaction.set(historialRef, {
       slotId,
       accion: `Partido cerrado: ${datosNuevos.diaExacto} ${datosNuevos.horaExacta} en ${datosNuevos.campoExacto}`,
       quienUid: auth.currentUser?.uid || null,
-      quienClubName: auth.currentUser?.displayName || "",
+      quienClubName: identidadCierre ? `${nombreClubCierre} (${identidadCierre})` : nombreClubCierre,
+      ownerUid: datosSlot.ownerUid || null,
+      requestedByUid: datosSlot.requestedByUid || null,
       timestamp: serverTimestamp(),
     });
   });
