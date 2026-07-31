@@ -72,11 +72,9 @@ function CierrePartido({ slot, allSlots, onCerrar, uid }) {
 function TusGestionesComoVisitante({ uid, allSlots }) {
   const [error, setError] = useState("");
   const pendientes = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pendiente");
-  const pactadoSinSede = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pactado" && !s.sede);
   const porCerrar = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pactado" && s.sede === "visitante");
-  const confirmados = allSlots.filter((s) => s.requestedByUid === uid && s.status === "confirmado");
 
-  if (pendientes.length + pactadoSinSede.length + porCerrar.length + confirmados.length === 0) return null;
+  if (pendientes.length + porCerrar.length === 0) return null;
 
   const ejecutar = async (fn) => {
     setError("");
@@ -106,22 +104,6 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
         </>
       )}
 
-      {pactadoSinSede.length > 0 && (
-        <>
-          <h2 className="cl-display" style={{ fontSize: "20px", color: "var(--pitch)" }}>
-            PACTADOS, ESPERANDO DÓNDE SE JUEGA ({pactadoSinSede.length})
-          </h2>
-          {pactadoSinSede.map((s) => (
-            <div key={s.id} className="cl-ticket">
-              <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
-              <p style={{ fontSize: "13px" }}>Contra <b>{s.clubName}</b> · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · {s.jornadaLabel}</p>
-              <p style={{ fontSize: "12px", color: "#888" }}>Aceptado — falta que ellos decidan si se juega en su campo o en el vuestro.</p>
-              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
-            </div>
-          ))}
-        </>
-      )}
-
       {porCerrar.length > 0 && (
         <>
           <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--clay)" }}>
@@ -140,26 +122,6 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
                 uid={uid}
                 onCerrar={(datos) => cerrarComoVisitante(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
               />
-              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
-            </div>
-          ))}
-        </>
-      )}
-
-      {confirmados.length > 0 && (
-        <>
-          <h2 className="cl-display" style={{ fontSize: "20px", color: "var(--pitch-dark)", marginTop: "12px" }}>
-            TUS PARTIDOS CONFIRMADOS ({confirmados.length})
-          </h2>
-          {confirmados.map((s) => (
-            <div key={s.id} className="cl-ticket">
-              <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
-              <div className="cl-row" style={{ justifyContent: "space-between" }}>
-                <p style={{ fontSize: "13px" }}>
-                  Contra <b>{s.clubName}</b> · {s.diaExacto} {s.horaExacta} · {s.campoExacto}
-                  {s.sede === "local" ? " (en su campo)" : " (en el vuestro)"}
-                </p>
-              </div>
               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
             </div>
           ))}

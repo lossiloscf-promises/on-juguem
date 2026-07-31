@@ -186,15 +186,35 @@ function contenidoCeldaExterna(slot) {
 // activo para una jornada con fecha parecida a la que se está pintando ahora
 // mismo — así la celda de mi propio cuadrante puede reflejarlo en vez de
 // seguir diciendo "disponible" cuando en realidad ya está ocupado fuera.
-function buscarCompromisoExterno(allSlots, teamId, jornadaOrderDate, excluirId) {
+// Busca cualquier negociación activa que conecte a un equipo concreto con
+// un club concreto, en CUALQUIERA de las dos direcciones:
+//   A) ese equipo reservó un hueco del otro club (mi propio cuadrante, viendo
+//      un compromiso fuera; o el cuadrante ajeno, si ES ese equipo el mío)
+//   B) el otro club reservó un hueco de ese equipo (el cuadrante ajeno, si el
+//      equipo que se ve pertenece al club rival y me reservó a mí)
+// "miUid" es el club desde cuyo punto de vista se mira. Si equipoUid (el
+// dueño del equipo `teamId`) es el mismo que miUid, solo tiene sentido la
+// dirección A; si no, se comprueban las dos.
+function buscarCompromisoExterno(allSlots, teamId, equipoUid, miUid, jornadaOrderDate, excluirId) {
   if (!jornadaOrderDate) return null;
+  const esMiPropioEquipo = equipoUid === miUid; // true en modo propio (el equipo es mío)
   return (allSlots || []).find((s) => {
     if (s.id === excluirId) return false;
-    if (s.requestedByTeamId !== teamId) return false;
     if (!["pendiente", "pactado", "confirmado"].includes(s.status)) return false;
     if (!s.jornadaOrderDate) return false;
     const diff = Math.abs((new Date(s.jornadaOrderDate) - new Date(jornadaOrderDate)) / (1000 * 60 * 60 * 24));
-    return diff <= 4;
+    if (diff > 4) return false;
+
+    if (esMiPropioEquipo) {
+      // Propio: cualquier compromiso externo de mi equipo, con cualquier club.
+      return s.requestedByTeamId === teamId && s.ownerUid !== equipoUid;
+    }
+    // Ajeno: el equipo que se está mirando es de OTRO club — solo interesa
+    // si la negociación me involucra específicamente a mí, en cualquiera
+    // de las dos direcciones.
+    if (s.ownerUid === equipoUid && s.requestedByTeamId === teamId && s.requestedByUid === miUid) return true; // yo reservé su hueco
+    if (s.ownerUid === miUid && s.teamId === teamId && s.requestedByUid === equipoUid) return true; // él reservó el mío
+    return false;
   }) || null;
 }
 
@@ -518,7 +538,7 @@ export default function CuadranteView({
 
       jornadasOrdenadas.forEach((j, i) => {
         const local = slotDe(t.id, j.id);
-        const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
+        const externo = buscarCompromisoExterno(allSlots, t.id, t.ownerUid, uid, j.orderDate, local?.id);
         const s = externo || local;
         const c = s ? (externo ? contenidoCeldaExterna(externo) : contenidoCelda(local, modo)) : { texto: "", sub: "" };
         const cell = row.getCell(i + 2);
@@ -611,11 +631,10 @@ export default function CuadranteView({
                       // En mi propio cuadrante, si este equipo tiene un compromiso activo
                       // en el calendario de OTRO club para una fecha parecida, ese
                       // compromiso "manda" sobre lo que diga mi propio hueco local.
-                      const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
+                      const externo = buscarCompromisoExterno(allSlots, t.id, t.ownerUid, uid, j.orderDate, local?.id);
                       // En modo ajeno, si el hueco ya es mío (yo lo reservé), se ve con
                       // todo el detalle en vez de anonimizado como "Ocupado".
-                      const esMiNegociacionAjena = modo === "ajeno" && local?.requestedByUid === uid;
-                      const esVistaExterna = !!externo || esMiNegociacionAjena;
+                      const esVistaExterna = !!externo;
                       const s = externo || local;
                       const c = esVistaExterna ? contenidoCeldaExterna(s) : contenidoCelda(local, modo);
                       const clicable = esVistaExterna || puedeExpandir(local) || (modo === "ajeno" && local?.status === "libre");
@@ -652,9 +671,8 @@ export default function CuadranteView({
                   {jornadasOrdenadas.map((j) => {
                     if (celdaAbierta !== `${t.id}:${j.id}`) return null;
                     const local = slotDe(t.id, j.id);
-                    const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
-                    const esMiNegociacionAjena = modo === "ajeno" && local?.requestedByUid === uid;
-                    const esVistaExterna = !!externo || esMiNegociacionAjena;
+                    const externo = buscarCompromisoExterno(allSlots, t.id, t.ownerUid, uid, j.orderDate, local?.id);
+                    const esVistaExterna = !!externo;
                     const s = externo || local;
                     return (
                       <tr key={`${t.id}:${j.id}:panel`}>

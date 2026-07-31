@@ -329,44 +329,6 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
             </button>
           </div>
         </div>
-
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>TUS INSTALACIONES</h2>
-        <div className="cl-ticket">
-          <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
-            Guarda aquí los campos que usáis habitualmente, para elegirlos rápido al cerrar un partido en vez de escribirlos cada vez.
-          </p>
-          <div className="cl-row" style={{ marginBottom: "8px" }}>
-            <input
-              className="cl-input"
-              placeholder="Ej. Camp Municipal Silla — pista 1"
-              value={nuevaInstalacion}
-              onChange={(e) => setNuevaInstalacion(e.target.value)}
-              maxLength={60}
-            />
-            <button className="cl-btn cl-btn-primary" onClick={añadirInstalacion}><Plus size={14} /> Añadir</button>
-          </div>
-          {errorInstalacion && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{errorInstalacion}</p>}
-          {instalaciones.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "#888" }}>Todavía no has añadido ninguna.</p>
-          ) : (
-            instalaciones.map((i) => (
-              <div key={i.id} className="cl-row" style={{ justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid var(--line)" }}>
-                <span style={{ fontSize: "13px" }}>{i.nombre}</span>
-                <button className="cl-btn cl-btn-ghost" style={{ padding: "2px 6px" }} onClick={() => deleteInstalacion(i.id)}>
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>COORDINADORES DE CONTACTO</h2>
-        <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
-          Rellena al menos el "Coordinador general" — si tenéis a alguien distinto por categoría, rellénalo también y
-          se usará ese en vez del general para esa categoría. Los partidos de una categoría sin ningún contacto
-          rellenado (ni específico ni general) no se pueden reservar ni aceptar.
-        </p>
-        <PanelCoordinadores uid={uid} profile={profile} onGuardar={onGuardarCoordinadores} />
       </div>
 
       <div>
@@ -405,6 +367,47 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         )}
       </div>
 
+      </div>
+
+      <div style={{ marginTop: "28px" }}>
+        <h2 className="cl-display" style={{ fontSize: "28px", color: "var(--pitch-dark)" }}>TUS INSTALACIONES</h2>
+        <div className="cl-ticket" style={{ padding: "20px", fontSize: "15px" }}>
+          <p style={{ fontSize: "14px", color: "#888", marginBottom: "12px" }}>
+            Guarda aquí los campos que usáis habitualmente, para elegirlos rápido al cerrar un partido en vez de escribirlos cada vez.
+          </p>
+          <div className="cl-row" style={{ marginBottom: "10px" }}>
+            <input
+              className="cl-input"
+              placeholder="Ej. Camp Municipal Silla — pista 1"
+              value={nuevaInstalacion}
+              onChange={(e) => setNuevaInstalacion(e.target.value)}
+              maxLength={60}
+              style={{ fontSize: "15px", padding: "10px" }}
+            />
+            <button className="cl-btn cl-btn-primary" onClick={añadirInstalacion} style={{ fontSize: "15px" }}><Plus size={16} /> Añadir</button>
+          </div>
+          {errorInstalacion && <p style={{ color: "var(--clay)", fontSize: "13px", marginBottom: "8px" }}>{errorInstalacion}</p>}
+          {instalaciones.length === 0 ? (
+            <p style={{ fontSize: "14px", color: "#888" }}>Todavía no has añadido ninguna.</p>
+          ) : (
+            instalaciones.map((i) => (
+              <div key={i.id} className="cl-row" style={{ justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+                <span style={{ fontSize: "15px" }}>{i.nombre}</span>
+                <button className="cl-btn cl-btn-ghost" style={{ padding: "4px 8px" }} onClick={() => deleteInstalacion(i.id)}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <h2 className="cl-display" style={{ fontSize: "28px", color: "var(--pitch-dark)", marginTop: "24px" }}>COORDINADORES DE CONTACTO</h2>
+        <p style={{ fontSize: "14px", color: "#888", marginBottom: "12px" }}>
+          Rellena al menos el "Coordinador general" — si tenéis a alguien distinto por categoría, rellénalo también y
+          se usará ese en vez del general para esa categoría. Los partidos de una categoría sin ningún contacto
+          rellenado (ni específico ni general) no se pueden reservar ni aceptar.
+        </p>
+        <PanelCoordinadores uid={uid} profile={profile} onGuardar={onGuardarCoordinadores} />
       </div>
 
       {verPolitica && <PoliticaPrivacidad onCerrar={() => setVerPolitica(false)} />}
