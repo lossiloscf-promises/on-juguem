@@ -3,6 +3,7 @@ import { Save, Trash2, Plus, ShieldCheck, AlertTriangle, Download, Check } from 
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
+import { CLAVES_COORDINADOR } from "../constants";
 import { useTodosLosClubes } from "../hooks/useAuth";
 import {
   useClubesOficiales,
@@ -156,7 +157,77 @@ function PanelAdmin({ onVerificar }) {
   );
 }
 
-export default function AjustesView({ uid, profile, onGuardarContacto, onBorrarCuenta, onVerificar }) {
+function PanelCoordinadores({ uid, profile, onGuardar }) {
+  const [datos, setDatos] = useState(() => {
+    const inicial = {};
+    CLAVES_COORDINADOR.forEach((c) => {
+      inicial[c.clave] = profile.coordinadores?.[c.clave] || { nombre: "", email: "", telefono: "" };
+    });
+    return inicial;
+  });
+  const [guardando, setGuardando] = useState(false);
+  const [guardado, setGuardado] = useState(false);
+  const [error, setError] = useState("");
+
+  const cambiar = (clave, campo, valor) => {
+    setDatos((prev) => ({ ...prev, [clave]: { ...prev[clave], [campo]: valor } }));
+  };
+
+  const guardar = async () => {
+    setGuardando(true);
+    setError("");
+    try {
+      await onGuardar(uid, datos);
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 2000);
+    } catch (err) {
+      setError(err.message || "No se ha podido guardar.");
+    }
+    setGuardando(false);
+  };
+
+  return (
+    <div className="cl-ticket">
+      {CLAVES_COORDINADOR.map((c) => (
+        <div key={c.clave} style={{ marginBottom: "14px", paddingBottom: "10px", borderBottom: "1px solid var(--line)" }}>
+          <label className="cl-label">{c.label.toUpperCase()}</label>
+          <div className="cl-row" style={{ flexWrap: "wrap" }}>
+            <input
+              className="cl-input"
+              placeholder="Nombre y apellidos"
+              value={datos[c.clave].nombre}
+              onChange={(e) => cambiar(c.clave, "nombre", e.target.value)}
+              maxLength={80}
+              style={{ minWidth: "180px" }}
+            />
+            <input
+              className="cl-input"
+              placeholder="Email"
+              value={datos[c.clave].email}
+              onChange={(e) => cambiar(c.clave, "email", e.target.value)}
+              maxLength={100}
+              style={{ minWidth: "180px" }}
+            />
+            <input
+              className="cl-input"
+              placeholder="Teléfono"
+              value={datos[c.clave].telefono}
+              onChange={(e) => cambiar(c.clave, "telefono", e.target.value)}
+              maxLength={20}
+              style={{ minWidth: "140px" }}
+            />
+          </div>
+        </div>
+      ))}
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{error}</p>}
+      <button className="cl-btn cl-btn-primary" onClick={guardar} disabled={guardando}>
+        <Save size={14} /> {guardando ? "Guardando..." : guardado ? "¡Guardado!" : "Guardar coordinadores"}
+      </button>
+    </div>
+  );
+}
+
+export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onBorrarCuenta, onVerificar }) {
   const instalaciones = useInstalaciones(uid);
   const [nuevaInstalacion, setNuevaInstalacion] = useState("");
   const [enlaceCopiado, setEnlaceCopiado] = useState(false);
@@ -288,6 +359,14 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onBorrarC
             ))
           )}
         </div>
+
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>COORDINADORES DE CONTACTO</h2>
+        <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+          Rellena al menos el "Coordinador general" — si tenéis a alguien distinto por categoría, rellénalo también y
+          se usará ese en vez del general para esa categoría. Los partidos de una categoría sin ningún contacto
+          rellenado (ni específico ni general) no se pueden reservar ni aceptar.
+        </p>
+        <PanelCoordinadores uid={uid} profile={profile} onGuardar={onGuardarCoordinadores} />
       </div>
 
       <div>

@@ -26,12 +26,12 @@ service cloud.firestore {
         (request.auth.uid == uid
           && textoValido(request.resource.data.clubName, 60)
           && textoValido(request.resource.data.telefono, 20)
-          && request.resource.data.verificado == resource.data.verificado
-          && request.resource.data.esAdmin == resource.data.esAdmin)
+          && request.resource.data.get('verificado', false) == resource.data.get('verificado', false)
+          && request.resource.data.get('esAdmin', false) == resource.data.get('esAdmin', false))
         ||
         // Un administrador puede cambiar el campo "verificado" de cualquiera
         // (y solo ese campo) — para eso comprueba su PROPIO documento.
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('esAdmin', false) == true
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verificado']))
       );
     }
@@ -42,10 +42,10 @@ service cloud.firestore {
     match /clubesOficiales/{id} {
       allow read: if true;
       allow create: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('esAdmin', false) == true
         && textoValido(request.resource.data.nombre, 100);
       allow delete: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true;
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('esAdmin', false) == true;
     }
 
     // Solicitudes para añadir un club que no está en la lista — cualquiera
@@ -57,12 +57,12 @@ service cloud.firestore {
         && textoValido(request.resource.data.email, 100)
         && request.resource.data.atendida == false;
       allow read: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true;
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('esAdmin', false) == true;
       allow update: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('esAdmin', false) == true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['atendida']);
       allow delete: if request.auth != null
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.esAdmin == true;
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('esAdmin', false) == true;
     }
 
     // Calendario de jornadas de temporada: cada coordinador gestiona el suyo,
@@ -155,13 +155,32 @@ service cloud.firestore {
             && request.resource.data.sede == null
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'sede'])) ||
 
-          // 3b) Ya con el partido pactado, el dueño decide dónde se juega
-          //     (esto puede pasar en el mismo momento de aceptar, o más tarde).
-          (request.auth.uid == resource.data.ownerUid
-            && resource.data.status == 'pactado'
-            && resource.data.get('sede', null) == null
-            && request.resource.data.sede in ['local', 'visitante']
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sede'])) ||
+          // 3b) Proponer dónde se juega — cualquiera de las dos partes, tanto
+          //     para decidirlo la primera vez como para proponer cambiarlo
+          //     más adelante (mientras siga "pactado", sin cerrar todavía).
+          (resource.data.status == 'pactado'
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && resource.data.get('sedePropuestaPor', null) == null
+            && request.resource.data.sedePropuestaPor == request.auth.uid
+            && request.resource.data.sedePropuesta in ['local', 'visitante']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sedePropuestaPor', 'sedePropuesta'])) ||
+
+          // 3c) Rechazar (o retirar) la propuesta de sede — se queda como
+          //     estaba, tenga o no una sede ya decidida de antes.
+          (resource.data.status == 'pactado'
+            && resource.data.get('sedePropuestaPor', null) != null
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && request.resource.data.sedePropuestaPor == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sedePropuestaPor', 'sedePropuesta'])) ||
+
+          // 3d) Aceptar la sede propuesta por LA OTRA parte — se aplica de verdad.
+          (resource.data.status == 'pactado'
+            && resource.data.get('sedePropuestaPor', null) != null
+            && resource.data.sedePropuestaPor != request.auth.uid
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && request.resource.data.sede == resource.data.sedePropuesta
+            && request.resource.data.sedePropuestaPor == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sede', 'sedePropuestaPor', 'sedePropuesta'])) ||
 
           // 4) El dueño fija día/hora/campo cuando se pactó jugar EN SU campo.
           (request.auth.uid == resource.data.ownerUid
@@ -179,8 +198,8 @@ service cloud.firestore {
           (resource.data.status == 'libre'
             && request.resource.data.status == 'pendiente'
             && request.resource.data.requestedByUid == request.auth.uid
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.verificado == true
-            && get(/databases/$(database)/documents/users/$(resource.data.ownerUid)).data.verificado == true
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('verificado', false) == true
+            && get(/databases/$(database)/documents/users/$(resource.data.ownerUid)).data.get('verificado', false) == true
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
                  ['status', 'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail', 'requestedByTeamId']
                )) ||

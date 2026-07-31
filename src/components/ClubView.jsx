@@ -217,7 +217,7 @@ function DirectorioClubes({ clubes, onEntrar }) {
 }
 
 // --- El cuadrante de un club concreto, con las jornadas cargadas para ese club ---
-function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email, misVerificado, onVolver }) {
+function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email, misVerificado, miProfile, onVolver }) {
   const jornadas = useJornadas(ownerUid);
   const teams = useAllTeams().filter((t) => t.ownerUid === ownerUid);
   const slots = allSlots.filter((s) => s.ownerUid === ownerUid);
@@ -250,6 +250,7 @@ function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas
         telefono={telefono}
         email={email}
         puedeReservar={puedeReservar}
+        miProfile={miProfile}
       />
     </div>
   );
@@ -393,7 +394,7 @@ function BusquedaPorFiltros({ uid, allSlots }) {
   );
 }
 
-export default function ClubView({ uid, clubName, telefono, email, allSlots, misEquipos, misJornadas, misVerificado }) {
+export default function ClubView({ uid, clubName, telefono, email, allSlots, misEquipos, misJornadas, misVerificado, miProfile }) {
   const [modoVista, setModoVista] = useState("directorio"); // directorio | filtros
   const [clubEntrado, setClubEntrado] = useState(null); // { uid, clubName } | null
   const allTeams = useAllTeams();
@@ -448,6 +449,7 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
           telefono={telefono}
           email={email}
           misVerificado={misVerificado}
+          miProfile={miProfile}
           onVolver={() => setClubEntrado(null)}
         />
       ) : (

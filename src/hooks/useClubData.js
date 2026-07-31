@@ -15,7 +15,6 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { getIdentidadActual } from "../identidad";
 import { hayConflictoDeAforo } from "../constants";
 
 // Anota una entrada en el historial de auditoría — quién hizo qué y cuándo,
@@ -23,7 +22,6 @@ import { hayConflictoDeAforo } from "../constants";
 // acción principal: el historial es informativo, no crítico para el flujo.
 async function registrarHistorial(slotId, accion) {
   try {
-    const identidad = getIdentidadActual();
     const nombreClub = auth.currentUser?.displayName || "";
     // Se lee el hueco para saber quiénes son las dos partes implicadas, y
     // guardarlo también en la propia entrada — así la regla de lectura no
@@ -43,7 +41,7 @@ async function registrarHistorial(slotId, accion) {
       slotId,
       accion,
       quienUid: auth.currentUser?.uid || null,
-      quienClubName: identidad ? `${nombreClub} (${identidad})` : nombreClub,
+      quienClubName: nombreClub,
       ownerUid,
       requestedByUid,
       timestamp: serverTimestamp(),
@@ -557,14 +555,13 @@ async function cerrarPartidoAtomico(slotId, datosNuevos, allSlots, teamId) {
     });
 
     const historialRef = doc(collection(db, "historial"));
-    const identidadCierre = getIdentidadActual();
     const nombreClubCierre = auth.currentUser?.displayName || "";
     const datosSlot = slotSnap.data();
     transaction.set(historialRef, {
       slotId,
       accion: `Partido cerrado: ${datosNuevos.diaExacto} ${datosNuevos.horaExacta} en ${datosNuevos.campoExacto}`,
       quienUid: auth.currentUser?.uid || null,
-      quienClubName: identidadCierre ? `${nombreClubCierre} (${identidadCierre})` : nombreClubCierre,
+      quienClubName: nombreClubCierre,
       ownerUid: datosSlot.ownerUid || null,
       requestedByUid: datosSlot.requestedByUid || null,
       timestamp: serverTimestamp(),

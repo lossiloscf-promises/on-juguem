@@ -106,6 +106,42 @@ export const HORARIOS_VALIDOS = (() => {
   return lista;
 })();
 
+// --- Coordinadores de contacto por categoría ---
+// Un club puede tener un coordinador distinto por cada combinación de
+// formato/género (F11 Masculino, F8 Masculino, F11 Femenino, F8 Femenino),
+// o simplemente uno "general" que vale para todo si es una sola persona.
+export const CLAVES_COORDINADOR = [
+  { clave: "general", label: "Coordinador general" },
+  { clave: "f11_m", label: "Coordinador Fútbol 11 Masculino" },
+  { clave: "f8_m", label: "Coordinador Fútbol 8 Masculino" },
+  { clave: "f11_f", label: "Coordinador Fútbol 11 Femenino" },
+  { clave: "f8_f", label: "Coordinador Fútbol 8 Femenino" },
+];
+
+export function claveCoordinador(genero, formato) {
+  const f = formato === "Fútbol 8" ? "f8" : "f11";
+  const g = genero === "Femenino" ? "f" : "m";
+  return `${f}_${g}`;
+}
+
+// Devuelve el contacto que corresponde a una categoría concreta: el
+// específico si existe, si no el general, y si tampoco hay general, el
+// contacto de siempre del club (para no dejar tirados a los clubes antiguos
+// que todavía no han rellenado ningún coordinador).
+export function contactoParaCategoria(profile, genero, formato) {
+  const clave = claveCoordinador(genero, formato);
+  const especifico = profile?.coordinadores?.[clave];
+  if (especifico?.telefono || especifico?.email) return especifico;
+  const general = profile?.coordinadores?.general;
+  if (general?.telefono || general?.email) return general;
+  return { nombre: profile?.clubName || "", telefono: profile?.telefono || "", email: profile?.email || "" };
+}
+
+export function tieneContactoParaCategoria(profile, genero, formato) {
+  const c = contactoParaCategoria(profile, genero, formato);
+  return !!(c?.telefono || c?.email);
+}
+
 // Fases del calendario de temporada, usadas para agrupar las columnas del cuadrante.
 export const FASES = ["Pretemporada", "Postemporada"];
 

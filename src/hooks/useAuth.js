@@ -71,6 +71,13 @@ export function useAuth() {
     setProfile((prev) => ({ ...prev, ...data }));
   };
 
+  // Guarda el mapa completo de coordinadores de contacto por categoría —
+  // se guarda entero de golpe (no campo a campo) para no complicar las reglas.
+  const updateCoordinadores = async (uid, coordinadores) => {
+    await updateDoc(doc(db, "users", uid), { coordinadores });
+    setProfile((prev) => ({ ...prev, coordinadores }));
+  };
+
   // Borra la cuenta y todos los datos que le pertenecen: equipos, huecos
   // propios y calendario de jornadas. Requiere volver a confirmar la
   // contraseña (Firebase lo exige por seguridad para operaciones sensibles
@@ -103,7 +110,7 @@ export function useAuth() {
   return {
     user, profile, loading,
     signup, login, logout,
-    updateContact, recuperarContrasena, deleteAccount,
+    updateContact, updateCoordinadores, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion,
     verificarClub,
   };

@@ -1,7 +1,8 @@
 import { useState, Fragment } from "react";
 import ExcelJS from "exceljs";
 import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide-react";
-import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE, HORARIOS_VALIDOS } from "../constants";
+import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE, HORARIOS_VALIDOS, contactoParaCategoria, tieneContactoParaCategoria } from "../constants";
+import { useClubProfile } from "../hooks/useAuth";
 import { diaCoincideConJornada, tieneJornadaCoincidente } from "../validaciones";
 import { useInstalaciones } from "../hooks/useInstalaciones";
 import { redactarMensajeWhatsApp } from "../hooks/useIA";
@@ -215,13 +216,20 @@ function enlaceGoogleCalendar(slot, miNombre, rivalNombre) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function BotonWhatsApp({ telefono, datosPartido }) {
+// otroClubUid: a quién le escribimos. grupo/formato/genero: para saber qué
+// coordinador de ESE club corresponde (o el general, o el de siempre si el
+// club todavía no ha rellenado ningún coordinador).
+function BotonWhatsApp({ otroClubUid, genero, formato, datosPartido }) {
+  const perfilOtroClub = useClubProfile(otroClubUid);
   const [abierto, setAbierto] = useState(false);
   const [tipo, setTipo] = useState("recordatorio");
   const [mensaje, setMensaje] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
 
+  if (!perfilOtroClub) return null;
+  const contacto = contactoParaCategoria(perfilOtroClub, genero, formato);
+  const telefono = contacto?.telefono;
   if (!telefono) return null;
 
   const generar = async () => {
@@ -445,6 +453,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
 export default function CuadranteView({
   clubName, teams, slots, jornadas,
   modo = "propio", allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email, puedeReservar = true,
+  miProfile,
 }) {
   const [celdaAbierta, setCeldaAbierta] = useState(null);
   const [error, setError] = useState("");
@@ -689,8 +698,15 @@ export default function CuadranteView({
                                 )}
                               </span>
                               <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rejectRequest(local.id))}><X size={14} /> Rechazar</button>
-                              <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarPartido(local.id))}><Check size={14} /> Aceptar</button>
-                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
+                              {tieneContactoParaCategoria(miProfile, local.genero, local.formato) ? (
+                                <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarPartido(local.id))}><Check size={14} /> Aceptar</button>
+                              ) : (
+                                <p style={{ fontSize: "12px", color: "var(--clay)", width: "100%" }}>
+                                  Para aceptar, rellena antes en Ajustes → Coordinadores de contacto al menos el
+                                  general (o el de {local.genero} {local.formato}).
+                                </p>
+                              )}
+                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "pactado" && !local.sede && (
@@ -698,7 +714,7 @@ export default function CuadranteView({
                               <p style={{ fontSize: "13px" }}>Pactado con <b>{local.requestedByClubName}</b> — ¿dónde se juega?</p>
                               <GestionSede slot={local} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
+                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "local" && (
@@ -711,7 +727,7 @@ export default function CuadranteView({
                               />
                               <GestionSede slot={local} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en vuestro campo" }} />
+                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "visitante" && (
@@ -722,7 +738,7 @@ export default function CuadranteView({
                               </p>
                               <GestionSede slot={local} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en su campo" }} />
+                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en su campo" }} />
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "confirmado" && (
@@ -740,7 +756,9 @@ export default function CuadranteView({
                               <GestionCambioHorario slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp
-                                telefono={local.requestedByTelefono}
+                                otroClubUid={local.requestedByUid}
+                                genero={local.genero}
+                                formato={local.formato}
                                 datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, dia: local.diaExacto, hora: local.horaExacta, campo: local.campoExacto }}
                               />
                             </>
@@ -761,7 +779,7 @@ export default function CuadranteView({
                               <p style={{ fontSize: "13px", color: "#666" }}>
                                 Solicitud enviada a <b>{s.clubName}</b> — esperando a que acepten o rechacen.
                               </p>
-                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
+                              <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
                           )}
                           {esVistaExterna && s.status === "pactado" && !s.sede && (
@@ -769,7 +787,7 @@ export default function CuadranteView({
                               <p style={{ fontSize: "13px" }}>Pactado con <b>{s.clubName}</b> — ¿dónde se juega?</p>
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
+                              <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
                           )}
                           {esVistaExterna && s.status === "pactado" && s.sede === "visitante" && (
@@ -783,7 +801,7 @@ export default function CuadranteView({
                               />
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en vuestro campo" }} />
+                              <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
                           )}
                           {esVistaExterna && s.status === "pactado" && s.sede === "local" && (
@@ -793,7 +811,7 @@ export default function CuadranteView({
                               </p>
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en su campo" }} />
+                              <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en su campo" }} />
                             </div>
                           )}
                           {esVistaExterna && s.status === "confirmado" && (
@@ -814,7 +832,9 @@ export default function CuadranteView({
                               <GestionCambioHorario slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp
-                                telefono={s.ownerTelefono}
+                                otroClubUid={s.ownerUid}
+                                genero={s.genero}
+                                formato={s.formato}
                                 datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, dia: s.diaExacto, hora: s.horaExacta, campo: s.campoExacto }}
                               />
                             </div>
@@ -824,6 +844,11 @@ export default function CuadranteView({
                             !puedeReservar ? (
                               <p style={{ fontSize: "12px", color: "var(--clay)" }}>
                                 No puedes reservar todavía — tu club o este todavía no está verificado por un administrador.
+                              </p>
+                            ) : !tieneContactoParaCategoria(miProfile, t.genero, t.formato) ? (
+                              <p style={{ fontSize: "12px", color: "var(--clay)" }}>
+                                No puedes reservar esta categoría todavía — ve a Ajustes → Coordinadores de contacto y
+                                rellena al menos el coordinador general (o el específico de {t.genero} {t.formato}).
                               </p>
                             ) : tieneJornadaCoincidente(misJornadas, j.orderDate) ? (
                               <SelectorEquipoPropio

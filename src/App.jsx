@@ -3,7 +3,6 @@ import { useAuth } from "./hooks/useAuth";
 import { useMyTeams, useMySlots, useAllSlots } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
 import { useCierreSesionPorInactividad } from "./hooks/useCierreSesionPorInactividad";
-import { getIdentidadActual, setIdentidadActual, IDENTIDADES_SUGERIDAS } from "./identidad";
 import { t, getIdioma, setIdioma, IDIOMAS } from "./i18n";
 import Login from "./components/Login";
 import CoordinadorView from "./components/CoordinadorView";
@@ -20,7 +19,7 @@ export default function App() {
 
   const {
     user, profile, loading, signup, login, logout,
-    updateContact, recuperarContrasena, deleteAccount,
+    updateContact, updateCoordinadores, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion, verificarClub,
   } = useAuth();
   const [role, setRole] = useState("coordinador");
@@ -30,7 +29,6 @@ export default function App() {
   const mySlots = useMySlots(user?.uid);
   const allSlots = useAllSlots();
   const jornadas = useJornadas(user?.uid);
-  const [identidadLista, setIdentidadLista] = useState(!!getIdentidadActual());
 
   useCierreSesionPorInactividad(!!user, logout);
 
@@ -42,17 +40,6 @@ export default function App() {
         <Header role={role} setRole={setRole} loggedIn={false} />
         <div className="cl-main">
           <Login onLogin={login} onSignup={signup} onRecuperar={recuperarContrasena} onComprobarDuplicado={comprobarNombreDuplicado} />
-        </div>
-      </div>
-    );
-  }
-
-  if (!identidadLista) {
-    return (
-      <div className="cl-shell">
-        <Header role={role} setRole={setRole} loggedIn={false} />
-        <div className="cl-main">
-          <PantallaQuienEres clubName={profile.clubName} onListo={() => setIdentidadLista(true)} />
         </div>
       </div>
     );
@@ -125,6 +112,7 @@ export default function App() {
             misEquipos={myTeams}
             misJornadas={jornadas}
             misVerificado={profile.verificado}
+            miProfile={profile}
           />
         )}
         {role === "cuadrante" && (
@@ -136,6 +124,7 @@ export default function App() {
             modo="propio"
             allSlots={allSlots}
             uid={user.uid}
+            miProfile={profile}
           />
         )}
         {role === "ajustes" && (
@@ -143,6 +132,7 @@ export default function App() {
             uid={user.uid}
             profile={profile}
             onGuardarContacto={(datos) => updateContact(user.uid, datos)}
+            onGuardarCoordinadores={(uid, datos) => updateCoordinadores(uid, datos)}
             onBorrarCuenta={(password) => deleteAccount(password)}
             onVerificar={verificarClub}
           />
@@ -152,53 +142,7 @@ export default function App() {
   );
 }
 
-function PantallaQuienEres({ clubName, onListo }) {
-  const [elegido, setElegido] = useState("");
-
-  const continuar = () => {
-    if (!elegido) return;
-    setIdentidadActual(elegido);
-    onListo();
-  };
-
-  return (
-    <div className="cl-auth-box cl-ticket">
-      <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>{t("identidad.titulo")}</h2>
-      <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
-        {clubName} — {t("identidad.explicacion")}
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
-        {IDENTIDADES_SUGERIDAS.map((op) => (
-          <button
-            key={op}
-            className="cl-btn"
-            style={{
-              justifyContent: "flex-start",
-              background: elegido === op ? "var(--pitch)" : "white",
-              color: elegido === op ? "white" : "var(--ink)",
-              border: "1.5px solid var(--line)",
-            }}
-            onClick={() => setElegido(op)}
-          >
-            {op}
-          </button>
-        ))}
-      </div>
-      <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={continuar} disabled={!elegido}>
-        {t("identidad.continuar")}
-      </button>
-    </div>
-  );
-}
-
 function Header({ role, setRole, loggedIn, clubName, onLogout, avisos, avisosClub }) {
-  const [identidad, setIdentidad] = useState(getIdentidadActual());
-
-  const cambiarIdentidad = (valor) => {
-    setIdentidad(valor);
-    setIdentidadActual(valor);
-  };
-
   const cambiarIdioma = (codigo) => {
     setIdioma(codigo);
     window.location.reload();
@@ -213,18 +157,6 @@ function Header({ role, setRole, loggedIn, clubName, onLogout, avisos, avisosClu
             {loggedIn ? `${clubName} · ${t("app.subtitulo_dentro")}` : t("app.subtitulo_fuera")}
           </p>
           <div className="cl-row" style={{ marginTop: "6px" }}>
-            {loggedIn && (
-              <select
-                className="cl-input"
-                style={{ fontSize: "12px", padding: "3px 6px", width: "auto" }}
-                value={identidad}
-                onChange={(e) => cambiarIdentidad(e.target.value)}
-                title="Quién eres — solo para que el historial sepa distinguir, si compartís el mismo login"
-              >
-                <option value="">¿Quién eres? (opcional)</option>
-                {IDENTIDADES_SUGERIDAS.map((i) => <option key={i} value={i}>{i}</option>)}
-              </select>
-            )}
             <select
               className="cl-input"
               style={{ fontSize: "12px", padding: "3px 6px", width: "auto" }}
