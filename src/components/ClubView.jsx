@@ -12,6 +12,7 @@ import {
   AGE_GROUPS_BY_FORMATO,
   CATEGORIAS,
   FASES,
+  NIVELES,
   groupColor,
 } from "../constants";
 
@@ -270,11 +271,35 @@ function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas
 }
 
 // --- Búsqueda por filtros (la vista detallada de antes, para quien ya sabe qué busca) ---
+function FiltroMultiple({ label, opciones, seleccionados, onCambiar, disabled }) {
+  const alternar = (op) => {
+    onCambiar(seleccionados.includes(op) ? seleccionados.filter((x) => x !== op) : [...seleccionados, op]);
+  };
+  return (
+    <div className="cl-field" style={{ position: "relative" }}>
+      <label className="cl-label">{label}{seleccionados.length > 0 ? ` (${seleccionados.length})` : ""}</label>
+      <div
+        className="cl-input"
+        style={{ maxHeight: "120px", overflowY: "auto", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}
+      >
+        {opciones.length === 0 && <span style={{ fontSize: "12px", color: "#888" }}>—</span>}
+        {opciones.map((op) => (
+          <label key={op} className="cl-row" style={{ fontSize: "13px", padding: "2px 0", cursor: disabled ? "default" : "pointer" }}>
+            <input type="checkbox" disabled={disabled} checked={seleccionados.includes(op)} onChange={() => alternar(op)} />
+            {op}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BusquedaPorFiltros({ uid, allSlots }) {
   const [filterGenero, setFilterGenero] = useState("Todos");
   const [filterFormato, setFilterFormato] = useState("Todos");
   const [filterGrupo, setFilterGrupo] = useState("Todos");
-  const [filterCategoria, setFilterCategoria] = useState("Todas");
+  const [filterCategorias, setFilterCategorias] = useState([]);
+  const [filterNiveles, setFilterNiveles] = useState([]);
   const [filterFase, setFilterFase] = useState("Todas");
   const [filterJornada, setFilterJornada] = useState("Todas");
 
@@ -290,6 +315,8 @@ function BusquedaPorFiltros({ uid, allSlots }) {
       .filter((s) => filterGenero === "Todos" || s.genero === filterGenero)
       .filter((s) => filterFormato === "Todos" || s.formato === filterFormato)
       .filter((s) => filterGrupo === "Todos" || s.grupo === filterGrupo)
+      .filter((s) => filterCategorias.length === 0 || filterCategorias.includes(s.categoria))
+      .filter((s) => filterNiveles.length === 0 || filterNiveles.includes(s.nivel))
       .filter((s) => filterFase === "Todas" || s.fase === filterFase)
       .map((s) => s.jornadaLabel)
   )].sort();
@@ -300,7 +327,8 @@ function BusquedaPorFiltros({ uid, allSlots }) {
     if (filterGenero !== "Todos" && s.genero !== filterGenero) return false;
     if (filterFormato !== "Todos" && s.formato !== filterFormato) return false;
     if (filterGrupo !== "Todos" && s.grupo !== filterGrupo) return false;
-    if (filterCategoria !== "Todas" && s.categoria !== filterCategoria) return false;
+    if (filterCategorias.length > 0 && !filterCategorias.includes(s.categoria)) return false;
+    if (filterNiveles.length > 0 && !filterNiveles.includes(s.nivel)) return false;
     if (filterFase !== "Todas" && s.fase !== filterFase) return false;
     if (filterJornada !== "Todas" && s.jornadaLabel !== filterJornada) return false;
     return true;
@@ -311,32 +339,38 @@ function BusquedaPorFiltros({ uid, allSlots }) {
       <div className="cl-ticket cl-row" style={{ flexWrap: "wrap" }}>
         <div className="cl-field">
           <label className="cl-label">GÉNERO</label>
-          <select className="cl-input" value={filterGenero} onChange={(e) => { setFilterGenero(e.target.value); setFilterCategoria("Todas"); }}>
+          <select className="cl-input" value={filterGenero} onChange={(e) => { setFilterGenero(e.target.value); setFilterCategorias([]); }}>
             <option>Todos</option>
             {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
         <div className="cl-field">
           <label className="cl-label">FORMATO</label>
-          <select className="cl-input" value={filterFormato} onChange={(e) => { setFilterFormato(e.target.value); setFilterGrupo("Todos"); setFilterCategoria("Todas"); }}>
+          <select className="cl-input" value={filterFormato} onChange={(e) => { setFilterFormato(e.target.value); setFilterGrupo("Todos"); setFilterCategorias([]); }}>
             <option>Todos</option>
             {FORMATOS.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
         </div>
         <div className="cl-field">
           <label className="cl-label">GRUPO DE EDAD</label>
-          <select className="cl-input" value={filterGrupo} onChange={(e) => { setFilterGrupo(e.target.value); setFilterCategoria("Todas"); }} disabled={filterFormato === "Todos"}>
+          <select className="cl-input" value={filterGrupo} onChange={(e) => { setFilterGrupo(e.target.value); setFilterCategorias([]); }} disabled={filterFormato === "Todos"}>
             <option>Todos</option>
             {grupoOptions.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         </div>
-        <div className="cl-field">
-          <label className="cl-label">CATEGORÍA / LIGA</label>
-          <select className="cl-input" value={filterCategoria} onChange={(e) => setFilterCategoria(e.target.value)} disabled={filterGrupo === "Todos"}>
-            <option>Todas</option>
-            {categoriaOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
+        <FiltroMultiple
+          label="CATEGORÍA / LIGA"
+          opciones={categoriaOptions}
+          seleccionados={filterCategorias}
+          onCambiar={setFilterCategorias}
+          disabled={filterGrupo === "Todos"}
+        />
+        <FiltroMultiple
+          label="NIVEL"
+          opciones={NIVELES}
+          seleccionados={filterNiveles}
+          onCambiar={setFilterNiveles}
+        />
         <div className="cl-field">
           <label className="cl-label">FASE</label>
           <select className="cl-input" value={filterFase} onChange={(e) => { setFilterFase(e.target.value); setFilterJornada("Todas"); }}>

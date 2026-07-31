@@ -159,6 +159,7 @@ function PanelAdmin({ onVerificar }) {
 export default function AjustesView({ uid, profile, onGuardarContacto, onBorrarCuenta, onVerificar }) {
   const instalaciones = useInstalaciones(uid);
   const [nuevaInstalacion, setNuevaInstalacion] = useState("");
+  const [enlaceCopiado, setEnlaceCopiado] = useState(false);
   const [errorInstalacion, setErrorInstalacion] = useState("");
 
   const añadirInstalacion = async () => {
@@ -237,6 +238,26 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onBorrarC
         <p style={{ fontSize: "13px" }}>
           <a href="#" onClick={(e) => { e.preventDefault(); setVerPolitica(true); }}>Ver política de privacidad</a>
         </p>
+
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ENLACE PÚBLICO DE TU CUADRANTE</h2>
+        <div className="cl-ticket">
+          <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+            Compártelo con quien quieras (directiva, padres, otros clubes) — se ve sin necesitar cuenta, y nunca muestra teléfonos ni emails.
+          </p>
+          <div className="cl-row">
+            <input className="cl-input" readOnly value={`${window.location.origin}${window.location.pathname}?publico=${uid}`} onClick={(e) => e.target.select()} />
+            <button
+              className="cl-btn cl-btn-primary"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?publico=${uid}`);
+                setEnlaceCopiado(true);
+                setTimeout(() => setEnlaceCopiado(false), 2000);
+              }}
+            >
+              {enlaceCopiado ? "¡Copiado!" : "Copiar enlace"}
+            </button>
+          </div>
+        </div>
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>TUS INSTALACIONES</h2>
         <div className="cl-ticket">

@@ -85,10 +85,10 @@ export const formatoDeGrupo = (grupo) =>
 // Un único sitio con el color y el nombre de cada estado de un hueco/partido,
 // para que todo (cuadrante, tarjetas, exportaciones) use siempre lo mismo.
 export const ESTADO_INFO = {
-  libre: { label: "Libre", color: "#FFE58A" },
+  libre: { label: "Libre", color: "#BFDBFE" },
   no_disponible: { label: "No disponible", color: "#E4E4E0" },
   pendiente: { label: "Pendiente", color: "#FFD8A8" },
-  pactado: { label: "Pactado", color: "#BFDBFE" },
+  pactado: { label: "Pactado", color: "#FFE58A" },
   confirmado: { label: "Cerrado", color: "#B7E4C7" },
 };
 export const COLOR_CANCELACION_PENDIENTE = "#FFC9C0";

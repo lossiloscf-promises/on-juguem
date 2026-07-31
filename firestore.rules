@@ -96,7 +96,7 @@ service cloud.firestore {
     // implicadas en ese hueco concreto (no cualquier usuario con sesión).
     match /historial/{entradaId} {
       allow read: if request.auth != null
-        && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid);
+        && (request.auth.uid == resource.data.get('ownerUid', null) || request.auth.uid == resource.data.get('requestedByUid', null));
       allow create: if request.auth != null
         && request.resource.data.quienUid == request.auth.uid
         && textoValido(request.resource.data.accion, 100);
@@ -147,14 +147,21 @@ service cloud.firestore {
                  ['status', 'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail', 'requestedByTeamId']
                )) ||
 
-          // 3) El dueño acepta una solicitud pendiente, decidiendo si se juega en
-          //    su campo o en el del rival — en ambos casos queda "pactado" al
-          //    momento, sin necesitar todavía el día/hora/campo exactos.
+          // 3) El dueño acepta una solicitud pendiente — queda "pactado" al
+          //    momento, sin decidir todavía dónde se juega ni el día/hora exacto.
           (request.auth.uid == resource.data.ownerUid
             && resource.data.status == 'pendiente'
             && request.resource.data.status == 'pactado'
-            && request.resource.data.sede in ['local', 'visitante']
+            && request.resource.data.sede == null
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'sede'])) ||
+
+          // 3b) Ya con el partido pactado, el dueño decide dónde se juega
+          //     (esto puede pasar en el mismo momento de aceptar, o más tarde).
+          (request.auth.uid == resource.data.ownerUid
+            && resource.data.status == 'pactado'
+            && resource.data.get('sede', null) == null
+            && request.resource.data.sede in ['local', 'visitante']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sede'])) ||
 
           // 4) El dueño fija día/hora/campo cuando se pactó jugar EN SU campo.
           (request.auth.uid == resource.data.ownerUid
@@ -216,6 +223,35 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
                  ['status', 'sede', 'diaExacto', 'horaExacta', 'campoExacto', 'cancelacionPropuestaPor',
                   'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail']
+               )) ||
+
+          // 9b) Proponer cambiar día/hora/campo de un partido YA cerrado —
+          //     cualquiera de las dos partes puede proponerlo, el partido
+          //     sigue confirmado tal cual hasta que se acepte.
+          (resource.data.status == 'confirmado'
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && resource.data.get('cambioPropuestoPor', null) == null
+            && request.resource.data.cambioPropuestoPor == request.auth.uid
+            && textoValido(request.resource.data.cambioPropuesto.campoExacto, 60)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cambioPropuestoPor', 'cambioPropuesto'])) ||
+
+          // 9c) Rechazar (o retirar) la propuesta de cambio de horario.
+          (resource.data.get('cambioPropuestoPor', null) != null
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && request.resource.data.cambioPropuestoPor == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cambioPropuestoPor', 'cambioPropuesto'])) ||
+
+          // 9d) Aceptar el cambio de horario propuesto por LA OTRA parte —
+          //     se aplica de verdad el nuevo día/hora/campo.
+          (resource.data.get('cambioPropuestoPor', null) != null
+            && resource.data.cambioPropuestoPor != request.auth.uid
+            && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
+            && request.resource.data.diaExacto == resource.data.cambioPropuesto.diaExacto
+            && request.resource.data.horaExacta == resource.data.cambioPropuesto.horaExacta
+            && request.resource.data.campoExacto == resource.data.cambioPropuesto.campoExacto
+            && request.resource.data.cambioPropuestoPor == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['diaExacto', 'horaExacta', 'campoExacto', 'cambioPropuestoPor', 'cambioPropuesto']
                )) ||
 
           // 10a) Liberación AUTOMÁTICA cuando el EQUIPO DUEÑO del hueco se ha

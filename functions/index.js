@@ -1,6 +1,10 @@
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
+const db = admin.firestore();
 
 // La clave de la API de Claude se guarda como "secret" de Firebase, nunca en
 // el código ni en el navegador. Se configura una vez con:
@@ -155,4 +159,59 @@ El tipo de mensaje es "${tipo}":
 
   const texto = await llamarClaude(ANTHROPIC_API_KEY.value(), systemPrompt, JSON.stringify(datosPartido || {}), 200);
   return { mensaje: texto.trim() };
+});
+
+// Cuadrante público de solo lectura — pensado para compartir sin necesitar
+// cuenta. Lee con permisos de servidor (no pasa por las reglas del navegador)
+// y devuelve SOLO lo necesario para pintar la tabla: nunca teléfono ni email
+// de nadie, aunque el visitante inspeccione la respuesta a mano.
+exports.cuadrantePublico = onRequest({ cors: true, region: "europe-west1" }, async (req, res) => {
+  const uid = req.query.club;
+  if (!uid || typeof uid !== "string") {
+    res.status(400).json({ error: "Falta el parámetro club en la URL." });
+    return;
+  }
+  try {
+    const userSnap = await db.collection("users").doc(uid).get();
+    if (!userSnap.exists) {
+      res.status(404).json({ error: "No se ha encontrado ese club." });
+      return;
+    }
+
+    const [teamsSnap, jornadasSnap, slotsSnap] = await Promise.all([
+      db.collection("teams").where("ownerUid", "==", uid).get(),
+      db.collection("jornadas").where("ownerUid", "==", uid).get(),
+      db.collection("slots").where("ownerUid", "==", uid).get(),
+    ]);
+
+    const teams = teamsSnap.docs.map((d) => {
+      const t = d.data();
+      return { id: d.id, grupo: t.grupo, anyo: t.anyo || "", categoria: t.categoria, nivel: t.nivel, identificador: t.identificador || "" };
+    });
+
+    const jornadas = jornadasSnap.docs
+      .map((d) => ({ id: d.id, label: d.data().label, orderDate: d.data().orderDate || "", fase: d.data().fase }))
+      .sort((a, b) => a.orderDate.localeCompare(b.orderDate));
+
+    const slots = slotsSnap.docs.map((d) => {
+      const s = d.data();
+      return {
+        teamId: s.teamId,
+        jornadaId: s.jornadaId,
+        status: s.status,
+        sede: s.sede || null,
+        diaExacto: s.diaExacto || "",
+        horaExacta: s.horaExacta || "",
+        campoExacto: s.campoExacto || "",
+        rivalClubName: s.requestedByClubName || null,
+        cancelacionPropuestaPor: !!s.cancelacionPropuestaPor,
+      };
+    });
+
+    res.set("Cache-Control", "public, max-age=60");
+    res.status(200).json({ clubName: userSnap.data().clubName, teams, jornadas, slots });
+  } catch (err) {
+    logger.error("Error en cuadrantePublico", err);
+    res.status(500).json({ error: "Error interno al cargar el cuadrante." });
+  }
 });

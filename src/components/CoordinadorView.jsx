@@ -18,7 +18,7 @@ const defaultGrupo = (formato) => AGE_GROUPS_BY_FORMATO[formato][0];
 const defaultCategoria = (genero, grupo) => CATEGORIAS[genero][grupo][0];
 const necesitaAnyo = (grupo) => AGE_GROUPS_WITH_ANYO.includes(grupo);
 
-function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid }) {
+function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots }) {
   const [editando, setEditando] = useState(false);
   const [nivel, setNivel] = useState(t.nivel);
   const [identificador, setIdentificador] = useState(t.identificador || "");
@@ -80,6 +80,23 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid }) {
           <div>
             <div style={{ fontWeight: 700 }}>{t.genero} · {t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
             <div className="cl-mono" style={{ fontSize: "12px", color: "#888" }}>{t.categoria} · {t.nivel}</div>
+            {(() => {
+              // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
+              // Cuenta tanto los partidos donde este equipo es el dueño del hueco
+              // como aquellos donde reservó él en el cuadrante de otro club.
+              const confirmadosPropios = slotsDeEsteEquipo.filter((s) => s.status === "confirmado");
+              const confirmadosFuera = (allSlots || []).filter((s) => s.requestedByTeamId === t.id && s.status === "confirmado");
+              const casa = confirmadosPropios.filter((s) => s.sede === "local").length + confirmadosFuera.filter((s) => s.sede === "visitante").length;
+              const fuera = confirmadosPropios.filter((s) => s.sede === "visitante").length + confirmadosFuera.filter((s) => s.sede === "local").length;
+              if (casa + fuera === 0) return null;
+              const desequilibrado = Math.abs(casa - fuera) >= 2;
+              return (
+                <div className="cl-mono" style={{ fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888", marginTop: "2px" }}>
+                  🏠 Casa: {casa} · ✈️ Fuera: {fuera}
+                  {desequilibrado && (casa > fuera ? " — considera buscar más partidos fuera" : " — considera buscar más partidos en casa")}
+                </div>
+              );
+            })()}
           </div>
           <div className="cl-row">
             <button className="cl-btn cl-btn-ghost" onClick={() => setEditando(true)}><Pencil size={13} /> Editar</button>
@@ -135,7 +152,7 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid }) {
   );
 }
 
-export default function CoordinadorView({ uid, clubName, telefono, email, teams, slots, jornadas }) {
+export default function CoordinadorView({ uid, clubName, telefono, email, teams, slots, jornadas, allSlots }) {
   const [newGenero, setNewGenero] = useState(GENEROS[0]);
   const [newFormato, setNewFormato] = useState(FORMATOS[0]);
   const [newGrupo, setNewGrupo] = useState(defaultGrupo(FORMATOS[0]));
@@ -287,6 +304,7 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
             t={t}
             uid={uid}
             slotsDeEsteEquipo={slots.filter((s) => s.teamId === t.id)}
+            allSlots={allSlots}
             onGuardado={() => {}}
           />
         ))}

@@ -403,6 +403,38 @@ export async function cerrarComoVisitante(slotId, { diaExacto, horaExacta, campo
 
 // El dueño del hueco, cuando decidió jugar EN SU campo, fija el día/hora/campo
 // exactos cuando le venga bien (no hace falta que sea al aceptar la solicitud).
+// Propone cambiar el día/hora/campo de un partido YA cerrado — no se aplica
+// al momento, queda pendiente de que la otra parte lo acepte o lo rechace.
+export async function proponerCambioHorario(slotId, { diaExacto, horaExacta, campoExacto }) {
+  await updateDoc(doc(db, "slots", slotId), {
+    cambioPropuestoPor: auth.currentUser?.uid || null,
+    cambioPropuesto: { diaExacto, horaExacta, campoExacto },
+  });
+  registrarHistorial(slotId, `Ha propuesto cambiar el partido a ${diaExacto} ${horaExacta} en ${campoExacto}`);
+}
+
+// La otra parte acepta el cambio propuesto — se aplica de verdad.
+export async function aceptarCambioHorario(slotId, cambioPropuesto) {
+  await updateDoc(doc(db, "slots", slotId), {
+    diaExacto: cambioPropuesto.diaExacto,
+    horaExacta: cambioPropuesto.horaExacta,
+    campoExacto: cambioPropuesto.campoExacto,
+    cambioPropuestoPor: null,
+    cambioPropuesto: null,
+  });
+  registrarHistorial(slotId, "Cambio de horario aceptado");
+}
+
+// Rechaza el cambio propuesto (o lo retira, si eres quien lo propuso) — el
+// partido se queda con el día/hora/campo que ya tenía.
+export async function rechazarCambioHorario(slotId) {
+  await updateDoc(doc(db, "slots", slotId), {
+    cambioPropuestoPor: null,
+    cambioPropuesto: null,
+  });
+  registrarHistorial(slotId, "Cambio de horario rechazado/retirado");
+}
+
 export async function cerrarComoLocal(slotId, { diaExacto, horaExacta, campoExacto, grupo, teamId }, allSlots) {
   return cerrarPartidoAtomico(slotId, { diaExacto, horaExacta, campoExacto, grupo }, allSlots, teamId);
 }

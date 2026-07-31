@@ -10,9 +10,13 @@ import ClubView from "./components/ClubView";
 import CuadranteView from "./components/CuadranteView";
 import TemporadaView from "./components/TemporadaView";
 import AjustesView from "./components/AjustesView";
+import CuadrantePublico from "./components/CuadrantePublico";
 import "./styles.css";
 
 export default function App() {
+  const uidPublico = new URLSearchParams(window.location.search).get("publico");
+  if (uidPublico) return <CuadrantePublico uidClub={uidPublico} />;
+
   const {
     user, profile, loading, signup, login, logout,
     updateContact, recuperarContrasena, deleteAccount,
@@ -25,6 +29,7 @@ export default function App() {
   const mySlots = useMySlots(user?.uid);
   const allSlots = useAllSlots();
   const jornadas = useJornadas(user?.uid);
+  const [identidadLista, setIdentidadLista] = useState(!!getIdentidadActual());
 
   useCierreSesionPorInactividad(!!user, logout);
 
@@ -36,6 +41,17 @@ export default function App() {
         <Header role={role} setRole={setRole} loggedIn={false} />
         <div className="cl-main">
           <Login onLogin={login} onSignup={signup} onRecuperar={recuperarContrasena} onComprobarDuplicado={comprobarNombreDuplicado} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!identidadLista) {
+    return (
+      <div className="cl-shell">
+        <Header role={role} setRole={setRole} loggedIn={false} />
+        <div className="cl-main">
+          <PantallaQuienEres clubName={profile.clubName} onListo={() => setIdentidadLista(true)} />
         </div>
       </div>
     );
@@ -62,7 +78,8 @@ export default function App() {
           s.status === "pendiente" ||
           (s.status === "pactado" && !s.sede) ||
           (s.status === "pactado" && s.sede === "local") ||
-          (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid)
+          (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid) ||
+          (s.cambioPropuestoPor && s.cambioPropuestoPor !== user.uid)
         ).length}
         avisosClub={allSlots.filter((s) =>
           s.requestedByUid === user.uid && (
@@ -90,6 +107,7 @@ export default function App() {
             teams={myTeams}
             slots={mySlots}
             jornadas={jornadas}
+            allSlots={allSlots}
           />
         )}
         {role === "temporada" && <TemporadaView uid={user.uid} jornadas={jornadas} slots={mySlots} teams={myTeams} />}
@@ -126,6 +144,45 @@ export default function App() {
           />
         )}
       </div>
+    </div>
+  );
+}
+
+function PantallaQuienEres({ clubName, onListo }) {
+  const [elegido, setElegido] = useState("");
+
+  const continuar = () => {
+    setIdentidadActual(elegido);
+    onListo();
+  };
+
+  return (
+    <div className="cl-auth-box cl-ticket">
+      <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>¿QUIÉN ERES HOY?</h2>
+      <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+        {clubName} — si varias personas usáis este mismo acceso, decir quién eres ayuda a que quede claro en el
+        historial de cada partido quién hizo cada cosa. No cambia lo que puedes ver ni hacer.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+        {[...IDENTIDADES_SUGERIDAS, "Coordinador general / no distingo"].map((op) => (
+          <button
+            key={op}
+            className="cl-btn"
+            style={{
+              justifyContent: "flex-start",
+              background: elegido === op ? "var(--pitch)" : "white",
+              color: elegido === op ? "white" : "var(--ink)",
+              border: "1.5px solid var(--line)",
+            }}
+            onClick={() => setElegido(op === "Coordinador general / no distingo" ? "" : op)}
+          >
+            {op}
+          </button>
+        ))}
+      </div>
+      <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={continuar}>
+        Continuar
+      </button>
     </div>
   );
 }

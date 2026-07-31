@@ -1,5 +1,5 @@
 import { useState, Fragment } from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide-react";
 import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE } from "../constants";
 import { diaCoincideConJornada, tieneJornadaCoincidente } from "../validaciones";
@@ -15,6 +15,9 @@ import {
   proponerCancelacion,
   rechazarCancelacion,
   aceptarCancelacion,
+  proponerCambioHorario,
+  aceptarCambioHorario,
+  rechazarCambioHorario,
   descartarAviso,
   hayConflictoDeHorario,
   setDisponibilidad,
@@ -182,6 +185,89 @@ function buscarCompromisoExterno(allSlots, teamId, jornadaOrderDate, excluirId) 
   }) || null;
 }
 
+// Construye un enlace que abre Google Calendar con el partido ya rellenado
+// (título, fecha/hora, campo) — no hace falta ninguna cuenta ni permiso especial.
+function enlaceGoogleCalendar(slot, miNombre, rivalNombre) {
+  if (!slot.diaExacto || !slot.horaExacta) return null;
+  const inicio = new Date(`${slot.diaExacto}T${slot.horaExacta}:00`);
+  if (isNaN(inicio.getTime())) return null;
+  const fin = new Date(inicio.getTime() + 90 * 60 * 1000); // 90 min de margen razonable
+  const formatoFecha = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `Amistoso: ${miNombre} vs ${rivalNombre}`,
+    dates: `${formatoFecha(inicio)}/${formatoFecha(fin)}`,
+    location: slot.campoExacto || "",
+    details: `Partido amistoso organizado a través de On Juguem.`,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
+  const [editando, setEditando] = useState(false);
+  const [dia, setDia] = useState(slot.diaExacto || "");
+  const [hora, setHora] = useState(slot.horaExacta || "");
+  const [campo, setCampo] = useState(slot.campoExacto || "");
+  const [error, setError] = useState("");
+
+  const soyDueño = uid === slot.ownerUid;
+  const nombreOtraParte = soyDueño ? slot.requestedByClubName : slot.clubName;
+  const propuestaPorMi = slot.cambioPropuestoPor === uid;
+  const propuestaPorElRival = slot.cambioPropuestoPor && slot.cambioPropuestoPor !== uid;
+
+  if (propuestaPorMi) {
+    return (
+      <p style={{ fontSize: "12px", color: "#888", marginTop: "6px" }}>
+        Has propuesto cambiar a {slot.cambioPropuesto?.diaExacto} {slot.cambioPropuesto?.horaExacta} en {slot.cambioPropuesto?.campoExacto} —
+        esperando a que {nombreOtraParte} lo acepte.{" "}
+        <a href="#" onClick={(e) => { e.preventDefault(); ejecutar(() => rechazarCambioHorario(slot.id)); }}>Retirar propuesta</a>
+      </p>
+    );
+  }
+  if (propuestaPorElRival) {
+    return (
+      <div style={{ marginTop: "6px", background: "#FBEFD9", padding: "8px", borderRadius: "4px" }}>
+        <p style={{ fontSize: "13px" }}>
+          <b>{nombreOtraParte}</b> propone cambiar a {slot.cambioPropuesto?.diaExacto} {slot.cambioPropuesto?.horaExacta} en {slot.cambioPropuesto?.campoExacto}
+        </p>
+        <div className="cl-row" style={{ marginTop: "4px" }}>
+          <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarCambioHorario(slot.id, slot.cambioPropuesto))}>Aceptar cambio</button>
+          <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rechazarCambioHorario(slot.id))}>Rechazar</button>
+        </div>
+      </div>
+    );
+  }
+  if (!editando) {
+    return (
+      <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setEditando(true)}>
+        Proponer cambiar día/hora/campo
+      </button>
+    );
+  }
+  return (
+    <div className="cl-row" style={{ flexWrap: "wrap", marginTop: "6px" }}>
+      <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
+      <input type="time" className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)} />
+      <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} />
+      <button
+        className="cl-btn cl-btn-primary"
+        onClick={() => {
+          if (!dia || !hora || !campo.trim()) { setError("Rellena día, hora y campo."); return; }
+          const conflicto = hayConflictoDeHorario(allSlots, { campoExacto: campo, diaExacto: dia, horaExacta: hora, grupo: slot.grupo }, slot.id);
+          if (conflicto) { setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`); return; }
+          setError("");
+          ejecutar(() => proponerCambioHorario(slot.id, { diaExacto: dia, horaExacta: hora, campoExacto: campo }));
+          setEditando(false);
+        }}
+      >
+        Proponer
+      </button>
+      <button className="cl-btn cl-btn-ghost" onClick={() => setEditando(false)}>Cancelar</button>
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", width: "100%" }}>{error}</p>}
+    </div>
+  );
+}
+
 export function GestionCancelacion({ slot, uid, ejecutar }) {
   const soyDueño = uid === slot.ownerUid;
   // El nombre de "la otra parte" depende de desde qué lado se mire: si soy el
@@ -250,21 +336,79 @@ export default function CuadranteView({
     }
   };
 
-  const exportarExcel = () => {
-    const datos = [...teams].sort(compararEquipos).map((t) => {
-      const fila = { Equipo: `${t.grupo}${t.anyo ? " (" + t.anyo + ")" : ""} · ${t.categoria} · ${t.nivel}${t.identificador ? " · " + t.identificador : ""}` };
-      jornadas.forEach((j) => {
+  const argb = (hex) => "FF" + hex.replace("#", "").toUpperCase();
+
+  const exportarExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "On Juguem";
+    const sheet = workbook.addWorksheet("Cuadrante", { views: [{ state: "frozen", ySplit: 3 }] });
+
+    const numCols = jornadas.length + 1;
+
+    // Título
+    sheet.mergeCells(1, 1, 1, numCols);
+    const tituloCell = sheet.getCell(1, 1);
+    tituloCell.value = `CUADRANTE · ${clubName}`;
+    tituloCell.font = { bold: true, size: 16, color: { argb: argb("#16302B") } };
+    tituloCell.alignment = { vertical: "middle" };
+    sheet.getRow(1).height = 26;
+
+    sheet.mergeCells(2, 1, 2, numCols);
+    const fechaCell = sheet.getCell(2, 1);
+    fechaCell.value = `Exportado el ${new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}`;
+    fechaCell.font = { italic: true, size: 10, color: { argb: argb("#666666") } };
+
+    // Cabecera
+    const headerRow = sheet.getRow(3);
+    headerRow.getCell(1).value = "Equipo";
+    jornadas.forEach((j, i) => { headerRow.getCell(i + 2).value = j.label; });
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb("#16302B") } };
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.border = { bottom: { style: "thin", color: { argb: "FFFFFFFF" } } };
+    });
+    headerRow.height = 20;
+
+    // Filas de datos
+    [...teams].sort(compararEquipos).forEach((t) => {
+      const row = sheet.addRow([]);
+      const equipoCell = row.getCell(1);
+      equipoCell.value = `${t.grupo}${t.anyo ? " (" + t.anyo + ")" : ""} · ${t.categoria} · ${t.nivel}${t.identificador ? " · " + t.identificador : ""}`;
+      equipoCell.font = { bold: true, size: 11 };
+      equipoCell.alignment = { vertical: "middle", wrapText: true };
+
+      jornadas.forEach((j, i) => {
         const local = slotDe(t.id, j.id);
         const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
-        const c = externo ? contenidoCeldaExterna(externo) : contenidoCelda(local, modo);
-        fila[j.label] = c.texto + (c.sub ? ` (${c.sub})` : "");
+        const s = externo || local;
+        const c = s ? (externo ? contenidoCeldaExterna(externo) : contenidoCelda(local, modo)) : { texto: "", sub: "" };
+        const cell = row.getCell(i + 2);
+        cell.value = c.texto + (c.sub ? `\n${c.sub}` : "");
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        const colorFondo = s?.cancelacionPropuestaPor
+          ? COLOR_CANCELACION_PENDIENTE
+          : ESTADO_INFO[s?.status]?.color || "#FFFFFF";
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(colorFondo) } };
+        cell.border = { top: { style: "thin", color: { argb: "FFDDDDDD" } }, bottom: { style: "thin", color: { argb: "FFDDDDDD" } } };
       });
-      return fila;
+      row.height = 32;
     });
-    const ws = XLSX.utils.json_to_sheet(datos);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Cuadrante");
-    XLSX.writeFile(wb, `cuadrante-${clubName.replace(/\s+/g, "-")}.xlsx`);
+
+    // Anchos de columna automáticos según el contenido más largo
+    sheet.getColumn(1).width = 32;
+    jornadas.forEach((j, i) => {
+      sheet.getColumn(i + 2).width = Math.max(16, j.label.length + 4);
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cuadrante-${clubName.replace(/\s+/g, "-")}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const imprimir = () => window.print();
@@ -339,6 +483,7 @@ export default function CuadranteView({
                       const clicable = esVistaExterna || puedeExpandir(local) || (modo === "ajeno" && local?.status === "libre");
                       const activa = celdaAbierta === `${t.id}:${j.id}`;
                       const hayCancelacionPendiente = s?.cancelacionPropuestaPor;
+                      const hayCambioPendiente = s?.cambioPropuestoPor;
                       return (
                         <td
                           key={j.id}
@@ -352,6 +497,9 @@ export default function CuadranteView({
                         >
                           {hayCancelacionPendiente && (
                             <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--clay)" }}>⚠️ CANCELACIÓN</div>
+                          )}
+                          {!hayCancelacionPendiente && hayCambioPendiente && (
+                            <div style={{ fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>🕓 CAMBIO PROPUESTO</div>
                           )}
                           <div style={{ fontSize: "12px", fontWeight: c.texto ? 600 : 400 }}>{c.texto}</div>
                           {c.sub && <div className="cl-mono" style={{ fontSize: "10px", color: "#666" }}>{c.sub}</div>}
@@ -442,7 +590,20 @@ export default function CuadranteView({
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "confirmado" && (
-                            <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                            <>
+                              {enlaceGoogleCalendar(local, clubName, local.requestedByClubName) && (
+                                <a
+                                  href={enlaceGoogleCalendar(local, clubName, local.requestedByClubName)}
+                                  target="_blank" rel="noreferrer"
+                                  className="cl-btn cl-btn-ghost"
+                                  style={{ marginBottom: "6px", display: "inline-flex" }}
+                                >
+                                  📅 Añadir a Google Calendar
+                                </a>
+                              )}
+                              <GestionCambioHorario slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
+                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                            </>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.avisoEquipoBorrado && (
                             <div style={{ marginTop: "8px", background: "#FDECEA", padding: "8px", borderRadius: "4px" }}>
@@ -493,6 +654,17 @@ export default function CuadranteView({
                               <p style={{ fontSize: "13px", color: "#666" }}>
                                 Cerrado con <b>{s.clubName}</b> · {s.diaExacto} {s.horaExacta} · {s.campoExacto}
                               </p>
+                              {enlaceGoogleCalendar(s, misClubName, s.clubName) && (
+                                <a
+                                  href={enlaceGoogleCalendar(s, misClubName, s.clubName)}
+                                  target="_blank" rel="noreferrer"
+                                  className="cl-btn cl-btn-ghost"
+                                  style={{ marginBottom: "6px", display: "inline-flex" }}
+                                >
+                                  📅 Añadir a Google Calendar
+                                </a>
+                              )}
+                              <GestionCambioHorario slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
                             </div>
                           )}
