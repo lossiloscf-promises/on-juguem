@@ -385,22 +385,40 @@ export async function aceptarPartido(slotId) {
 // Propone dónde se juega — cualquiera de las dos partes puede hacerlo, tanto
 // para decidirlo por primera vez como para proponer CAMBIARLO más adelante
 // (mientras siga "pactado", antes de cerrar día/hora/campo exactos).
-export async function proponerSede(slotId, sedePropuesta) {
+// detalles (opcional) = { diaExacto, horaExacta, campoExacto } — si se dan,
+// al aceptar se pasa directo a "cerrado", sin el paso intermedio. Vale tanto
+// para pactar por primera vez como para cambiar de campo en un partido que
+// ya estaba cerrado (por ejemplo, si a última hora hay que jugar en el otro).
+export async function proponerSede(slotId, sedePropuesta, detalles) {
   await updateDoc(doc(db, "slots", slotId), {
     sedePropuestaPor: auth.currentUser?.uid || null,
     sedePropuesta,
+    sedePropuestaDetalles: detalles || null,
   });
-  registrarHistorial(slotId, `Ha propuesto jugar ${sedePropuesta === "local" ? "en campo del anfitrión" : "en campo de quien reservó"}`);
+  const conDetalle = detalles ? ` el ${detalles.diaExacto} ${detalles.horaExacta} en ${detalles.campoExacto}` : "";
+  registrarHistorial(slotId, `Ha propuesto jugar ${sedePropuesta === "local" ? "en campo del anfitrión" : "en campo de quien reservó"}${conDetalle}`);
 }
 
-// La otra parte acepta — se aplica de verdad.
-export async function aceptarSede(slotId, sedePropuesta) {
-  await updateDoc(doc(db, "slots", slotId), {
+// La otra parte acepta — se aplica de verdad. Si venían día/hora/campo en la
+// propuesta, el partido queda "cerrado" al momento; si no, queda "pactado"
+// como antes, para cerrarlo más adelante.
+export async function aceptarSede(slotId, sedePropuesta, detalles) {
+  const payload = {
     sede: sedePropuesta,
     sedePropuestaPor: null,
     sedePropuesta: null,
-  });
-  registrarHistorial(slotId, "Sede aceptada");
+    sedePropuestaDetalles: null,
+  };
+  if (detalles?.diaExacto && detalles?.horaExacta && detalles?.campoExacto) {
+    payload.status = "confirmado";
+    payload.diaExacto = detalles.diaExacto;
+    payload.horaExacta = detalles.horaExacta;
+    payload.campoExacto = detalles.campoExacto;
+  } else {
+    payload.status = "pactado";
+  }
+  await updateDoc(doc(db, "slots", slotId), payload);
+  registrarHistorial(slotId, payload.status === "confirmado" ? "Sede y horario aceptados — partido cerrado" : "Sede aceptada");
 }
 
 // Rechaza la propuesta (o la retira, si eres quien la hizo) — se queda como
@@ -409,6 +427,7 @@ export async function rechazarSede(slotId) {
   await updateDoc(doc(db, "slots", slotId), {
     sedePropuestaPor: null,
     sedePropuesta: null,
+    sedePropuestaDetalles: null,
   });
   registrarHistorial(slotId, "Propuesta de sede rechazada/retirada");
 }

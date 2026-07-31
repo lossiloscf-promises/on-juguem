@@ -361,6 +361,18 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
   const [clubEntrado, setClubEntrado] = useState(null); // { uid, clubName } | null
   const allTeams = useAllTeams();
 
+  const tengoContactoGeneral = !!(miProfile?.coordinadores?.general?.telefono || miProfile?.coordinadores?.general?.email);
+  if (!tengoContactoGeneral) {
+    return (
+      <div className="cl-ticket" style={{ borderColor: "var(--gold)" }}>
+        <p style={{ fontSize: "14px" }}>
+          Antes de buscar rivales, rellena al menos el <b>Coordinador general</b> en
+          Ajustes → Coordinadores de contacto — así el rival sabe a quién dirigirse.
+        </p>
+      </div>
+    );
+  }
+
   const misSlotsLibres = allSlots.filter((s) => s.ownerUid === uid && s.status === "libre");
 
   // Cuenta cuántas parejas (uno de mis equipos libre + uno suyo libre) coinciden

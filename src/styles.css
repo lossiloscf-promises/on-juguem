@@ -165,20 +165,26 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  border: 2px solid var(--pitch-dark);
 }
 .cl-table th {
   text-align: left;
   font-family: 'Space Mono', monospace;
   font-size: 11px;
   color: var(--pitch);
-  border-bottom: 2px solid var(--line);
-  padding: 8px 10px;
+  border-bottom: 3px solid var(--pitch-dark);
+  border-right: 1px solid var(--pitch-dark);
+  padding: 10px 12px;
 }
+.cl-table th:last-child { border-right: none; }
 .cl-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--pitch-dark);
+  border-right: 1px solid #B8B2A4;
   vertical-align: top;
 }
+.cl-table td:last-child { border-right: none; }
+.cl-table tr:last-child td { border-bottom: none; }
 .cl-table tr:hover td { background: #FAFAF7; }
 
 .cl-print-title { margin-bottom: 12px; }

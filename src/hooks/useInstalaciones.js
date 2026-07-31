@@ -18,10 +18,11 @@ export function useInstalaciones(uid) {
   return instalaciones;
 }
 
-export async function addInstalacion(uid, nombre) {
+export async function addInstalacion(uid, nombre, direccion) {
   return addDoc(collection(db, "instalaciones"), {
     ownerUid: uid,
     nombre: nombre.trim(),
+    direccion: (direccion || "").trim(),
     createdAt: serverTimestamp(),
   });
 }
