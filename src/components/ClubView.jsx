@@ -14,6 +14,7 @@ import {
   FASES,
   NIVELES,
   groupColor,
+  HORARIOS_VALIDOS,
 } from "../constants";
 
 // Formulario compacto para cerrar día/hora/campo cuando juegas como visitante.
@@ -34,7 +35,7 @@ function CierrePartido({ slot, allSlots, onCerrar, uid }) {
       if (!seguir) return;
     }
     const conflicto = hayConflictoDeHorario(allSlots, { campoExacto: campo, diaExacto: dia, horaExacta: hora, grupo: slot.grupo }, slot.id);
-    if (conflicto) return setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}, deja al menos 10 min de descanso.`);
+    if (conflicto) return setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`);
     setError("");
     setGuardando(true);
     try {
@@ -48,7 +49,10 @@ function CierrePartido({ slot, allSlots, onCerrar, uid }) {
   return (
     <div className="cl-row" style={{ flexWrap: "wrap", marginTop: "8px" }}>
       <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
-      <input type="time" className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)} />
+      <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
+        <option value="">Hora</option>
+        {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
+      </select>
       <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-visitante" />
       <datalist id="instalaciones-visitante">
         {instalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
@@ -70,10 +74,9 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
   const pendientes = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pendiente");
   const pactadoSinSede = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pactado" && !s.sede);
   const porCerrar = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pactado" && s.sede === "visitante");
-  const pactadosEnSuCampo = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pactado" && s.sede === "local");
   const confirmados = allSlots.filter((s) => s.requestedByUid === uid && s.status === "confirmado");
 
-  if (pendientes.length + pactadoSinSede.length + porCerrar.length + pactadosEnSuCampo.length + confirmados.length === 0) return null;
+  if (pendientes.length + pactadoSinSede.length + porCerrar.length + confirmados.length === 0) return null;
 
   const ejecutar = async (fn) => {
     setError("");
@@ -137,24 +140,6 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
                 uid={uid}
                 onCerrar={(datos) => cerrarComoVisitante(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
               />
-              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
-            </div>
-          ))}
-        </>
-      )}
-
-      {pactadosEnSuCampo.length > 0 && (
-        <>
-          <h2 className="cl-display" style={{ fontSize: "20px", color: "var(--pitch-dark)", marginTop: "12px" }}>
-            PACTADOS EN CAMPO DEL RIVAL ({pactadosEnSuCampo.length})
-          </h2>
-          {pactadosEnSuCampo.map((s) => (
-            <div key={s.id} className="cl-ticket">
-              <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
-              <p style={{ fontSize: "13px" }}>
-                Contra <b>{s.clubName}</b> · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · {s.jornadaLabel}
-              </p>
-              <p style={{ fontSize: "12px", color: "#888" }}>Falta que ellos cierren día/hora/campo (juegan en su campo, lo deciden ellos).</p>
               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
             </div>
           ))}

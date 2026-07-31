@@ -1,7 +1,7 @@
 import { useState, Fragment } from "react";
 import ExcelJS from "exceljs";
 import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide-react";
-import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE } from "../constants";
+import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE, HORARIOS_VALIDOS } from "../constants";
 import { diaCoincideConJornada, tieneJornadaCoincidente } from "../validaciones";
 import { useInstalaciones } from "../hooks/useInstalaciones";
 import { redactarMensajeWhatsApp } from "../hooks/useIA";
@@ -10,13 +10,14 @@ import {
   requestBooking,
   rejectRequest,
   aceptarPartido,
-  decidirJugarEnCasa,
-  decidirJugarFuera,
   cerrarComoLocal,
   cerrarComoVisitante,
   proponerCancelacion,
   rechazarCancelacion,
   aceptarCancelacion,
+  proponerSede,
+  aceptarSede,
+  rechazarSede,
   proponerCambioHorario,
   aceptarCambioHorario,
   rechazarCambioHorario,
@@ -73,7 +74,10 @@ function contenidoCelda(slot, modo) {
     if (!slot.sede) return { texto: slot.requestedByClubName, sub: "falta decidir dónde se juega — pincha" };
     return { texto: slot.requestedByClubName, sub: slot.sede === "local" ? "falta cerrar día/hora — pincha" : "falta que el rival cierre" };
   }
-  if (slot.status === "confirmado") return { texto: slot.requestedByClubName, sub: `${slot.diaExacto} ${slot.horaExacta} · ${slot.campoExacto}` };
+  if (slot.status === "confirmado") {
+    const icono = slot.sede === "local" ? "🏠" : "✈️";
+    return { texto: `${icono} ${slot.requestedByClubName}`, sub: `${slot.diaExacto} ${slot.horaExacta} · ${slot.campoExacto}` };
+  }
   return { texto: "", sub: "" };
 }
 
@@ -95,7 +99,7 @@ function FormularioCierreInline({ slot, allSlots, onConfirmar, uid }) {
       if (!seguir) return;
     }
     const conflicto = hayConflictoDeHorario(allSlots, { campoExacto: campo, diaExacto: dia, horaExacta: hora, grupo: slot.grupo }, slot.id);
-    if (conflicto) return setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta} (deja 10 min de descanso).`);
+    if (conflicto) return setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`);
     setError("");
     setGuardando(true);
     try {
@@ -109,7 +113,10 @@ function FormularioCierreInline({ slot, allSlots, onConfirmar, uid }) {
   return (
     <div className="cl-row" style={{ flexWrap: "wrap" }}>
       <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
-      <input type="time" className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)} />
+      <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
+        <option value="">Hora</option>
+        {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
+      </select>
       <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-propio" />
       <datalist id="instalaciones-propio">
         {instalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
@@ -167,7 +174,10 @@ function contenidoCeldaExterna(slot) {
     if (slot.sede === "visitante") return { texto: `Pactado con ${slot.clubName}`, sub: "tenéis que cerrar — pincha" };
     return { texto: `Pactado con ${slot.clubName}`, sub: "esperando que ellos cierren — pincha" };
   }
-  if (slot.status === "confirmado") return { texto: `Cerrado con ${slot.clubName}`, sub: `${slot.diaExacto} ${slot.horaExacta} · ${slot.campoExacto}` };
+  if (slot.status === "confirmado") {
+    const icono = slot.sede === "visitante" ? "🏠" : "✈️"; // sede='visitante' = juega en el campo de quien reservó (yo)
+    return { texto: `${icono} Cerrado con ${slot.clubName}`, sub: `${slot.diaExacto} ${slot.horaExacta} · ${slot.campoExacto}` };
+  }
   return { texto: "", sub: "" };
 }
 
@@ -270,6 +280,51 @@ function BotonWhatsApp({ telefono, datosPartido }) {
   );
 }
 
+export function GestionSede({ slot, uid, ejecutar }) {
+  const soyDueño = uid === slot.ownerUid;
+  const nombreOtraParte = soyDueño ? slot.requestedByClubName : slot.clubName;
+  // 'local' = se juega en el campo del anfitrión (el dueño del hueco);
+  // 'visitante' = se juega en el campo de quien reservó. La etiqueta que se
+  // muestra depende de qué lado esté mirando.
+  const etiqueta = (valor) => {
+    if (soyDueño) return valor === "local" ? "en mi campo" : "en el suyo";
+    return valor === "visitante" ? "en nuestro campo" : "en el suyo";
+  };
+
+  const propuestaPorMi = slot.sedePropuestaPor === uid;
+  const propuestaPorElRival = slot.sedePropuestaPor && slot.sedePropuestaPor !== uid;
+
+  if (propuestaPorMi) {
+    return (
+      <p style={{ fontSize: "12px", color: "#888", marginTop: "6px" }}>
+        Has propuesto jugar {etiqueta(slot.sedePropuesta)} — esperando a que {nombreOtraParte} lo acepte.{" "}
+        <a href="#" onClick={(e) => { e.preventDefault(); ejecutar(() => rechazarSede(slot.id)); }}>Retirar propuesta</a>
+      </p>
+    );
+  }
+  if (propuestaPorElRival) {
+    return (
+      <div style={{ marginTop: "6px", background: "#FBEFD9", padding: "8px", borderRadius: "4px" }}>
+        <p style={{ fontSize: "13px" }}><b>{nombreOtraParte}</b> propone jugar {etiqueta(slot.sedePropuesta)}.</p>
+        <div className="cl-row" style={{ marginTop: "4px" }}>
+          <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarSede(slot.id, slot.sedePropuesta))}>Aceptar</button>
+          <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rechazarSede(slot.id))}>Rechazar</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="cl-row" style={{ marginTop: "6px" }}>
+      <button className="cl-btn cl-btn-gold" onClick={() => ejecutar(() => proponerSede(slot.id, "local"))}>
+        <Home size={14} /> Proponer {etiqueta("local")}
+      </button>
+      <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => proponerSede(slot.id, "visitante"))}>
+        <Plane size={14} /> Proponer {etiqueta("visitante")}
+      </button>
+    </div>
+  );
+}
+
 export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
   const [editando, setEditando] = useState(false);
   const [dia, setDia] = useState(slot.diaExacto || "");
@@ -314,7 +369,10 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
   return (
     <div className="cl-row" style={{ flexWrap: "wrap", marginTop: "6px" }}>
       <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
-      <input type="time" className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)} />
+      <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
+        <option value="">Hora</option>
+        {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
+      </select>
       <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} />
       <button
         className="cl-btn cl-btn-primary"
@@ -535,7 +593,7 @@ export default function CuadranteView({
                         <span style={{ width: "4px", height: "14px", background: groupColor(t.grupo), display: "inline-block" }} />
                         <div>
                           <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` ${t.identificador}` : ""}</div>
-                          <div className="cl-mono" style={{ fontSize: "11px", color: "#888" }}>{t.categoria} · {t.nivel}</div>
+                          <div className="cl-mono" style={{ fontSize: "11px", color: "#888" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
                         </div>
                       </div>
                     </td>
@@ -555,6 +613,7 @@ export default function CuadranteView({
                       const activa = celdaAbierta === `${t.id}:${j.id}`;
                       const hayCancelacionPendiente = s?.cancelacionPropuestaPor;
                       const hayCambioPendiente = s?.cambioPropuestoPor;
+                      const haySedePendiente = s?.sedePropuestaPor;
                       return (
                         <td
                           key={j.id}
@@ -571,6 +630,9 @@ export default function CuadranteView({
                           )}
                           {!hayCancelacionPendiente && hayCambioPendiente && (
                             <div style={{ fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>🕓 CAMBIO PROPUESTO</div>
+                          )}
+                          {!hayCancelacionPendiente && !hayCambioPendiente && haySedePendiente && (
+                            <div style={{ fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>📍 SEDE PROPUESTA</div>
                           )}
                           <div style={{ fontSize: "12px", fontWeight: c.texto ? 600 : 400 }}>{c.texto}</div>
                           {c.sub && <div className="cl-mono" style={{ fontSize: "10px", color: "#666" }}>{c.sub}</div>}
@@ -632,12 +694,9 @@ export default function CuadranteView({
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "pactado" && !local.sede && (
-                            <div className="cl-row" style={{ flexWrap: "wrap" }}>
-                              <span style={{ fontSize: "13px" }}>
-                                Pactado con <b>{local.requestedByClubName}</b> — ¿dónde se juega?
-                              </span>
-                              <button className="cl-btn cl-btn-gold" onClick={() => ejecutar(() => decidirJugarEnCasa(local.id))}><Home size={14} /> En mi campo</button>
-                              <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => decidirJugarFuera(local.id))}><Plane size={14} /> En el suyo</button>
+                            <div>
+                              <p style={{ fontSize: "13px" }}>Pactado con <b>{local.requestedByClubName}</b> — ¿dónde se juega?</p>
+                              <GestionSede slot={local} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
                             </div>
@@ -650,6 +709,7 @@ export default function CuadranteView({
                                 uid={uid}
                                 onConfirmar={(datos) => cerrarComoLocal(local.id, { ...datos, grupo: local.grupo, teamId: local.teamId }, allSlots)}
                               />
+                              <GestionSede slot={local} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
@@ -660,6 +720,7 @@ export default function CuadranteView({
                                 Pactado contra <b>{local.requestedByClubName}</b> — falta que ellos cierren día/hora/campo
                                 (juegan en su campo, así que lo deciden ellos).
                               </p>
+                              <GestionSede slot={local} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en su campo" }} />
                             </div>
@@ -705,9 +766,8 @@ export default function CuadranteView({
                           )}
                           {esVistaExterna && s.status === "pactado" && !s.sede && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#666" }}>
-                                Pactado con <b>{s.clubName}</b> — falta que ellos decidan si se juega en su campo o en el vuestro.
-                              </p>
+                              <p style={{ fontSize: "13px" }}>Pactado con <b>{s.clubName}</b> — ¿dónde se juega?</p>
+                              <GestionSede slot={s} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
@@ -721,6 +781,7 @@ export default function CuadranteView({
                                 uid={uid}
                                 onConfirmar={(datos) => cerrarComoVisitante(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
                               />
+                              <GestionSede slot={s} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
@@ -730,6 +791,7 @@ export default function CuadranteView({
                               <p style={{ fontSize: "13px", color: "#666" }}>
                                 Pactado con <b>{s.clubName}</b> — juega en su campo, falta que ellos cierren día/hora/campo.
                               </p>
+                              <GestionSede slot={s} uid={uid} ejecutar={ejecutar} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en su campo" }} />
                             </div>

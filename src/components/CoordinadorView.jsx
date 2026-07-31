@@ -78,8 +78,8 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
         <div className="cl-cat-strip" style={{ background: groupColor(t.grupo) }} />
         <div className="cl-row" style={{ justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontWeight: 700 }}>{t.genero} · {t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-            <div className="cl-mono" style={{ fontSize: "12px", color: "#888" }}>{t.categoria} · {t.nivel}</div>
+            <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
+            <div className="cl-mono" style={{ fontSize: "12px", color: "#888" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
             {(() => {
               // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
               // Cuenta tanto los partidos donde este equipo es el dueño del hueco

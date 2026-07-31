@@ -384,14 +384,35 @@ export async function aceptarPartido(slotId) {
 }
 
 // Ya con el partido pactado, el dueño decide dónde se juega.
-export async function decidirJugarEnCasa(slotId) {
-  await updateDoc(doc(db, "slots", slotId), { sede: "local" });
-  registrarHistorial(slotId, "Decidido — se juega en el campo del anfitrión");
+// Propone dónde se juega — cualquiera de las dos partes puede hacerlo, tanto
+// para decidirlo por primera vez como para proponer CAMBIARLO más adelante
+// (mientras siga "pactado", antes de cerrar día/hora/campo exactos).
+export async function proponerSede(slotId, sedePropuesta) {
+  await updateDoc(doc(db, "slots", slotId), {
+    sedePropuestaPor: auth.currentUser?.uid || null,
+    sedePropuesta,
+  });
+  registrarHistorial(slotId, `Ha propuesto jugar ${sedePropuesta === "local" ? "en campo del anfitrión" : "en campo de quien reservó"}`);
 }
 
-export async function decidirJugarFuera(slotId) {
-  await updateDoc(doc(db, "slots", slotId), { sede: "visitante" });
-  registrarHistorial(slotId, "Decidido — se juega en el campo del rival");
+// La otra parte acepta — se aplica de verdad.
+export async function aceptarSede(slotId, sedePropuesta) {
+  await updateDoc(doc(db, "slots", slotId), {
+    sede: sedePropuesta,
+    sedePropuestaPor: null,
+    sedePropuesta: null,
+  });
+  registrarHistorial(slotId, "Sede aceptada");
+}
+
+// Rechaza la propuesta (o la retira, si eres quien la hizo) — se queda como
+// estaba (sin sede decidida, o con la sede anterior si ya había una).
+export async function rechazarSede(slotId) {
+  await updateDoc(doc(db, "slots", slotId), {
+    sedePropuestaPor: null,
+    sedePropuesta: null,
+  });
+  registrarHistorial(slotId, "Propuesta de sede rechazada/retirada");
 }
 
 // El club que reservó (y va a hacer de local porque se decidió jugar en su campo)

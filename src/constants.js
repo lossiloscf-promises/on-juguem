@@ -93,6 +93,19 @@ export const ESTADO_INFO = {
 };
 export const COLOR_CANCELACION_PENDIENTE = "#FFC9C0";
 
+// Horarios válidos para cerrar un partido: de 9:00 a 22:00, cada 15 minutos —
+// así nadie puede meter una hora rara tipo "12:08".
+export const HORARIOS_VALIDOS = (() => {
+  const lista = [];
+  for (let h = 9; h <= 22; h++) {
+    for (const m of [0, 15, 30, 45]) {
+      if (h === 22 && m > 0) break; // no pasar de las 22:00
+      lista.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return lista;
+})();
+
 // Fases del calendario de temporada, usadas para agrupar las columnas del cuadrante.
 export const FASES = ["Pretemporada", "Postemporada"];
 

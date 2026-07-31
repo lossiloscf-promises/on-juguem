@@ -80,12 +80,15 @@ export default function App() {
           (s.status === "pactado" && !s.sede) ||
           (s.status === "pactado" && s.sede === "local") ||
           (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid) ||
-          (s.cambioPropuestoPor && s.cambioPropuestoPor !== user.uid)
+          (s.cambioPropuestoPor && s.cambioPropuestoPor !== user.uid) ||
+          (s.sedePropuestaPor && s.sedePropuestaPor !== user.uid)
         ).length}
         avisosClub={allSlots.filter((s) =>
           s.requestedByUid === user.uid && (
             (s.status === "pactado" && s.sede === "visitante") ||
-            (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid)
+            (s.cancelacionPropuestaPor && s.cancelacionPropuestaPor !== user.uid) ||
+            (s.cambioPropuestoPor && s.cambioPropuestoPor !== user.uid) ||
+            (s.sedePropuestaPor && s.sedePropuestaPor !== user.uid)
           )
         ).length}
       />
