@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2, Sparkles } from "lucide-react";
+import { t } from "../i18n";
 import { addJornada, deleteJornada } from "../hooks/useJornadas";
 import { crearHuecosLibresEnBloque } from "../hooks/useClubData";
 import { FASES } from "../constants";
@@ -108,7 +109,7 @@ export default function TemporadaView({ uid, jornadas, slots, teams }) {
       </div>
 
       <div>
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>CALENDARIO DE LA TEMPORADA</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("temporada.titulo")}</h2>
         {jornadas.length > 0 && teams && teams.length > 0 && (
           <>
             <button className="cl-btn cl-btn-primary" onClick={rellenarHuecosQueFaltan} disabled={rellenando} style={{ marginBottom: "8px" }}>

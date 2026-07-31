@@ -2,6 +2,7 @@ import { useState } from "react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useClubesOficiales, crearSolicitudClub } from "../hooks/useClubesOficiales";
+import { t } from "../i18n";
 
 function BuscadorDeClub({ clubElegido, setClubElegido }) {
   const clubes = useClubesOficiales();
@@ -36,7 +37,7 @@ function BuscadorDeClub({ clubElegido, setClubElegido }) {
   if (clubElegido) {
     return (
       <div>
-        <label className="cl-label">TU CLUB</label>
+        <label className="cl-label">{t("login.tu_club")}</label>
         <div className="cl-row" style={{ justifyContent: "space-between", background: "#EAF3EC", padding: "8px 10px", borderRadius: "4px" }}>
           <span>✅ {clubElegido.nombre}</span>
           <button type="button" className="cl-btn cl-btn-ghost" style={{ padding: "2px 8px" }} onClick={() => setClubElegido(null)}>
@@ -74,7 +75,7 @@ function BuscadorDeClub({ clubElegido, setClubElegido }) {
 
   return (
     <div style={{ position: "relative" }}>
-      <label className="cl-label">TU CLUB</label>
+      <label className="cl-label">{t("login.tu_club")}</label>
       <input
         className="cl-input"
         placeholder="Escribe el nombre de tu club..."
@@ -177,14 +178,14 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
   return (
     <div className="cl-auth-box cl-ticket">
       <h2 className="cl-display" style={{ fontSize: "26px", color: "var(--pitch-dark)" }}>
-        {mode === "login" ? "ENTRAR" : "CREAR CLUB"}
+        {mode === "login" ? t("login.entrar") : t("login.crear_club")}
       </h2>
       <form onSubmit={submit} className="cl-grid-2" style={{ gridTemplateColumns: "1fr", gap: "10px", marginTop: "12px" }}>
         {mode === "signup" && (
           <>
             <BuscadorDeClub clubElegido={clubElegido} setClubElegido={setClubElegido} />
             <div>
-              <label className="cl-label">TELÉFONO DE CONTACTO</label>
+              <label className="cl-label">{t("login.telefono")}</label>
               <input
                 type="tel"
                 className="cl-input"
@@ -198,11 +199,11 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
           </>
         )}
         <div>
-          <label className="cl-label">EMAIL</label>
+          <label className="cl-label">{t("login.email")}</label>
           <input type="email" className="cl-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <div>
-          <label className="cl-label">CONTRASEÑA</label>
+          <label className="cl-label">{t("login.contrasena")}</label>
           <input type="password" className="cl-input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
         </div>
 
@@ -221,21 +222,21 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
         {aviso && <p style={{ color: "var(--pitch)", fontSize: "13px" }}>{aviso}</p>}
 
         <button className="cl-btn cl-btn-primary" disabled={loading} style={{ justifyContent: "center" }}>
-          {loading ? "Un momento..." : mode === "login" ? "Entrar" : "Crear mi club"}
+          {loading ? "Un momento..." : mode === "login" ? t("login.boton_entrar") : t("login.boton_crear")}
         </button>
       </form>
 
       {mode === "login" && (
         <p style={{ fontSize: "12px", textAlign: "center", marginTop: "8px" }}>
-          <a href="#" onClick={(e) => { e.preventDefault(); recuperar(); }}>¿Has olvidado tu contraseña?</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); recuperar(); }}>{t("login.olvidaste")}</a>
         </p>
       )}
 
       <p style={{ fontSize: "13px", marginTop: "14px", textAlign: "center" }}>
         {mode === "login" ? (
-          <>¿Aún no tienes club? <a href="#" onClick={(e) => { e.preventDefault(); setMode("signup"); }}>Crea uno</a></>
+          <>{t("login.no_tienes_club")} <a href="#" onClick={(e) => { e.preventDefault(); setMode("signup"); }}>{t("login.crea_uno")}</a></>
         ) : (
-          <>¿Ya tienes cuenta? <a href="#" onClick={(e) => { e.preventDefault(); setMode("login"); }}>Entra</a></>
+          <>{t("login.ya_tienes_cuenta")} <a href="#" onClick={(e) => { e.preventDefault(); setMode("login"); }}>{t("login.entra")}</a></>
         )}
       </p>
 

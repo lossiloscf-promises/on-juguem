@@ -4,6 +4,7 @@ import { useMyTeams, useMySlots, useAllSlots } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
 import { useCierreSesionPorInactividad } from "./hooks/useCierreSesionPorInactividad";
 import { getIdentidadActual, setIdentidadActual, IDENTIDADES_SUGERIDAS } from "./identidad";
+import { t, getIdioma, setIdioma, IDIOMAS } from "./i18n";
 import Login from "./components/Login";
 import CoordinadorView from "./components/CoordinadorView";
 import ClubView from "./components/ClubView";
@@ -152,19 +153,19 @@ function PantallaQuienEres({ clubName, onListo }) {
   const [elegido, setElegido] = useState("");
 
   const continuar = () => {
+    if (!elegido) return;
     setIdentidadActual(elegido);
     onListo();
   };
 
   return (
     <div className="cl-auth-box cl-ticket">
-      <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>¿QUIÉN ERES HOY?</h2>
+      <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>{t("identidad.titulo")}</h2>
       <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
-        {clubName} — si varias personas usáis este mismo acceso, decir quién eres ayuda a que quede claro en el
-        historial de cada partido quién hizo cada cosa. No cambia lo que puedes ver ni hacer.
+        {clubName} — {t("identidad.explicacion")}
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
-        {[...IDENTIDADES_SUGERIDAS, "Coordinador general / no distingo"].map((op) => (
+        {IDENTIDADES_SUGERIDAS.map((op) => (
           <button
             key={op}
             className="cl-btn"
@@ -174,14 +175,14 @@ function PantallaQuienEres({ clubName, onListo }) {
               color: elegido === op ? "white" : "var(--ink)",
               border: "1.5px solid var(--line)",
             }}
-            onClick={() => setElegido(op === "Coordinador general / no distingo" ? "" : op)}
+            onClick={() => setElegido(op)}
           >
             {op}
           </button>
         ))}
       </div>
-      <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={continuar}>
-        Continuar
+      <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={continuar} disabled={!elegido}>
+        {t("identidad.continuar")}
       </button>
     </div>
   );
@@ -195,41 +196,57 @@ function Header({ role, setRole, loggedIn, clubName, onLogout, avisos, avisosClu
     setIdentidadActual(valor);
   };
 
+  const cambiarIdioma = (codigo) => {
+    setIdioma(codigo);
+    window.location.reload();
+  };
+
   return (
     <header className="cl-header">
       <div className="cl-header-inner">
         <div>
           <h1 className="cl-display cl-title">ON JUGUEM</h1>
           <p className="cl-mono cl-subtitle">
-            {loggedIn ? `${clubName} · amistosos sin líos de whatsapp` : "amistosos pretemporada · sin líos de whatsapp"}
+            {loggedIn ? `${clubName} · ${t("app.subtitulo_dentro")}` : t("app.subtitulo_fuera")}
           </p>
-          {loggedIn && (
+          <div className="cl-row" style={{ marginTop: "6px" }}>
+            {loggedIn && (
+              <select
+                className="cl-input"
+                style={{ fontSize: "12px", padding: "3px 6px", width: "auto" }}
+                value={identidad}
+                onChange={(e) => cambiarIdentidad(e.target.value)}
+                title="Quién eres — solo para que el historial sepa distinguir, si compartís el mismo login"
+              >
+                <option value="">¿Quién eres? (opcional)</option>
+                {IDENTIDADES_SUGERIDAS.map((i) => <option key={i} value={i}>{i}</option>)}
+              </select>
+            )}
             <select
               className="cl-input"
-              style={{ marginTop: "6px", fontSize: "12px", padding: "3px 6px", width: "auto" }}
-              value={identidad}
-              onChange={(e) => cambiarIdentidad(e.target.value)}
-              title="Quién eres — solo para que el historial sepa distinguir, si compartís el mismo login"
+              style={{ fontSize: "12px", padding: "3px 6px", width: "auto" }}
+              value={getIdioma()}
+              onChange={(e) => cambiarIdioma(e.target.value)}
+              title="Idioma"
             >
-              <option value="">¿Quién eres? (opcional)</option>
-              {IDENTIDADES_SUGERIDAS.map((i) => <option key={i} value={i}>{i}</option>)}
+              {IDIOMAS.map((i) => <option key={i.codigo} value={i.codigo}>{i.nombre}</option>)}
             </select>
-          )}
+          </div>
         </div>
         {loggedIn && (
           <div className="cl-tabs">
             <button className={`cl-tab ${role === "coordinador" ? "active" : ""}`} onClick={() => setRole("coordinador")}>
-              MI CLUB
+              {t("nav.mi_club")}
               {avisos > 0 && <span className="cl-badge-aviso">{avisos}</span>}
             </button>
-            <button className={`cl-tab ${role === "temporada" ? "active" : ""}`} onClick={() => setRole("temporada")}>PRE/POST TEMPORADA</button>
+            <button className={`cl-tab ${role === "temporada" ? "active" : ""}`} onClick={() => setRole("temporada")}>{t("nav.temporada")}</button>
             <button className={`cl-tab ${role === "club" ? "active" : ""}`} onClick={() => setRole("club")}>
-              BUSCO RIVAL
+              {t("nav.busco_rival")}
               {avisosClub > 0 && <span className="cl-badge-aviso">{avisosClub}</span>}
             </button>
-            <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>CUADRANTE</button>
-            <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>AJUSTES</button>
-            <button className="cl-tab" onClick={onLogout}>SALIR</button>
+            <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>{t("nav.cuadrante")}</button>
+            <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>{t("nav.ajustes")}</button>
+            <button className="cl-tab" onClick={onLogout}>{t("nav.salir")}</button>
           </div>
         )}
       </div>

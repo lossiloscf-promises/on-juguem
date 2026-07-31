@@ -4,6 +4,8 @@ import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide
 import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE } from "../constants";
 import { diaCoincideConJornada, tieneJornadaCoincidente } from "../validaciones";
 import { useInstalaciones } from "../hooks/useInstalaciones";
+import { redactarMensajeWhatsApp } from "../hooks/useIA";
+import { t } from "../i18n";
 import {
   requestBooking,
   rejectRequest,
@@ -203,6 +205,71 @@ function enlaceGoogleCalendar(slot, miNombre, rivalNombre) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+function BotonWhatsApp({ telefono, datosPartido }) {
+  const [abierto, setAbierto] = useState(false);
+  const [tipo, setTipo] = useState("recordatorio");
+  const [mensaje, setMensaje] = useState("");
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!telefono) return null;
+
+  const generar = async () => {
+    setCargando(true);
+    setError("");
+    try {
+      const r = await redactarMensajeWhatsApp(tipo, datosPartido);
+      setMensaje(r.mensaje);
+    } catch (err) {
+      setError(err.message || "No se ha podido redactar el mensaje.");
+    }
+    setCargando(false);
+  };
+
+  const telefonoLimpio = telefono.replace(/[^\d+]/g, "").replace(/^\+/, "");
+  const enlace = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`;
+
+  if (!abierto) {
+    return (
+      <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setAbierto(true)}>
+        💬 WhatsApp
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: "8px", background: "#EAF3EC", padding: "8px", borderRadius: "4px" }}>
+      <select className="cl-input" value={tipo} onChange={(e) => setTipo(e.target.value)} style={{ marginBottom: "6px" }}>
+        <option value="primer_contacto">Primer contacto</option>
+        <option value="recordatorio">Recordatorio</option>
+        <option value="cambio_ultima_hora">Aviso de cambio</option>
+        <option value="confirmacion">Confirmación</option>
+      </select>
+      <div className="cl-row">
+        <button className="cl-btn cl-btn-gold" onClick={generar} disabled={cargando}>
+          {cargando ? "Redactando..." : "✨ Redactar con IA"}
+        </button>
+        <button className="cl-btn cl-btn-ghost" onClick={() => setAbierto(false)}>Cerrar</button>
+      </div>
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
+      {mensaje && (
+        <>
+          <textarea
+            className="cl-input"
+            value={mensaje}
+            onChange={(e) => setMensaje(e.target.value)}
+            rows={4}
+            style={{ marginTop: "6px", width: "100%" }}
+          />
+          <a href={enlace} target="_blank" rel="noreferrer" className="cl-btn cl-btn-primary" style={{ marginTop: "6px", display: "inline-flex" }}>
+            Abrir WhatsApp
+          </a>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
   const [editando, setEditando] = useState(false);
   const [dia, setDia] = useState(slot.diaExacto || "");
@@ -324,6 +391,10 @@ export default function CuadranteView({
   const [celdaAbierta, setCeldaAbierta] = useState(null);
   const [error, setError] = useState("");
   const slotDe = (teamId, jornadaId) => slots.find((s) => s.teamId === teamId && s.jornadaId === jornadaId);
+  // Mismo orden para la cabecera y para las celdas: agrupado por fase (en el
+  // orden de FASES) y, dentro de cada fase, por fecha (jornadas ya viene
+  // ordenado por fecha desde el hook, así que solo hace falta agrupar).
+  const jornadasOrdenadas = FASES.flatMap((fase) => jornadas.filter((j) => j.fase === fase));
 
   // Envuelve cualquier acción directa (sin formulario) para que, si falla,
   // se vea el motivo en pantalla en vez de quedarse callado.
@@ -361,7 +432,7 @@ export default function CuadranteView({
     // Cabecera
     const headerRow = sheet.getRow(3);
     headerRow.getCell(1).value = "Equipo";
-    jornadas.forEach((j, i) => { headerRow.getCell(i + 2).value = j.label; });
+    jornadasOrdenadas.forEach((j, i) => { headerRow.getCell(i + 2).value = j.label; });
     headerRow.eachCell((cell) => {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb("#16302B") } };
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
@@ -378,7 +449,7 @@ export default function CuadranteView({
       equipoCell.font = { bold: true, size: 11 };
       equipoCell.alignment = { vertical: "middle", wrapText: true };
 
-      jornadas.forEach((j, i) => {
+      jornadasOrdenadas.forEach((j, i) => {
         const local = slotDe(t.id, j.id);
         const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
         const s = externo || local;
@@ -397,7 +468,7 @@ export default function CuadranteView({
 
     // Anchos de columna automáticos según el contenido más largo
     sheet.getColumn(1).width = 32;
-    jornadas.forEach((j, i) => {
+    jornadasOrdenadas.forEach((j, i) => {
       sheet.getColumn(i + 2).width = Math.max(16, j.label.length + 4);
     });
 
@@ -425,13 +496,13 @@ export default function CuadranteView({
       {modo === "propio" && (
         <>
           <div className="cl-row no-print" style={{ justifyContent: "space-between", marginBottom: "16px" }}>
-            <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>CUADRANTE · {clubName}</h2>
+            <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("cuadrante.titulo")} · {clubName}</h2>
             <div className="cl-row">
-              <button className="cl-btn cl-btn-primary" onClick={imprimir}><Printer size={14} /> Exportar a PDF</button>
-              <button className="cl-btn cl-btn-gold" onClick={exportarExcel}><FileSpreadsheet size={14} /> Exportar a Excel</button>
+              <button className="cl-btn cl-btn-primary" onClick={imprimir}><Printer size={14} /> {t("cuadrante.exportar_pdf")}</button>
+              <button className="cl-btn cl-btn-gold" onClick={exportarExcel}><FileSpreadsheet size={14} /> {t("cuadrante.exportar_excel")}</button>
             </div>
           </div>
-          <h2 className="cl-display cl-print-title" style={{ display: "none" }}>CUADRANTE · {clubName}</h2>
+          <h2 className="cl-display cl-print-title" style={{ display: "none" }}>{t("cuadrante.titulo")} · {clubName}</h2>
         </>
       )}
       {modo === "ajeno" && (
@@ -451,8 +522,8 @@ export default function CuadranteView({
           <table className="cl-table" style={{ minWidth: "700px" }}>
             <thead>
               <tr>
-                <th style={{ position: "sticky", left: 0, background: "white" }}>Equipo</th>
-                {FASES.map((fase) => jornadas.filter((j) => j.fase === fase).map((j) => <th key={j.id}>{j.label}</th>))}
+                <th style={{ position: "sticky", left: 0, background: "white" }}>{t("cuadrante.equipo")}</th>
+                {jornadasOrdenadas.map((j) => <th key={j.id}>{j.label}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -468,7 +539,7 @@ export default function CuadranteView({
                         </div>
                       </div>
                     </td>
-                    {jornadas.map((j) => {
+                    {jornadasOrdenadas.map((j) => {
                       const local = slotDe(t.id, j.id);
                       // En mi propio cuadrante, si este equipo tiene un compromiso activo
                       // en el calendario de OTRO club para una fecha parecida, ese
@@ -507,7 +578,7 @@ export default function CuadranteView({
                       );
                     })}
                   </tr>
-                  {jornadas.map((j) => {
+                  {jornadasOrdenadas.map((j) => {
                     if (celdaAbierta !== `${t.id}:${j.id}`) return null;
                     const local = slotDe(t.id, j.id);
                     const externo = modo === "propio" ? buscarCompromisoExterno(allSlots, t.id, j.orderDate, local?.id) : null;
@@ -557,6 +628,7 @@ export default function CuadranteView({
                               </span>
                               <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rejectRequest(local.id))}><X size={14} /> Rechazar</button>
                               <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarPartido(local.id))}><Check size={14} /> Aceptar</button>
+                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "pactado" && !local.sede && (
@@ -567,6 +639,7 @@ export default function CuadranteView({
                               <button className="cl-btn cl-btn-gold" onClick={() => ejecutar(() => decidirJugarEnCasa(local.id))}><Home size={14} /> En mi campo</button>
                               <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => decidirJugarFuera(local.id))}><Plane size={14} /> En el suyo</button>
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "local" && (
@@ -578,6 +651,7 @@ export default function CuadranteView({
                                 onConfirmar={(datos) => cerrarComoLocal(local.id, { ...datos, grupo: local.grupo, teamId: local.teamId }, allSlots)}
                               />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "visitante" && (
@@ -587,6 +661,7 @@ export default function CuadranteView({
                                 (juegan en su campo, así que lo deciden ellos).
                               </p>
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp telefono={local.requestedByTelefono} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en su campo" }} />
                             </div>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.status === "confirmado" && (
@@ -603,6 +678,10 @@ export default function CuadranteView({
                               )}
                               <GestionCambioHorario slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
                               <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp
+                                telefono={local.requestedByTelefono}
+                                datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, dia: local.diaExacto, hora: local.horaExacta, campo: local.campoExacto }}
+                              />
                             </>
                           )}
                           {!esVistaExterna && modo === "propio" && local?.avisoEquipoBorrado && (
@@ -617,9 +696,12 @@ export default function CuadranteView({
                           {/* Mi propia negociación como quien reservó — venga superpuesta en mi
                               propio cuadrante, o vista entrando en "Busco rival" sobre ese club. */}
                           {esVistaExterna && s.status === "pendiente" && (
-                            <p style={{ fontSize: "13px", color: "#666" }}>
-                              Solicitud enviada a <b>{s.clubName}</b> — esperando a que acepten o rechacen.
-                            </p>
+                            <div>
+                              <p style={{ fontSize: "13px", color: "#666" }}>
+                                Solicitud enviada a <b>{s.clubName}</b> — esperando a que acepten o rechacen.
+                              </p>
+                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
+                            </div>
                           )}
                           {esVistaExterna && s.status === "pactado" && !s.sede && (
                             <div>
@@ -627,6 +709,7 @@ export default function CuadranteView({
                                 Pactado con <b>{s.clubName}</b> — falta que ellos decidan si se juega en su campo o en el vuestro.
                               </p>
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
                           )}
                           {esVistaExterna && s.status === "pactado" && s.sede === "visitante" && (
@@ -639,6 +722,7 @@ export default function CuadranteView({
                                 onConfirmar={(datos) => cerrarComoVisitante(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
                               />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
                           )}
                           {esVistaExterna && s.status === "pactado" && s.sede === "local" && (
@@ -647,6 +731,7 @@ export default function CuadranteView({
                                 Pactado con <b>{s.clubName}</b> — juega en su campo, falta que ellos cierren día/hora/campo.
                               </p>
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp telefono={s.ownerTelefono} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en su campo" }} />
                             </div>
                           )}
                           {esVistaExterna && s.status === "confirmado" && (
@@ -666,6 +751,10 @@ export default function CuadranteView({
                               )}
                               <GestionCambioHorario slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
                               <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp
+                                telefono={s.ownerTelefono}
+                                datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, dia: s.diaExacto, hora: s.horaExacta, campo: s.campoExacto }}
+                              />
                             </div>
                           )}
 
