@@ -309,15 +309,19 @@ function BotonWhatsApp({ otroClubUid, genero, formato, datosPartido }) {
 }
 
 export function GestionSede({ slot, uid, ejecutar, allSlots }) {
-  const [conDetalle, setConDetalle] = useState(false);
-  const [sedeElegida, setSedeElegida] = useState(null);
   const [dia, setDia] = useState(slot.diaExacto || "");
   const [hora, setHora] = useState(slot.horaExacta || "");
   const [campo, setCampo] = useState(slot.campoExacto || "");
   const [error, setError] = useState("");
-  const instalaciones = useInstalaciones(uid);
 
   const soyDueño = uid === slot.ownerUid;
+  const otroUid = soyDueño ? slot.requestedByUid : slot.ownerUid;
+  // El campo puede ser de cualquiera de los dos clubes según qué botón se
+  // pinche, así que se muestran las instalaciones guardadas de los dos.
+  const misInstalaciones = useInstalaciones(uid);
+  const susInstalaciones = useInstalaciones(otroUid);
+  const todasLasInstalaciones = [...misInstalaciones, ...susInstalaciones];
+
   const nombreOtraParte = soyDueño ? slot.requestedByClubName : slot.clubName;
   // 'local' = se juega en el campo del anfitrión (el dueño del hueco);
   // 'visitante' = se juega en el campo de quien reservó. La etiqueta que se
@@ -357,11 +361,12 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   }
 
   const proponer = (sede) => {
-    if (!conDetalle) {
+    const hayAlgunDato = dia || hora || campo.trim();
+    if (!hayAlgunDato) {
       ejecutar(() => proponerSede(slot.id, sede));
       return;
     }
-    if (!dia || !hora || !campo.trim()) { setError("Rellena día, hora y campo, o desmarca la casilla para proponer solo la sede."); return; }
+    if (!dia || !hora || !campo.trim()) { setError("Rellena día, hora y campo los tres, o déjalos los tres en blanco para proponer solo la sede."); return; }
     const conflicto = hayConflictoDeHorario(allSlots, { campoExacto: campo, diaExacto: dia, horaExacta: hora, grupo: slot.grupo }, slot.id);
     if (conflicto) { setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`); return; }
     setError("");
@@ -370,23 +375,20 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
 
   return (
     <div style={{ marginTop: "6px" }}>
-      <label className="cl-row" style={{ fontSize: "12px", cursor: "pointer" }}>
-        <input type="checkbox" checked={conDetalle} onChange={(e) => setConDetalle(e.target.checked)} />
-        Incluir ya día/hora/campo (así queda cerrado en cuanto acepten, sin pasos de más)
-      </label>
-      {conDetalle && (
-        <div className="cl-row" style={{ flexWrap: "wrap", marginTop: "4px" }}>
-          <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
-          <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
-            <option value="">Hora</option>
-            {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
-          </select>
-          <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-sede" />
-          <datalist id="instalaciones-sede">
-            {instalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
-          </datalist>
-        </div>
-      )}
+      <p style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>
+        Si ya sabéis día, hora y campo, ponedlos aquí — así queda cerrado en cuanto acepten. Si no, dejadlo en blanco y se decide después.
+      </p>
+      <div className="cl-row" style={{ flexWrap: "wrap" }}>
+        <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
+        <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
+          <option value="">Hora</option>
+          {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
+        </select>
+        <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-sede" />
+        <datalist id="instalaciones-sede">
+          {todasLasInstalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
+        </datalist>
+      </div>
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
       <div className="cl-row" style={{ marginTop: "6px" }}>
         <button className="cl-btn cl-btn-gold" onClick={() => proponer("local")}>

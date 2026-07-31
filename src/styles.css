@@ -168,21 +168,27 @@ body {
   border: 2px solid var(--pitch-dark);
 }
 .cl-table th {
-  text-align: left;
+  text-align: center;
+  vertical-align: middle;
   font-family: 'Space Mono', monospace;
   font-size: 11px;
   color: var(--pitch);
   border-bottom: 3px solid var(--pitch-dark);
   border-right: 1px solid var(--pitch-dark);
   padding: 10px 12px;
+  white-space: nowrap;
+  line-height: 1.5;
 }
+.cl-table th:first-child { text-align: left; white-space: normal; }
 .cl-table th:last-child { border-right: none; }
 .cl-table td {
   padding: 10px 12px;
   border-bottom: 2px solid var(--pitch-dark);
   border-right: 1px solid #B8B2A4;
-  vertical-align: top;
+  vertical-align: middle;
+  text-align: center;
 }
+.cl-table td:first-child { text-align: left; vertical-align: top; }
 .cl-table td:last-child { border-right: none; }
 .cl-table tr:last-child td { border-bottom: none; }
 .cl-table tr:hover td { background: #FAFAF7; }
