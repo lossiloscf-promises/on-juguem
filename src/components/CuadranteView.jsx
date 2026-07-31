@@ -309,9 +309,12 @@ function BotonWhatsApp({ otroClubUid, genero, formato, datosPartido }) {
 }
 
 export function GestionSede({ slot, uid, ejecutar, allSlots }) {
-  const [dia, setDia] = useState(slot.diaExacto || "");
-  const [hora, setHora] = useState(slot.horaExacta || "");
-  const [campo, setCampo] = useState(slot.campoExacto || "");
+  // Empieza en blanco a propósito: si ya hay día/hora/campo (partido cerrado)
+  // y se está proponiendo CAMBIAR de sede, esos datos antiguos pertenecen al
+  // campo del otro equipo — no tiene sentido heredarlos como si fueran tuyos.
+  const [dia, setDia] = useState("");
+  const [hora, setHora] = useState("");
+  const [campo, setCampo] = useState("");
   const [error, setError] = useState("");
 
   const soyDueño = uid === slot.ownerUid;
@@ -423,6 +426,7 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
   const [hora, setHora] = useState(slot.horaExacta || "");
   const [campo, setCampo] = useState(slot.campoExacto || "");
   const [error, setError] = useState("");
+  const misInstalaciones = useInstalaciones(uid);
 
   const soyDueño = uid === slot.ownerUid;
   const nombreOtraParte = soyDueño ? slot.requestedByClubName : slot.clubName;
@@ -465,7 +469,10 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
         <option value="">Hora</option>
         {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
       </select>
-      <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} />
+      <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-cambio-horario" />
+      <datalist id="instalaciones-cambio-horario">
+        {misInstalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
+      </datalist>
       <button
         className="cl-btn cl-btn-primary"
         onClick={() => {
