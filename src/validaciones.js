@@ -39,6 +39,31 @@ export function diaCoincideConJornada(diaExactoISO, jornadaOrderDateISO, toleran
   return diffDias <= toleranciaDias;
 }
 
+// Calcula el rango exacto de días que vale para una jornada, leyendo su
+// etiqueta (ej. "5-6 septiembre" → del 5 al 6 de ese mes/año). Si la etiqueta
+// no tiene ese formato, usa un margen de un día alrededor de la fecha de
+// referencia. Devuelve { min, max } en formato YYYY-MM-DD para usar
+// directamente como límites de un <input type="date">.
+export function rangoFechasDeJornada(label, orderDateISO) {
+  const base = new Date(orderDateISO);
+  if (isNaN(base.getTime())) return { min: undefined, max: undefined };
+  const match = (label || "").match(/^\s*(\d{1,2})\s*-\s*(\d{1,2})/);
+  const aISO = (d) => d.toISOString().slice(0, 10);
+  if (match) {
+    const d1 = parseInt(match[1], 10);
+    const d2 = parseInt(match[2], 10);
+    const año = base.getFullYear();
+    const mes = base.getMonth();
+    const fechaMenor = new Date(año, mes, Math.min(d1, d2));
+    const fechaMayor = new Date(año, mes, Math.max(d1, d2));
+    return { min: aISO(fechaMenor), max: aISO(fechaMayor) };
+  }
+  const min = new Date(base);
+  const max = new Date(base);
+  max.setDate(max.getDate() + 1);
+  return { min: aISO(min), max: aISO(max) };
+}
+
 // Comprueba si el club que quiere reservar tiene, en SU PROPIO calendario,
 // alguna jornada con una fecha de referencia parecida a la del hueco que
 // quiere pedir — si no tiene ninguna fecha cercana, no tiene sentido que

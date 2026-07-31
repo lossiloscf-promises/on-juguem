@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide-react";
 import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE, HORARIOS_VALIDOS, contactoParaCategoria, tieneContactoParaCategoria } from "../constants";
 import { useClubProfile } from "../hooks/useAuth";
-import { diaCoincideConJornada, tieneJornadaCoincidente } from "../validaciones";
+import { diaCoincideConJornada, tieneJornadaCoincidente, rangoFechasDeJornada } from "../validaciones";
 import { useInstalaciones } from "../hooks/useInstalaciones";
 import { redactarMensajeWhatsApp } from "../hooks/useIA";
 import { t } from "../i18n";
@@ -362,8 +362,17 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   const sedeMiCampo = soyDueño ? "local" : "visitante";
   const sedeSuCampo = soyDueño ? "visitante" : "local";
 
+  const rango = rangoFechasDeJornada(slot.jornadaLabel, slot.jornadaOrderDate);
+  const sedeYaDecidida = !!slot.sede; // si ya hay sede (pactado o cerrado), esto es un CAMBIO, no una primera decisión
+  const yaEsMiCampo = slot.sede === sedeMiCampo;
+  const yaEsSuCampo = slot.sede === sedeSuCampo;
+
   const proponerMiCampo = () => {
     if (!dia || !hora || !campo.trim()) { setError("Rellena día, hora y campo."); return; }
+    if (rango.min && (dia < rango.min || dia > rango.max)) {
+      setError(`Esa fecha no corresponde a la jornada "${slot.jornadaLabel}" — elige un día entre ${rango.min} y ${rango.max}.`);
+      return;
+    }
     const conflicto = hayConflictoDeHorario(allSlots, { campoExacto: campo, diaExacto: dia, horaExacta: hora, grupo: slot.grupo }, slot.id);
     if (conflicto) { setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`); return; }
     setError("");
@@ -376,27 +385,34 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
 
   return (
     <div style={{ marginTop: "6px" }}>
-      <div style={{ background: "#F5F3EC", padding: "8px", borderRadius: "4px", marginBottom: "8px" }}>
-        <p style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px" }}>Proponer {etiqueta(sedeMiCampo)}</p>
-        <div className="cl-row" style={{ flexWrap: "wrap" }}>
-          <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
-          <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
-            <option value="">Hora</option>
-            {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
-          </select>
-          <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-sede" />
-          <datalist id="instalaciones-sede">
-            {misInstalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
-          </datalist>
+      {sedeYaDecidida && (
+        <p style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>¿Cambiar a última hora?</p>
+      )}
+      {!yaEsMiCampo && (
+        <div style={{ background: "#F5F3EC", padding: "8px", borderRadius: "4px", marginBottom: "8px" }}>
+          <p style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px" }}>Proponer {etiqueta(sedeMiCampo)}</p>
+          <div className="cl-row" style={{ flexWrap: "wrap" }}>
+            <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} min={rango.min} max={rango.max} onChange={(e) => setDia(e.target.value)} />
+            <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
+              <option value="">Hora</option>
+              {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
+            </select>
+            <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-sede" />
+            <datalist id="instalaciones-sede">
+              {misInstalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
+            </datalist>
+          </div>
+          {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
+          <button className="cl-btn cl-btn-gold" onClick={proponerMiCampo} style={{ marginTop: "6px" }}>
+            <Home size={14} /> Proponer {etiqueta(sedeMiCampo)}
+          </button>
         </div>
-        {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
-        <button className="cl-btn cl-btn-gold" onClick={proponerMiCampo} style={{ marginTop: "6px" }}>
-          <Home size={14} /> Proponer {etiqueta(sedeMiCampo)}
+      )}
+      {!yaEsSuCampo && (
+        <button className="cl-btn cl-btn-primary" onClick={proponerSuCampo}>
+          <Plane size={14} /> Proponer {etiqueta(sedeSuCampo)} <span style={{ fontWeight: 400, fontSize: "11px" }}>(que cierren ellos día/hora/campo)</span>
         </button>
-      </div>
-      <button className="cl-btn cl-btn-primary" onClick={proponerSuCampo}>
-        <Plane size={14} /> Proponer {etiqueta(sedeSuCampo)} <span style={{ fontWeight: 400, fontSize: "11px" }}>(que cierren ellos día/hora/campo)</span>
-      </button>
+      )}
     </div>
   );
 }

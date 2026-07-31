@@ -128,8 +128,8 @@ service cloud.firestore {
         && request.resource.data.status in ['libre', 'no_disponible'];
 
       allow update: if request.auth != null
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.get('ownerUid', null) == resource.data.get('ownerUid', null)
+        && request.resource.data.get('teamId', null) == resource.data.get('teamId', null)
         && (
           // 1) El dueño marca disponible/no-disponible (reescritura completa vía
           //    setDisponibilidad) — SOLO si no hay ya algo en marcha con otro club.
@@ -156,36 +156,41 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'sede'])) ||
 
           // 3b) Proponer dónde se juega — cualquiera de las dos partes, tanto
-          //     para decidirlo la primera vez como para proponer cambiarlo
-          //     más adelante (mientras siga "pactado", sin cerrar todavía).
-          (resource.data.status == 'pactado'
+          //     para decidirlo la primera vez (pactado) como para proponer
+          //     cambiarlo más adelante, incluso con el partido YA cerrado
+          //     (por si a última hora hay que jugar en el otro campo).
+          //     Se puede incluir ya día/hora/campo, o dejarlo para después.
+          (resource.data.status in ['pactado', 'confirmado']
             && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
             && resource.data.get('sedePropuestaPor', null) == null
             && request.resource.data.sedePropuestaPor == request.auth.uid
             && request.resource.data.sedePropuesta in ['local', 'visitante']
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sedePropuestaPor', 'sedePropuesta'])) ||
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sedePropuestaPor', 'sedePropuesta', 'sedePropuestaDetalles'])) ||
 
           // 3c) Rechazar (o retirar) la propuesta de sede — se queda como
           //     estaba, tenga o no una sede ya decidida de antes.
-          (resource.data.status == 'pactado'
-            && resource.data.get('sedePropuestaPor', null) != null
+          (resource.data.get('sedePropuestaPor', null) != null
             && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
             && request.resource.data.sedePropuestaPor == null
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sedePropuestaPor', 'sedePropuesta'])) ||
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sedePropuestaPor', 'sedePropuesta', 'sedePropuestaDetalles'])) ||
 
-          // 3d) Aceptar la sede propuesta por LA OTRA parte — se aplica de verdad.
-          (resource.data.status == 'pactado'
-            && resource.data.get('sedePropuestaPor', null) != null
+          // 3d) Aceptar la sede propuesta por LA OTRA parte — si venían
+          //     día/hora/campo en la propuesta, queda "cerrado" al momento;
+          //     si no, queda "pactado" para cerrarlo más adelante.
+          (resource.data.get('sedePropuestaPor', null) != null
             && resource.data.sedePropuestaPor != request.auth.uid
             && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
             && request.resource.data.sede == resource.data.sedePropuesta
             && request.resource.data.sedePropuestaPor == null
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sede', 'sedePropuestaPor', 'sedePropuesta'])) ||
+            && request.resource.data.status in ['pactado', 'confirmado']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['sede', 'sedePropuestaPor', 'sedePropuesta', 'sedePropuestaDetalles', 'status', 'diaExacto', 'horaExacta', 'campoExacto']
+               )) ||
 
           // 4) El dueño fija día/hora/campo cuando se pactó jugar EN SU campo.
           (request.auth.uid == resource.data.ownerUid
             && resource.data.status == 'pactado'
-            && resource.data.sede == 'local'
+            && resource.data.get('sede', null) == 'local'
             && request.resource.data.status == 'confirmado'
             && textoValido(request.resource.data.campoExacto, 60)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
@@ -207,7 +212,7 @@ service cloud.firestore {
           // 6) El club que reservó, si se decidió que juega en SU campo (sede
           //    visitante), cierra el partido con día/hora/campo exactos.
           (resource.data.status == 'pactado'
-            && resource.data.sede == 'visitante'
+            && resource.data.get('sede', null) == 'visitante'
             && resource.data.requestedByUid == request.auth.uid
             && request.resource.data.status == 'confirmado'
             && textoValido(request.resource.data.campoExacto, 60)
