@@ -315,12 +315,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   const [error, setError] = useState("");
 
   const soyDueño = uid === slot.ownerUid;
-  const otroUid = soyDueño ? slot.requestedByUid : slot.ownerUid;
-  // El campo puede ser de cualquiera de los dos clubes según qué botón se
-  // pinche, así que se muestran las instalaciones guardadas de los dos.
   const misInstalaciones = useInstalaciones(uid);
-  const susInstalaciones = useInstalaciones(otroUid);
-  const todasLasInstalaciones = [...misInstalaciones, ...susInstalaciones];
 
   const nombreOtraParte = soyDueño ? slot.requestedByClubName : slot.clubName;
   // 'local' = se juega en el campo del anfitrión (el dueño del hueco);
@@ -360,44 +355,48 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
     );
   }
 
-  const proponer = (sede) => {
-    const hayAlgunDato = dia || hora || campo.trim();
-    if (!hayAlgunDato) {
-      ejecutar(() => proponerSede(slot.id, sede));
-      return;
-    }
-    if (!dia || !hora || !campo.trim()) { setError("Rellena día, hora y campo los tres, o déjalos los tres en blanco para proponer solo la sede."); return; }
+  // La sede que corresponde a "mi propio campo" depende de qué lado soy —
+  // solo para ESA opción tiene sentido pedir día/hora/campo ya (soy yo quien
+  // conoce mis instalaciones). Para la sede del rival, solo se envía la
+  // invitación — que la cierren ellos, que son quienes saben su campo.
+  const sedeMiCampo = soyDueño ? "local" : "visitante";
+  const sedeSuCampo = soyDueño ? "visitante" : "local";
+
+  const proponerMiCampo = () => {
+    if (!dia || !hora || !campo.trim()) { setError("Rellena día, hora y campo."); return; }
     const conflicto = hayConflictoDeHorario(allSlots, { campoExacto: campo, diaExacto: dia, horaExacta: hora, grupo: slot.grupo }, slot.id);
     if (conflicto) { setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`); return; }
     setError("");
-    ejecutar(() => proponerSede(slot.id, sede, { diaExacto: dia, horaExacta: hora, campoExacto: campo }));
+    ejecutar(() => proponerSede(slot.id, sedeMiCampo, { diaExacto: dia, horaExacta: hora, campoExacto: campo }));
+  };
+
+  const proponerSuCampo = () => {
+    ejecutar(() => proponerSede(slot.id, sedeSuCampo));
   };
 
   return (
     <div style={{ marginTop: "6px" }}>
-      <p style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>
-        Si ya sabéis día, hora y campo, ponedlos aquí — así queda cerrado en cuanto acepten. Si no, dejadlo en blanco y se decide después.
-      </p>
-      <div className="cl-row" style={{ flexWrap: "wrap" }}>
-        <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
-        <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
-          <option value="">Hora</option>
-          {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
-        </select>
-        <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-sede" />
-        <datalist id="instalaciones-sede">
-          {todasLasInstalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
-        </datalist>
-      </div>
-      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
-      <div className="cl-row" style={{ marginTop: "6px" }}>
-        <button className="cl-btn cl-btn-gold" onClick={() => proponer("local")}>
-          <Home size={14} /> Proponer {etiqueta("local")}
-        </button>
-        <button className="cl-btn cl-btn-primary" onClick={() => proponer("visitante")}>
-          <Plane size={14} /> Proponer {etiqueta("visitante")}
+      <div style={{ background: "#F5F3EC", padding: "8px", borderRadius: "4px", marginBottom: "8px" }}>
+        <p style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px" }}>Proponer {etiqueta(sedeMiCampo)}</p>
+        <div className="cl-row" style={{ flexWrap: "wrap" }}>
+          <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} onChange={(e) => setDia(e.target.value)} />
+          <select className="cl-input" style={{ width: "auto" }} value={hora} onChange={(e) => setHora(e.target.value)}>
+            <option value="">Hora</option>
+            {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
+          </select>
+          <input placeholder="Campo" className="cl-input" style={{ width: "auto" }} value={campo} onChange={(e) => setCampo(e.target.value)} maxLength={60} list="instalaciones-sede" />
+          <datalist id="instalaciones-sede">
+            {misInstalaciones.map((i) => <option key={i.id} value={i.nombre} />)}
+          </datalist>
+        </div>
+        {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
+        <button className="cl-btn cl-btn-gold" onClick={proponerMiCampo} style={{ marginTop: "6px" }}>
+          <Home size={14} /> Proponer {etiqueta(sedeMiCampo)}
         </button>
       </div>
+      <button className="cl-btn cl-btn-primary" onClick={proponerSuCampo}>
+        <Plane size={14} /> Proponer {etiqueta(sedeSuCampo)} <span style={{ fontWeight: 400, fontSize: "11px" }}>(que cierren ellos día/hora/campo)</span>
+      </button>
     </div>
   );
 }
