@@ -213,7 +213,7 @@ function buscarCompromisoExterno(allSlots, teamId, equipoUid, miUid, jornadaOrde
     // si la negociación me involucra específicamente a mí, en cualquiera
     // de las dos direcciones.
     if (s.ownerUid === equipoUid && s.requestedByTeamId === teamId && s.requestedByUid === miUid) return true; // yo reservé su hueco
-    if (s.ownerUid === miUid && s.teamId === teamId && s.requestedByUid === equipoUid) return true; // él reservó el mío
+    if (s.ownerUid === miUid && s.requestedByTeamId === teamId && s.requestedByUid === equipoUid) return true; // él reservó el mío
     return false;
   }) || null;
 }
