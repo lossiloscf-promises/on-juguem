@@ -158,7 +158,7 @@ function PanelAdmin({ onVerificar }) {
   );
 }
 
-function PanelEscudo({ uid, profile }) {
+function PanelEscudo({ uid, profile, onEscudoCambiado }) {
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState("");
 
@@ -168,7 +168,8 @@ function PanelEscudo({ uid, profile }) {
     setError("");
     setSubiendo(true);
     try {
-      await subirEscudo(uid, file);
+      const url = await subirEscudo(uid, file);
+      onEscudoCambiado?.(url);
     } catch (err) {
       setError(err.message || "No se ha podido subir el escudo.");
     }
@@ -181,6 +182,7 @@ function PanelEscudo({ uid, profile }) {
     setError("");
     try {
       await borrarEscudo(uid);
+      onEscudoCambiado?.(null);
     } catch (err) {
       setError(err.message || "No se ha podido quitar.");
     }
@@ -282,7 +284,7 @@ function PanelCoordinadores({ uid, profile, onGuardar }) {
   );
 }
 
-export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onBorrarCuenta, onVerificar }) {
+export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta, onVerificar }) {
   const instalaciones = useInstalaciones(uid);
   const [nuevaInstalacion, setNuevaInstalacion] = useState("");
   const [nuevaDireccion, setNuevaDireccion] = useState("");
@@ -368,7 +370,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         </p>
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ESCUDO DEL CLUB</h2>
-        <PanelEscudo uid={uid} profile={profile} />
+        <PanelEscudo uid={uid} profile={profile} onEscudoCambiado={onEscudoCambiado} />
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ENLACE PÚBLICO DE TU CUADRANTE</h2>
         <div className="cl-ticket">

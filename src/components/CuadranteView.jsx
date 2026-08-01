@@ -564,7 +564,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
 export default function CuadranteView({
   clubName, teams, slots, jornadas,
   modo = "propio", allSlots, misEquipos, misJornadas, uid, misClubName, telefono, email, puedeReservar = true,
-  miProfile,
+  miProfile, escudoUrl,
 }) {
   const [celdaAbierta, setCeldaAbierta] = useState(null);
   const [error, setError] = useState("");
@@ -674,7 +674,10 @@ export default function CuadranteView({
       {modo === "propio" && (
         <>
           <div className="cl-row no-print" style={{ justifyContent: "space-between", marginBottom: "16px" }}>
-            <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("cuadrante.titulo")} · {clubName}</h2>
+            <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>
+              {escudoUrl && <img src={escudoUrl} alt="" style={{ width: "28px", height: "28px", objectFit: "contain", verticalAlign: "-6px", marginRight: "6px" }} />}
+              {t("cuadrante.titulo")} · {clubName}
+            </h2>
             <div className="cl-row">
               <button className="cl-btn cl-btn-primary" onClick={imprimir}><Printer size={14} /> {t("cuadrante.exportar_pdf")}</button>
               <button className="cl-btn cl-btn-gold" onClick={exportarExcel}><FileSpreadsheet size={14} /> {t("cuadrante.exportar_excel")}</button>

@@ -214,6 +214,7 @@ function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas
         misClubName={misClubName}
         telefono={telefono}
         email={email}
+        escudoUrl={perfilAjeno?.escudoUrl}
         puedeReservar={puedeReservar}
         miProfile={miProfile}
       />

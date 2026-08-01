@@ -78,6 +78,13 @@ export function useAuth() {
     setProfile((prev) => ({ ...prev, coordinadores }));
   };
 
+  // El propio subirEscudo/borrarEscudo (en useEscudo.js) ya actualiza
+  // Firestore — esto solo refresca el perfil que se ve en pantalla al
+  // momento, sin esperar a un refresco de página.
+  const actualizarEscudoLocal = (escudoUrl) => {
+    setProfile((prev) => ({ ...prev, escudoUrl }));
+  };
+
   // Borra la cuenta y todos los datos que le pertenecen: equipos, huecos
   // propios y calendario de jornadas. Requiere volver a confirmar la
   // contraseña (Firebase lo exige por seguridad para operaciones sensibles
@@ -110,7 +117,7 @@ export function useAuth() {
   return {
     user, profile, loading,
     signup, login, logout,
-    updateContact, updateCoordinadores, recuperarContrasena, deleteAccount,
+    updateContact, updateCoordinadores, actualizarEscudoLocal, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion,
     verificarClub,
   };

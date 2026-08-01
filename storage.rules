@@ -1,12 +1,23 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+// Reglas de Firebase Storage — de momento solo se usa para el escudo de
+// cada club. Se guarda en la ruta "escudos/{uid}", donde {uid} es el id del
+// club dueño del escudo.
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read, write: if false;
+    match /escudos/{uid} {
+      // Los escudos son públicos (se ven en tarjetas de club, directorio,
+      // enlace público) — cualquiera puede leerlos, aunque no tenga cuenta.
+      allow read: if true;
+
+      // Solo el propio club puede subir o cambiar SU escudo — y solo
+      // imágenes, con un tamaño razonable (máximo 2 MB).
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
   }
 }

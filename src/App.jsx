@@ -20,7 +20,7 @@ export default function App() {
 
   const {
     user, profile, loading, signup, login, logout,
-    updateContact, updateCoordinadores, recuperarContrasena, deleteAccount,
+    updateContact, updateCoordinadores, actualizarEscudoLocal, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion, verificarClub,
   } = useAuth();
   const [role, setRole] = useState("coordinador");
@@ -129,6 +129,7 @@ export default function App() {
             allSlots={allSlots}
             uid={user.uid}
             miProfile={profile}
+            escudoUrl={profile.escudoUrl}
           />
         )}
         {role === "torneos" && (
@@ -148,6 +149,7 @@ export default function App() {
             profile={profile}
             onGuardarContacto={(datos) => updateContact(user.uid, datos)}
             onGuardarCoordinadores={(uid, datos) => updateCoordinadores(uid, datos)}
+            onEscudoCambiado={actualizarEscudoLocal}
             onBorrarCuenta={(password) => deleteAccount(password)}
             onVerificar={verificarClub}
           />
@@ -166,14 +168,19 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos
   return (
     <header className="cl-header">
       <div className="cl-header-inner">
-        <div className="cl-row" style={{ alignItems: "flex-start" }}>
+        <div className="cl-row" style={{ alignItems: "center" }}>
           {loggedIn && escudoUrl && (
-            <img src={escudoUrl} alt="" style={{ width: "40px", height: "40px", objectFit: "contain" }} />
+            <img src={escudoUrl} alt="" style={{ width: "44px", height: "44px", objectFit: "contain" }} />
           )}
           <div>
-            <h1 className="cl-display cl-title">ON JUGUEM</h1>
+            {loggedIn && (
+              <p className="cl-mono" style={{ fontSize: "13px", fontWeight: 700, color: "white", marginBottom: "2px" }}>
+                {clubName}
+              </p>
+            )}
+            <h1 className="cl-display cl-title" style={{ fontSize: loggedIn ? "22px" : undefined }}>ON JUGUEM</h1>
             <p className="cl-mono cl-subtitle">
-              {loggedIn ? `${clubName} · ${t("app.subtitulo_dentro")}` : t("app.subtitulo_fuera")}
+              {loggedIn ? t("app.subtitulo_dentro") : t("app.subtitulo_fuera")}
             </p>
             <div className="cl-row" style={{ marginTop: "6px" }}>
               <select

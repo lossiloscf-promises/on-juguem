@@ -106,6 +106,24 @@ service cloud.firestore {
     // Instalaciones/campos guardados por cada club, para no escribir el nombre
     // a mano cada vez — visibles para cualquier usuario con sesión (por si en
     // el futuro interesa mostrarlas), pero solo el dueño las gestiona.
+    // Torneos/triangulares — el organizador controla el torneo entero;
+    // cualquier club puede apuntarse o retirarse mientras esté abierto,
+    // tocando solo la lista de participantes.
+    match /torneos/{torneoId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.organizadorUid == request.auth.uid
+        && textoValido(request.resource.data.nombre, 100)
+        && request.resource.data.estado == 'abierto';
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.organizadorUid
+        ||
+        (resource.data.estado == 'abierto'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantes']))
+      );
+      allow delete: if request.auth != null && request.auth.uid == resource.data.organizadorUid;
+    }
+
     match /instalaciones/{instalacionId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
@@ -122,10 +140,19 @@ service cloud.firestore {
       allow read: if request.auth != null;
 
       // Solo el coordinador puede publicar disponibilidad de un equipo propio,
-      // y siempre empieza como 'libre' o 'no_disponible'.
-      allow create: if request.auth != null
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status in ['libre', 'no_disponible'];
+      // y siempre empieza como 'libre' o 'no_disponible' — SALVO el caso de
+      // un partido de torneo, donde el organizador (comprobado de verdad
+      // contra el torneo real) puede crear directamente el partido ya
+      // cerrado entre dos equipos participantes, sin ser dueño de ninguno.
+      allow create: if request.auth != null && (
+        (request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.status in ['libre', 'no_disponible'])
+        ||
+        (request.resource.data.status == 'confirmado'
+          && request.resource.data.get('torneoOrganizadorUid', null) == request.auth.uid
+          && request.resource.data.get('torneoId', null) != null
+          && get(/databases/$(database)/documents/torneos/$(request.resource.data.torneoId)).data.organizadorUid == request.auth.uid)
+      );
 
       allow update: if request.auth != null
         && request.resource.data.get('ownerUid', null) == resource.data.get('ownerUid', null)
@@ -178,9 +205,9 @@ service cloud.firestore {
           //     día/hora/campo en la propuesta, queda "cerrado" al momento;
           //     si no, queda "pactado" para cerrarlo más adelante.
           (resource.data.get('sedePropuestaPor', null) != null
-            && resource.data.sedePropuestaPor != request.auth.uid
+            && resource.data.get('sedePropuestaPor', null) != request.auth.uid
             && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
-            && request.resource.data.sede == resource.data.sedePropuesta
+            && request.resource.data.sede == resource.data.get('sedePropuesta', null)
             && request.resource.data.sedePropuestaPor == null
             && request.resource.data.status in ['pactado', 'confirmado']
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
@@ -241,7 +268,7 @@ service cloud.firestore {
           // 9) Aceptar la cancelación propuesta por LA OTRA parte (no puedes
           //    aceptar tu propia propuesta) — aquí sí se libera el hueco de verdad.
           (resource.data.get('cancelacionPropuestaPor', null) != null
-            && resource.data.cancelacionPropuestaPor != request.auth.uid
+            && resource.data.get('cancelacionPropuestaPor', null) != request.auth.uid
             && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
             && request.resource.data.status == 'libre'
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
@@ -268,11 +295,11 @@ service cloud.firestore {
           // 9d) Aceptar el cambio de horario propuesto por LA OTRA parte —
           //     se aplica de verdad el nuevo día/hora/campo.
           (resource.data.get('cambioPropuestoPor', null) != null
-            && resource.data.cambioPropuestoPor != request.auth.uid
+            && resource.data.get('cambioPropuestoPor', null) != request.auth.uid
             && (request.auth.uid == resource.data.ownerUid || request.auth.uid == resource.data.requestedByUid)
-            && request.resource.data.diaExacto == resource.data.cambioPropuesto.diaExacto
-            && request.resource.data.horaExacta == resource.data.cambioPropuesto.horaExacta
-            && request.resource.data.campoExacto == resource.data.cambioPropuesto.campoExacto
+            && request.resource.data.diaExacto == resource.data.get('cambioPropuesto', {}).get('diaExacto', null)
+            && request.resource.data.horaExacta == resource.data.get('cambioPropuesto', {}).get('horaExacta', null)
+            && request.resource.data.campoExacto == resource.data.get('cambioPropuesto', {}).get('campoExacto', null)
             && request.resource.data.cambioPropuestoPor == null
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
                  ['diaExacto', 'horaExacta', 'campoExacto', 'cambioPropuestoPor', 'cambioPropuesto']
@@ -313,7 +340,14 @@ service cloud.firestore {
           // 11) Descartar el aviso de "equipo borrado" una vez leído — solo el
           //     dueño del hueco, y solo toca esos dos campos.
           (request.auth.uid == resource.data.ownerUid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avisoEquipoBorrado', 'avisoTexto']))
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avisoEquipoBorrado', 'avisoTexto'])) ||
+
+          // 12) El organizador de un torneo cambia hora/campo de un partido
+          //     que él programó — sin acuerdo mutuo, porque es su torneo
+          //     (aunque él no sea ni el dueño ni quien reservó ese partido).
+          (resource.data.get('torneoOrganizadorUid', null) != null
+            && request.auth.uid == resource.data.torneoOrganizadorUid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['horaExacta', 'campoExacto']))
         );
 
       allow delete: if request.auth != null
