@@ -12,6 +12,8 @@
 
 * { box-sizing: border-box; }
 
+html, body { overflow-x: hidden; max-width: 100%; }
+
 body {
   margin: 0;
   background: var(--chalk);
@@ -28,6 +30,7 @@ body {
   background: var(--pitch-dark);
   color: var(--chalk);
   padding: 20px 24px;
+  overflow-x: hidden;
 }
 .cl-header-inner {
   max-width: 960px;
@@ -37,6 +40,7 @@ body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+  min-width: 0;
 }
 .cl-title { font-size: 46px; line-height: 1; margin: 0; }
 .cl-subtitle { font-size: 14px; opacity: 0.8; margin-top: 4px; }

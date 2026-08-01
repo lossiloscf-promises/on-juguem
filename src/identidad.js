@@ -1,13 +1,12 @@
-// Guardado solo en esta pestaña/sesión del navegador (no en la cuenta) —
-// cada coordinador que comparte el login del club puede decir "quién es"
-// para que quede reflejado en el historial, sin que esto dé ni quite
-// ningún permiso real: es solo una etiqueta para el rastro de auditoría.
-const CLAVE = "cl_identidad_actual";
+// Guarda, solo para esta sesión del navegador (se olvida al cerrar), quién
+// de vuestro club está usando la app ahora mismo — únicamente para que el
+// historial de cada partido pueda distinguir quién hizo cada cosa, si varias
+// personas compartís el mismo acceso. No afecta a lo que se puede ver o hacer.
+const CLAVE = "cl_identidad";
 
 export const IDENTIDADES_SUGERIDAS = [
-  "Coordinador general",
-  "Coordinador Fútbol 11",
-  "Coordinador Fútbol 8",
+  "Coordinador Fútbol 11 Masculino",
+  "Coordinador Fútbol 8 Masculino",
   "Coordinador Fútbol 11 Femenino",
   "Coordinador Fútbol 8 Femenino",
 ];
@@ -22,8 +21,8 @@ export function getIdentidadActual() {
 
 export function setIdentidadActual(valor) {
   try {
-    sessionStorage.setItem(CLAVE, valor || "");
+    sessionStorage.setItem(CLAVE, valor);
   } catch {
-    // si el navegador bloquea sessionStorage, simplemente no se guarda
+    // si el navegador bloquea sessionStorage, simplemente no se recuerda
   }
 }

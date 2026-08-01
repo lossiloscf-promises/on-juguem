@@ -4,6 +4,7 @@ import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClu
 import { useJornadas } from "./hooks/useJornadas";
 import { useCierreSesionPorInactividad } from "./hooks/useCierreSesionPorInactividad";
 import { t, getIdioma, setIdioma, IDIOMAS } from "./i18n";
+import { getIdentidadActual, setIdentidadActual, IDENTIDADES_SUGERIDAS } from "./identidad";
 import Login from "./components/Login";
 import CoordinadorView from "./components/CoordinadorView";
 import ClubView from "./components/ClubView";
@@ -25,6 +26,7 @@ export default function App() {
   } = useAuth();
   const [role, setRole] = useState("coordinador");
   const [avisoVerificacion, setAvisoVerificacion] = useState("");
+  const [identidadLista, setIdentidadLista] = useState(!!getIdentidadActual());
 
   const myTeams = useMyTeams(user?.uid);
   const allTeams = useAllTeams();
@@ -43,6 +45,17 @@ export default function App() {
         <Header role={role} setRole={setRole} loggedIn={false} />
         <div className="cl-main">
           <Login onLogin={login} onSignup={signup} onRecuperar={recuperarContrasena} onComprobarDuplicado={comprobarNombreDuplicado} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!identidadLista) {
+    return (
+      <div className="cl-shell">
+        <Header role={role} setRole={setRole} loggedIn={false} />
+        <div className="cl-main">
+          <PantallaQuienEres clubName={profile.clubName} escudoUrl={profile.escudoUrl} onListo={() => setIdentidadLista(true)} />
         </div>
       </div>
     );
@@ -155,6 +168,50 @@ export default function App() {
           />
         )}
       </div>
+    </div>
+  );
+}
+
+function PantallaQuienEres({ clubName, escudoUrl, onListo }) {
+  const [elegido, setElegido] = useState("");
+
+  const continuar = () => {
+    if (!elegido) return;
+    setIdentidadActual(elegido);
+    onListo();
+  };
+
+  return (
+    <div className="cl-auth-box cl-ticket">
+      <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>{t("identidad.titulo")}</h2>
+      <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+        {clubName} — {t("identidad.explicacion")}
+      </p>
+      {!escudoUrl && (
+        <p style={{ fontSize: "12px", color: "var(--clay)", background: "#FDECEA", padding: "8px", borderRadius: "4px", marginBottom: "12px" }}>
+          ⚠️ Todavía no has subido el escudo del club — puedes hacerlo cuando quieras en Ajustes.
+        </p>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+        {IDENTIDADES_SUGERIDAS.map((op) => (
+          <button
+            key={op}
+            className="cl-btn"
+            style={{
+              justifyContent: "flex-start",
+              background: elegido === op ? "var(--pitch)" : "white",
+              color: elegido === op ? "white" : "var(--ink)",
+              border: "1.5px solid var(--line)",
+            }}
+            onClick={() => setElegido(op)}
+          >
+            {op}
+          </button>
+        ))}
+      </div>
+      <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={continuar} disabled={!elegido}>
+        {t("identidad.continuar")}
+      </button>
     </div>
   );
 }
