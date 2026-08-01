@@ -65,8 +65,8 @@ export function useAuth() {
   const recuperarContrasena = (email) => sendPasswordResetEmail(auth, email);
   const reenviarVerificacion = () => sendEmailVerification(auth.currentUser);
 
-  const updateContact = async (uid, { clubName, telefono }) => {
-    const data = { clubName, clubNameLower: clubName.trim().toLowerCase(), telefono };
+  const updateContact = async (uid, { clubName, telefono, emailContacto }) => {
+    const data = { clubName, clubNameLower: clubName.trim().toLowerCase(), telefono, emailContacto: emailContacto || "" };
     await updateDoc(doc(db, "users", uid), data);
     setProfile((prev) => ({ ...prev, ...data }));
   };

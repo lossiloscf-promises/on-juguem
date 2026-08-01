@@ -12,6 +12,7 @@ import {
   getDoc,
   getDocs,
   runTransaction,
+  writeBatch,
   serverTimestamp,
 } from "firebase/firestore";
 import { db, auth } from "../firebase";
@@ -592,5 +593,45 @@ async function cerrarPartidoAtomico(slotId, datosNuevos, allSlots, teamId) {
       timestamp: serverTimestamp(),
     });
   });
+}
+
+// Zona peligrosa: vuelve TODOS tus huecos a "libre" de golpe, sin tocar
+// equipos ni jornadas — para empezar una temporada de cero sin tener que
+// borrar y rehacer todo el calendario a mano. Rompe cualquier negociación
+// en marcha con otros clubes SIN pedirles acuerdo (es una acción fuerte y
+// deliberada, por eso vive en Zona Peligrosa).
+export async function limpiarTemporada(uid) {
+  const q = query(collection(db, "slots"), where("ownerUid", "==", uid));
+  const snap = await getDocs(q);
+  const docs = snap.docs;
+  // Firestore permite como mucho 500 escrituras por lote.
+  for (let i = 0; i < docs.length; i += 450) {
+    const lote = docs.slice(i, i + 450);
+    const batch = writeBatch(db);
+    lote.forEach((d) => {
+      batch.update(d.ref, {
+        status: "libre",
+        sede: null,
+        diaExacto: "",
+        horaExacta: "",
+        campoExacto: "",
+        requestedByUid: null,
+        requestedByClubName: "",
+        requestedByTelefono: "",
+        requestedByEmail: "",
+        requestedByTeamId: null,
+        cancelacionPropuestaPor: null,
+        sedePropuestaPor: null,
+        sedePropuesta: null,
+        sedePropuestaDetalles: null,
+        cambioPropuestoPor: null,
+        cambioPropuesto: null,
+        avisoEquipoBorrado: false,
+        avisoTexto: "",
+      });
+    });
+    await batch.commit();
+  }
+  return docs.length;
 }
 

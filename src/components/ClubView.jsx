@@ -323,6 +323,21 @@ function BusquedaPorFiltros({ uid, allSlots }) {
           seleccionados={filterNiveles}
           onCambiar={setFilterNiveles}
         />
+        {filterNiveles.length === 1 && (() => {
+          const idx = NIVELES.indexOf(filterNiveles[0]);
+          const vecinos = [NIVELES[idx - 1], NIVELES[idx + 1]].filter(Boolean);
+          if (vecinos.length === 0) return null;
+          return (
+            <button
+              type="button"
+              className="cl-btn cl-btn-ghost"
+              style={{ alignSelf: "flex-end", fontSize: "12px" }}
+              onClick={() => setFilterNiveles([...filterNiveles, ...vecinos])}
+            >
+              + Nivel superior e inferior
+            </button>
+          );
+        })()}
         <div className="cl-field">
           <label className="cl-label">FASE</label>
           <select className="cl-input" value={filterFase} onChange={(e) => { setFilterFase(e.target.value); setFilterJornada("Todas"); }}>

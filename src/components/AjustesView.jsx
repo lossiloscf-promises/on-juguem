@@ -5,6 +5,7 @@ import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
 import { CLAVES_COORDINADOR } from "../constants";
 import { subirEscudo, borrarEscudo } from "../hooks/useEscudo";
+import { limpiarTemporada } from "../hooks/useClubData";
 import { useTodosLosClubes } from "../hooks/useAuth";
 import {
   useClubesOficiales,
@@ -284,6 +285,57 @@ function PanelCoordinadores({ uid, profile, onGuardar }) {
   );
 }
 
+function PanelLimpiarTemporada({ uid }) {
+  const [confirmando, setConfirmando] = useState(false);
+  const [limpiando, setLimpiando] = useState(false);
+  const [resultado, setResultado] = useState("");
+  const [error, setError] = useState("");
+
+  const limpiar = async () => {
+    setLimpiando(true);
+    setError("");
+    try {
+      const n = await limpiarTemporada(uid);
+      setResultado(`Hecho — ${n} hueco${n !== 1 ? "s" : ""} vuelto${n !== 1 ? "s" : ""} a "Disponible".`);
+      setConfirmando(false);
+    } catch (err) {
+      setError(err.message || "No se ha podido limpiar.");
+    }
+    setLimpiando(false);
+  };
+
+  return (
+    <div className="cl-ticket" style={{ borderColor: "var(--clay)", marginBottom: "12px" }}>
+      {!confirmando ? (
+        <>
+          <p style={{ fontSize: "13px", marginBottom: "10px" }}>
+            Vuelve todos tus huecos a "Disponible" de golpe (incluidos los ya pactados o cerrados con otros clubes) —
+            tus equipos, sus niveles y tu calendario de jornadas no se tocan. Pensado para empezar una temporada de cero.
+          </p>
+          <button className="cl-btn cl-btn-ghost" onClick={() => setConfirmando(true)}>
+            Limpiar pre/postemporada
+          </button>
+        </>
+      ) : (
+        <>
+          <p style={{ fontSize: "13px", marginBottom: "8px", color: "var(--clay)" }}>
+            ⚠️ Esto rompe también cualquier partido ya pactado o cerrado con otros clubes, sin avisarles ni pedirles
+            acuerdo — si tienes partidos reales en marcha, avísales tú por tu cuenta antes de hacerlo. No se puede deshacer.
+          </p>
+          <div className="cl-row">
+            <button className="cl-btn cl-btn-ghost" onClick={() => setConfirmando(false)}>Cancelar</button>
+            <button className="cl-btn" style={{ background: "var(--clay)", color: "white" }} onClick={limpiar} disabled={limpiando}>
+              {limpiando ? "Limpiando..." : "Sí, limpiar de verdad"}
+            </button>
+          </div>
+        </>
+      )}
+      {resultado && <p style={{ color: "var(--pitch)", fontSize: "12px", marginTop: "8px" }}>{resultado}</p>}
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "8px" }}>{error}</p>}
+    </div>
+  );
+}
+
 export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta, onVerificar }) {
   const instalaciones = useInstalaciones(uid);
   const [nuevaInstalacion, setNuevaInstalacion] = useState("");
@@ -304,6 +356,8 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
   };
   const [clubName, setClubName] = useState(profile.clubName);
   const [telefono, setTelefono] = useState(profile.telefono || "");
+  const [emailContacto, setEmailContacto] = useState(profile.emailContacto || "");
+  const clubesOficiales = useClubesOficiales();
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
   const [error, setError] = useState("");
@@ -322,7 +376,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
     }
     setGuardando(true);
     try {
-      await onGuardarContacto({ clubName: clubName.trim(), telefono: telefono.trim() });
+      await onGuardarContacto({ clubName: clubName.trim(), telefono: telefono.trim(), emailContacto: emailContacto.trim() });
       setAviso("Guardado.");
     } catch (err) {
       setError(err.message || "No se ha podido guardar.");
@@ -352,9 +406,17 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>DATOS DE CONTACTO</h2>
         <div className="cl-ticket">
           <label className="cl-label">NOMBRE DEL CLUB</label>
-          <input className="cl-input" value={clubName} onChange={(e) => setClubName(e.target.value)} maxLength={LIMITES.clubName} style={{ marginBottom: "8px" }} />
-          <label className="cl-label">TELÉFONO</label>
+          <select className="cl-input" value={clubName} onChange={(e) => setClubName(e.target.value)} style={{ marginBottom: "8px" }}>
+            <option value={clubName}>{clubName}</option>
+            {clubesOficiales
+              .filter((c) => c.nombre !== clubName)
+              .sort((a, b) => a.nombre.localeCompare(b.nombre))
+              .map((c) => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+          </select>
+          <label className="cl-label">TELÉFONO DEL CLUB</label>
           <input className="cl-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} maxLength={LIMITES.telefono} style={{ marginBottom: "8px" }} />
+          <label className="cl-label">CORREO DEL CLUB</label>
+          <input className="cl-input" type="email" value={emailContacto} onChange={(e) => setEmailContacto(e.target.value)} maxLength={100} style={{ marginBottom: "8px" }} placeholder="Distinto del correo de acceso, si hace falta" />
           <p style={{ fontSize: "11px", color: "#888", marginBottom: "8px" }}>
             Los equipos que ya has publicado no se actualizan solos con el nuevo teléfono — solo afecta a lo nuevo que publiques a partir de ahora.
           </p>
@@ -395,6 +457,9 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
 
       <div>
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--clay)" }}>ZONA PELIGROSA</h2>
+
+        <PanelLimpiarTemporada uid={uid} />
+
         {!borrando ? (
           <div className="cl-ticket" style={{ borderColor: "var(--clay)" }}>
             <p style={{ fontSize: "13px", marginBottom: "10px" }}>
