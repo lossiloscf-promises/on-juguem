@@ -83,8 +83,20 @@ export function useMySlots(uid) {
 export function useAllTeams() {
   const [teams, setTeams] = useState([]);
   useEffect(() => {
-    const q = collection(db, "teams");
-    return onSnapshot(q, (snap) => setTeams(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    // Espera a que haya sesión de verdad antes de escuchar — si no, esta
+    // consulta arranca nada más cargar la página (antes de iniciar sesión)
+    // y da un error de permisos sin sentido, que solo confunde al depurar.
+    let unsubSnapshot = null;
+    const unsubAuth = auth.onAuthStateChanged((u) => {
+      if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
+      if (!u) { setTeams([]); return; }
+      const q = collection(db, "teams");
+      unsubSnapshot = onSnapshot(q, (snap) => setTeams(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    });
+    return () => {
+      unsubAuth();
+      if (unsubSnapshot) unsubSnapshot();
+    };
   }, []);
   return teams;
 }
@@ -93,8 +105,17 @@ export function useAllTeams() {
 export function useAllSlots() {
   const [slots, setSlots] = useState([]);
   useEffect(() => {
-    const q = collection(db, "slots");
-    return onSnapshot(q, (snap) => setSlots(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    let unsubSnapshot = null;
+    const unsubAuth = auth.onAuthStateChanged((u) => {
+      if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
+      if (!u) { setSlots([]); return; }
+      const q = collection(db, "slots");
+      unsubSnapshot = onSnapshot(q, (snap) => setSlots(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    });
+    return () => {
+      unsubAuth();
+      if (unsubSnapshot) unsubSnapshot();
+    };
   }, []);
   return slots;
 }
