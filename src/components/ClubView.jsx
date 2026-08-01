@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Search, LayoutGrid, X } from "lucide-react";
 import { useAllTeams, cerrarComoVisitante, hayConflictoDeHorario } from "../hooks/useClubData";
-import { useClubProfile } from "../hooks/useAuth";
+import { useClubProfile, useTodosLosClubes } from "../hooks/useAuth";
 import { useInstalaciones } from "../hooks/useInstalaciones";
 import { diaCoincideConJornada } from "../validaciones";
 import { useJornadas } from "../hooks/useJornadas";
@@ -161,7 +161,10 @@ function DirectorioClubes({ clubes, onEntrar }) {
         {ordenados.map((c) => (
           <div key={c.ownerUid} className="cl-ticket" style={{ cursor: "pointer" }} onClick={() => onEntrar(c.ownerUid, c.clubName)}>
             <div className="cl-row" style={{ justifyContent: "space-between" }}>
-              <span className="cl-display" style={{ fontSize: "20px" }}>{c.clubName}</span>
+              <span className="cl-row" style={{ gap: "8px" }}>
+                {c.escudoUrl && <img src={c.escudoUrl} alt="" style={{ width: "28px", height: "28px", objectFit: "contain" }} />}
+                <span className="cl-display" style={{ fontSize: "20px" }}>{c.clubName}</span>
+              </span>
               <LayoutGrid size={16} style={{ color: "var(--pitch)" }} />
             </div>
             <p style={{ fontSize: "13px", color: "#666" }}>{c.numEquipos} equipo{c.numEquipos !== 1 ? "s" : ""}</p>
@@ -391,6 +394,9 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
     return total;
   };
 
+  const todosLosPerfiles = useTodosLosClubes();
+  const escudoPorUid = Object.fromEntries(todosLosPerfiles.map((p) => [p.uid, p.escudoUrl]));
+
   const clubes = Object.values(
     allTeams
       .filter((t) => t.ownerUid !== uid)
@@ -404,7 +410,7 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
     const cerrados = slotsDelClub.filter((s) => ["pendiente", "pactado", "confirmado"].includes(s.status)).length;
     const pct = slotsDelClub.length > 0 ? Math.round((cerrados / slotsDelClub.length) * 100) : 0;
     const susLibres = slotsDelClub.filter((s) => s.status === "libre");
-    return { ...c, pctCompletado: pct, afinidad: calcularAfinidad(susLibres) };
+    return { ...c, pctCompletado: pct, afinidad: calcularAfinidad(susLibres), escudoUrl: escudoPorUid[c.ownerUid] };
   });
 
   return (

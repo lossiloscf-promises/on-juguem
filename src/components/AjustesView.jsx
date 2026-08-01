@@ -4,6 +4,7 @@ import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
 import { CLAVES_COORDINADOR } from "../constants";
+import { subirEscudo, borrarEscudo } from "../hooks/useEscudo";
 import { useTodosLosClubes } from "../hooks/useAuth";
 import {
   useClubesOficiales,
@@ -153,6 +154,60 @@ function PanelAdmin({ onVerificar }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PanelEscudo({ uid, profile }) {
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState("");
+
+  const elegirArchivo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setSubiendo(true);
+    try {
+      await subirEscudo(uid, file);
+    } catch (err) {
+      setError(err.message || "No se ha podido subir el escudo.");
+    }
+    setSubiendo(false);
+    e.target.value = "";
+  };
+
+  const quitar = async () => {
+    if (!window.confirm("¿Quitar el escudo del club?")) return;
+    setError("");
+    try {
+      await borrarEscudo(uid);
+    } catch (err) {
+      setError(err.message || "No se ha podido quitar.");
+    }
+  };
+
+  return (
+    <div className="cl-ticket">
+      <div className="cl-row" style={{ alignItems: "center" }}>
+        {profile.escudoUrl ? (
+          <img src={profile.escudoUrl} alt="Escudo del club" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "4px", border: "1px solid var(--line)" }} />
+        ) : (
+          <div style={{ width: "64px", height: "64px", borderRadius: "4px", border: "1px dashed var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#888" }}>
+            Sin escudo
+          </div>
+        )}
+        <div>
+          <label className="cl-btn cl-btn-primary" style={{ cursor: "pointer", display: "inline-flex" }}>
+            {subiendo ? "Subiendo..." : profile.escudoUrl ? "Cambiar escudo" : "Subir escudo"}
+            <input type="file" accept="image/*" onChange={elegirArchivo} disabled={subiendo} style={{ display: "none" }} />
+          </label>
+          {profile.escudoUrl && (
+            <button className="cl-btn cl-btn-ghost" onClick={quitar} style={{ marginLeft: "6px" }}>Quitar</button>
+          )}
+        </div>
+      </div>
+      <p style={{ fontSize: "11px", color: "#888", marginTop: "6px" }}>Imagen cuadrada, máximo 2 MB. Se ve en el directorio de clubes y en el enlace público.</p>
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
     </div>
   );
 }
@@ -311,6 +366,9 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         <p style={{ fontSize: "13px" }}>
           <a href="#" onClick={(e) => { e.preventDefault(); setVerPolitica(true); }}>Ver política de privacidad</a>
         </p>
+
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ESCUDO DEL CLUB</h2>
+        <PanelEscudo uid={uid} profile={profile} />
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ENLACE PÚBLICO DE TU CUADRANTE</h2>
         <div className="cl-ticket">

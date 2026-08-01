@@ -51,6 +51,9 @@ async function registrarHistorial(slotId, accion) {
   }
 }
 
+// Se reutiliza desde el módulo de torneos, que también escribe historial.
+export const registrarHistorialTorneo = registrarHistorial;
+
 // Equipos del propio coordinador (en tiempo real)
 export function useMyTeams(uid) {
   const [teams, setTeams] = useState([]);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "./hooks/useAuth";
-import { useMyTeams, useMySlots, useAllSlots } from "./hooks/useClubData";
+import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
 import { useCierreSesionPorInactividad } from "./hooks/useCierreSesionPorInactividad";
 import { t, getIdioma, setIdioma, IDIOMAS } from "./i18n";
@@ -10,6 +10,7 @@ import ClubView from "./components/ClubView";
 import CuadranteView from "./components/CuadranteView";
 import TemporadaView from "./components/TemporadaView";
 import AjustesView from "./components/AjustesView";
+import TorneosView from "./components/TorneosView";
 import CuadrantePublico from "./components/CuadrantePublico";
 import "./styles.css";
 
@@ -26,6 +27,8 @@ export default function App() {
   const [avisoVerificacion, setAvisoVerificacion] = useState("");
 
   const myTeams = useMyTeams(user?.uid);
+  const allTeams = useAllTeams();
+  const teamsPorClub = Object.fromEntries(allTeams.map((t) => [t.id, t]));
   const mySlots = useMySlots(user?.uid);
   const allSlots = useAllSlots();
   const jornadas = useJornadas(user?.uid);
@@ -61,6 +64,7 @@ export default function App() {
         setRole={setRole}
         loggedIn={true}
         clubName={profile.clubName}
+        escudoUrl={profile.escudoUrl}
         onLogout={logout}
         avisos={mySlots.filter((s) =>
           s.status === "pendiente" ||
@@ -127,6 +131,17 @@ export default function App() {
             miProfile={profile}
           />
         )}
+        {role === "torneos" && (
+          <TorneosView
+            uid={user.uid}
+            clubName={profile.clubName}
+            telefono={profile.telefono}
+            email={profile.email}
+            misEquipos={myTeams}
+            jornadas={jornadas}
+            teamsPorClub={teamsPorClub}
+          />
+        )}
         {role === "ajustes" && (
           <AjustesView
             uid={user.uid}
@@ -142,7 +157,7 @@ export default function App() {
   );
 }
 
-function Header({ role, setRole, loggedIn, clubName, onLogout, avisos, avisosClub }) {
+function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos, avisosClub }) {
   const cambiarIdioma = (codigo) => {
     setIdioma(codigo);
     window.location.reload();
@@ -151,21 +166,26 @@ function Header({ role, setRole, loggedIn, clubName, onLogout, avisos, avisosClu
   return (
     <header className="cl-header">
       <div className="cl-header-inner">
-        <div>
-          <h1 className="cl-display cl-title">ON JUGUEM</h1>
-          <p className="cl-mono cl-subtitle">
-            {loggedIn ? `${clubName} · ${t("app.subtitulo_dentro")}` : t("app.subtitulo_fuera")}
-          </p>
-          <div className="cl-row" style={{ marginTop: "6px" }}>
-            <select
-              className="cl-input"
-              style={{ fontSize: "12px", padding: "3px 6px", width: "auto" }}
-              value={getIdioma()}
-              onChange={(e) => cambiarIdioma(e.target.value)}
-              title="Idioma"
-            >
-              {IDIOMAS.map((i) => <option key={i.codigo} value={i.codigo}>{i.nombre}</option>)}
-            </select>
+        <div className="cl-row" style={{ alignItems: "flex-start" }}>
+          {loggedIn && escudoUrl && (
+            <img src={escudoUrl} alt="" style={{ width: "40px", height: "40px", objectFit: "contain" }} />
+          )}
+          <div>
+            <h1 className="cl-display cl-title">ON JUGUEM</h1>
+            <p className="cl-mono cl-subtitle">
+              {loggedIn ? `${clubName} · ${t("app.subtitulo_dentro")}` : t("app.subtitulo_fuera")}
+            </p>
+            <div className="cl-row" style={{ marginTop: "6px" }}>
+              <select
+                className="cl-input"
+                style={{ fontSize: "12px", padding: "3px 6px", width: "auto" }}
+                value={getIdioma()}
+                onChange={(e) => cambiarIdioma(e.target.value)}
+                title="Idioma"
+              >
+                {IDIOMAS.map((i) => <option key={i.codigo} value={i.codigo}>{i.nombre}</option>)}
+              </select>
+            </div>
           </div>
         </div>
         {loggedIn && (
@@ -180,6 +200,7 @@ function Header({ role, setRole, loggedIn, clubName, onLogout, avisos, avisosClu
               {avisosClub > 0 && <span className="cl-badge-aviso">{avisosClub}</span>}
             </button>
             <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>{t("nav.cuadrante")}</button>
+            <button className={`cl-tab ${role === "torneos" ? "active" : ""}`} onClick={() => setRole("torneos")}>TORNEOS</button>
             <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>{t("nav.ajustes")}</button>
             <button className="cl-tab" onClick={onLogout}>{t("nav.salir")}</button>
           </div>
