@@ -12,7 +12,8 @@ import {
   deleteUser,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { httpsCallable } from "firebase/functions";
+import { auth, db, functions } from "../firebase";
 
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -37,9 +38,13 @@ export function useAuth() {
   // no para bloquear — dos clubes podrían coincidir en nombre por casualidad,
   // pero es mejor que el coordinador lo sepa antes de crear el suyo).
   const comprobarNombreDuplicado = async (clubName) => {
-    const q = query(collection(db, "users"), where("clubNameLower", "==", clubName.trim().toLowerCase()));
-    const snap = await getDocs(q);
-    return !snap.empty;
+    // Esta comprobación pasa por el servidor (no por Firestore directamente)
+    // porque se llama ANTES de tener sesión iniciada, y las reglas normales
+    // de "users" exigen sesión para leer (con razón: ahí vive el teléfono y
+    // el email de cada club).
+    const fn = httpsCallable(functions, "comprobarClubDuplicado");
+    const resultado = await fn({ clubName });
+    return !!resultado.data?.existe;
   };
 
   const signup = async (email, password, clubName, telefono) => {
