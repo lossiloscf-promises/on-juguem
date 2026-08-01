@@ -215,3 +215,15 @@ exports.cuadrantePublico = onRequest({ cors: true, region: "europe-west1" }, asy
     res.status(500).json({ error: "Error interno al cargar el cuadrante." });
   }
 });
+
+// Comprueba si ya existe un club con ese nombre — se llama ANTES de crear la
+// cuenta, cuando todavía no hay sesión iniciada, así que no puede pasar por
+// las reglas normales de Firestore (que exigen sesión para leer "users",
+// precisamente para no exponer teléfonos/emails a cualquiera). Aquí solo se
+// devuelve un true/false, nunca datos de contacto de nadie.
+exports.comprobarClubDuplicado = onCall({ region: "europe-west1" }, async (request) => {
+  const nombre = (request.data?.clubName || "").trim().toLowerCase();
+  if (!nombre) return { existe: false };
+  const snap = await db.collection("users").where("clubNameLower", "==", nombre).limit(1).get();
+  return { existe: !snap.empty };
+});
