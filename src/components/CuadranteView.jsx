@@ -316,6 +316,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   const [hora, setHora] = useState("");
   const [campo, setCampo] = useState("");
   const [error, setError] = useState("");
+  const [editando, setEditando] = useState(false);
 
   const soyDueño = uid === slot.ownerUid;
   const misInstalaciones = useInstalaciones(uid);
@@ -366,7 +367,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   const sedeSuCampo = soyDueño ? "visitante" : "local";
 
   const rango = rangoFechasDeJornada(slot.jornadaLabel, slot.jornadaOrderDate);
-  const sedeYaDecidida = !!slot.sede; // si ya hay sede (pactado o cerrado), esto es un CAMBIO, no una primera decisión
+  const sedeYaDecidida = !!slot.sede; // si ya hay sede (pactado o cerrado), esto es un CAMBIO DE CAMPO, no una primera decisión
   const yaEsMiCampo = slot.sede === sedeMiCampo;
   const yaEsSuCampo = slot.sede === sedeSuCampo;
 
@@ -380,16 +381,31 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
     if (conflicto) { setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`); return; }
     setError("");
     ejecutar(() => proponerSede(slot.id, sedeMiCampo, { diaExacto: dia, horaExacta: hora, campoExacto: campo }));
+    setEditando(false);
   };
 
   const proponerSuCampo = () => {
     ejecutar(() => proponerSede(slot.id, sedeSuCampo));
+    setEditando(false);
   };
+
+  // Si la sede ya está decidida, esto es un cambio de CAMPO (no solo de hora)
+  // — se deja recogido detrás de un enlace, bien diferenciado del botón de
+  // "cambiar día/hora/campo" (que mantiene el mismo campo de siempre).
+  if (sedeYaDecidida && !editando) {
+    return (
+      <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setEditando(true)}>
+        <Plane size={13} /> Jugar en el campo contrario en su lugar
+      </button>
+    );
+  }
 
   return (
     <div style={{ marginTop: "6px" }}>
       {sedeYaDecidida && (
-        <p style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>¿Cambiar a última hora?</p>
+        <p style={{ fontSize: "12px", fontWeight: 700, marginBottom: "6px" }}>
+          Cambiar de campo — no confundir con "cambiar día/hora" (eso mantiene el mismo campo de siempre)
+        </p>
       )}
       {!yaEsMiCampo && (
         <div style={{ background: "#F5F3EC", padding: "8px", borderRadius: "4px", marginBottom: "8px" }}>
@@ -415,6 +431,9 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
         <button className="cl-btn cl-btn-primary" onClick={proponerSuCampo}>
           <Plane size={14} /> Proponer {etiqueta(sedeSuCampo)} <span style={{ fontWeight: 400, fontSize: "11px" }}>(que cierren ellos día/hora/campo)</span>
         </button>
+      )}
+      {sedeYaDecidida && (
+        <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setEditando(false)}>Cancelar</button>
       )}
     </div>
   );
@@ -458,7 +477,7 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
   if (!editando) {
     return (
       <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setEditando(true)}>
-        Proponer cambiar día/hora/campo
+        Cambiar día u hora (mismo campo)
       </button>
     );
   }
