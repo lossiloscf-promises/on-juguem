@@ -4,13 +4,6 @@
 // personas compartís el mismo acceso. No afecta a lo que se puede ver o hacer.
 const CLAVE = "cl_identidad";
 
-export const IDENTIDADES_SUGERIDAS = [
-  "Coordinador Fútbol 11 Masculino",
-  "Coordinador Fútbol 8 Masculino",
-  "Coordinador Fútbol 11 Femenino",
-  "Coordinador Fútbol 8 Femenino",
-];
-
 export function getIdentidadActual() {
   try {
     return sessionStorage.getItem(CLAVE) || "";

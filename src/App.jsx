@@ -4,7 +4,8 @@ import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClu
 import { useJornadas } from "./hooks/useJornadas";
 import { useCierreSesionPorInactividad } from "./hooks/useCierreSesionPorInactividad";
 import { t, getIdioma, setIdioma, IDIOMAS } from "./i18n";
-import { getIdentidadActual, setIdentidadActual, IDENTIDADES_SUGERIDAS } from "./identidad";
+import { getIdentidadActual, setIdentidadActual } from "./identidad";
+import { CLAVES_COORDINADOR } from "./constants";
 import Login from "./components/Login";
 import CoordinadorView from "./components/CoordinadorView";
 import ClubView from "./components/ClubView";
@@ -50,12 +51,22 @@ export default function App() {
     );
   }
 
-  if (!identidadLista) {
+  const coordinadoresRellenados = CLAVES_COORDINADOR.filter((c) => {
+    const co = profile.coordinadores?.[c.clave];
+    return co && (co.nombre || co.telefono || co.email);
+  });
+
+  if (coordinadoresRellenados.length > 1 && !identidadLista) {
     return (
       <div className="cl-shell">
         <Header role={role} setRole={setRole} loggedIn={false} />
         <div className="cl-main">
-          <PantallaQuienEres clubName={profile.clubName} escudoUrl={profile.escudoUrl} onListo={() => setIdentidadLista(true)} />
+          <PantallaQuienEres
+            clubName={profile.clubName}
+            escudoUrl={profile.escudoUrl}
+            opciones={coordinadoresRellenados}
+            onListo={() => setIdentidadLista(true)}
+          />
         </div>
       </div>
     );
@@ -172,7 +183,7 @@ export default function App() {
   );
 }
 
-function PantallaQuienEres({ clubName, escudoUrl, onListo }) {
+function PantallaQuienEres({ clubName, escudoUrl, opciones, onListo }) {
   const [elegido, setElegido] = useState("");
 
   const continuar = () => {
@@ -193,19 +204,19 @@ function PantallaQuienEres({ clubName, escudoUrl, onListo }) {
         </p>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
-        {IDENTIDADES_SUGERIDAS.map((op) => (
+        {opciones.map((op) => (
           <button
-            key={op}
+            key={op.clave}
             className="cl-btn"
             style={{
               justifyContent: "flex-start",
-              background: elegido === op ? "var(--pitch)" : "white",
-              color: elegido === op ? "white" : "var(--ink)",
+              background: elegido === op.label ? "var(--pitch)" : "white",
+              color: elegido === op.label ? "white" : "var(--ink)",
               border: "1.5px solid var(--line)",
             }}
-            onClick={() => setElegido(op)}
+            onClick={() => setElegido(op.label)}
           >
-            {op}
+            {op.label}
           </button>
         ))}
       </div>
