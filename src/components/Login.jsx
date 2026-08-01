@@ -156,7 +156,8 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
         await onSignup(email, password, clubName, telefono);
       }
     } catch (err) {
-      setError(traducirError(err.code));
+      console.error('Error en Login/Signup:', err);
+      setError(traducirError(err.code, err.message));
     }
     setLoading(false);
   };
@@ -171,7 +172,8 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
       await onRecuperar(email);
       setAviso("Te hemos enviado un email para restablecer tu contraseña. Revisa tu bandeja de entrada (y el spam, por si acaso).");
     } catch (err) {
-      setError(traducirError(err.code));
+      console.error('Error en Login/Signup:', err);
+      setError(traducirError(err.code, err.message));
     }
   };
 
@@ -245,7 +247,7 @@ export default function Login({ onLogin, onSignup, onRecuperar, onComprobarDupli
   );
 }
 
-function traducirError(code) {
+function traducirError(code, mensajeOriginal) {
   const map = {
     "auth/invalid-email": "Ese email no es válido.",
     "auth/user-not-found": "Email o contraseña incorrectos.",
@@ -255,5 +257,8 @@ function traducirError(code) {
     "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
     "auth/too-many-requests": "Demasiados intentos. Espera un momento y vuelve a probar.",
   };
-  return map[code] || "Algo ha ido mal. Inténtalo de nuevo.";
+  if (map[code]) return map[code];
+  // Si no es un error conocido, mostramos el código/mensaje real en vez de
+  // taparlo con un genérico — así se puede diagnosticar sin abrir la consola.
+  return `Algo ha ido mal (${code || "sin código"}: ${mensajeOriginal || "sin detalle"}). Inténtalo de nuevo.`;
 }
