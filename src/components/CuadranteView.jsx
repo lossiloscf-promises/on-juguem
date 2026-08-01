@@ -391,11 +391,12 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
 
   // Si la sede ya está decidida, esto es un cambio de CAMPO (no solo de hora)
   // — se deja recogido detrás de un enlace, bien diferenciado del botón de
-  // "cambiar día/hora/campo" (que mantiene el mismo campo de siempre).
+  // "cambiar día/hora" (que mantiene el mismo campo de siempre).
   if (sedeYaDecidida && !editando) {
+    const etiquetaCambio = yaEsMiCampo ? etiqueta(sedeSuCampo) : etiqueta(sedeMiCampo);
     return (
       <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setEditando(true)}>
-        <Plane size={13} /> Jugar en el campo contrario en su lugar
+        <Plane size={13} /> Proponer jugar {etiquetaCambio}
       </button>
     );
   }
@@ -477,7 +478,7 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
   if (!editando) {
     return (
       <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setEditando(true)}>
-        Cambiar día u hora (mismo campo)
+        Proponer cambiar día y hora (mismo campo)
       </button>
     );
   }
