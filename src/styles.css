@@ -41,7 +41,7 @@ body {
 .cl-title { font-size: 46px; line-height: 1; margin: 0; }
 .cl-subtitle { font-size: 14px; opacity: 0.8; margin-top: 4px; }
 
-.cl-tabs { display: flex; gap: 8px; }
+.cl-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .cl-tab {
   font-family: 'Bebas Neue', sans-serif;
   letter-spacing: 0.06em;
@@ -55,6 +55,9 @@ body {
 }
 .cl-tab.active { background: var(--gold); color: var(--ink); border-color: var(--gold); }
 .cl-tab { position: relative; }
+@media (max-width: 640px) {
+  .cl-tab { padding: 8px 12px; font-size: 14px; }
+}
 .cl-badge-aviso {
   position: absolute;
   top: -6px;
