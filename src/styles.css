@@ -38,8 +38,8 @@ body {
   flex-wrap: wrap;
   gap: 16px;
 }
-.cl-title { font-size: 40px; line-height: 1; margin: 0; }
-.cl-subtitle { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+.cl-title { font-size: 46px; line-height: 1; margin: 0; }
+.cl-subtitle { font-size: 14px; opacity: 0.8; margin-top: 4px; }
 
 .cl-tabs { display: flex; gap: 8px; }
 .cl-tab {

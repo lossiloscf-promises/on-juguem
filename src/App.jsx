@@ -170,15 +170,15 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos
       <div className="cl-header-inner">
         <div className="cl-row" style={{ alignItems: "center" }}>
           {loggedIn && escudoUrl && (
-            <img src={escudoUrl} alt="" style={{ width: "44px", height: "44px", objectFit: "contain" }} />
+            <img src={escudoUrl} alt="" style={{ width: "68px", height: "68px", objectFit: "contain", flexShrink: 0 }} />
           )}
           <div>
             {loggedIn && (
-              <p className="cl-mono" style={{ fontSize: "13px", fontWeight: 700, color: "white", marginBottom: "2px" }}>
+              <p className="cl-mono" style={{ fontSize: "20px", fontWeight: 700, color: "white", marginBottom: "2px", lineHeight: 1.1 }}>
                 {clubName}
               </p>
             )}
-            <h1 className="cl-display cl-title" style={{ fontSize: loggedIn ? "22px" : undefined }}>ON JUGUEM</h1>
+            <h1 className="cl-display cl-title" style={{ fontSize: loggedIn ? "30px" : undefined }}>ON JUGUEM</h1>
             <p className="cl-mono cl-subtitle">
               {loggedIn ? t("app.subtitulo_dentro") : t("app.subtitulo_fuera")}
             </p>
