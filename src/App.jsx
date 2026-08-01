@@ -200,7 +200,7 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos
               {avisosClub > 0 && <span className="cl-badge-aviso">{avisosClub}</span>}
             </button>
             <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>{t("nav.cuadrante")}</button>
-            <button className={`cl-tab ${role === "torneos" ? "active" : ""}`} onClick={() => setRole("torneos")}>TORNEOS</button>
+            <button className={`cl-tab ${role === "torneos" ? "active" : ""}`} onClick={() => setRole("torneos")}>{t("nav.torneos")}</button>
             <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>{t("nav.ajustes")}</button>
             <button className="cl-tab" onClick={onLogout}>{t("nav.salir")}</button>
           </div>
