@@ -85,13 +85,13 @@ export const formatoDeGrupo = (grupo) =>
 // Un único sitio con el color y el nombre de cada estado de un hueco/partido,
 // para que todo (cuadrante, tarjetas, exportaciones) use siempre lo mismo.
 export const ESTADO_INFO = {
-  libre: { label: "Libre", color: "#BFDBFE" },
-  no_disponible: { label: "No disponible", color: "#E4E4E0" },
-  pendiente: { label: "Pendiente", color: "#FFD8A8" },
-  pactado: { label: "Pactado", color: "#FFE58A" },
-  confirmado: { label: "Cerrado", color: "#B7E4C7" },
+  libre: { label: "Libre", color: "#E0F2FE" },
+  no_disponible: { label: "No disponible", color: "#F1F5F9" },
+  pendiente: { label: "Pendiente", color: "#FEF3C7" },
+  pactado: { label: "Pactado", color: "#E0E7FF" },
+  confirmado: { label: "Cerrado", color: "#DCFCE7" },
 };
-export const COLOR_CANCELACION_PENDIENTE = "#FFC9C0";
+export const COLOR_CANCELACION_PENDIENTE = "#FEE2E2";
 
 // Horarios válidos para cerrar un partido: de 9:00 a 22:00, cada 15 minutos —
 // así nadie puede meter una hora rara tipo "12:08".

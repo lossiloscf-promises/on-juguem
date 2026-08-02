@@ -47,7 +47,7 @@ export default function CuadrantePublico({ uidClub }) {
         </div>
       </header>
       <div className="cl-main">
-        <p style={{ fontSize: "12px", color: "#888", marginBottom: "10px" }}>
+        <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "10px" }}>
           Vista pública, sin datos de contacto — para reservar o gestionar partidos hace falta una cuenta en On Juguem.
         </p>
         {FASES.map((fase) => {

@@ -21,7 +21,7 @@ export default function PoliticaPrivacidad({ onCerrar }) {
           <p><b>Quién puede verlos.</b> Solo coordinadores con una cuenta creada en la app (no es información pública de internet). El teléfono/email de un partido concreto solo lo ven los dos clubes implicados en ese partido.</p>
           <p><b>Cuánto tiempo se guardan.</b> Mientras tu cuenta esté activa. Si borras tu cuenta, tus equipos, tu calendario y tus huecos publicados se eliminan de forma permanente.</p>
           <p><b>Tus derechos.</b> Puedes editar tu teléfono/nombre de club en cualquier momento desde "Ajustes". Puedes borrar tu cuenta y todos tus datos por completo desde esa misma pantalla, sin necesidad de pedírselo a nadie.</p>
-          <p style={{ color: "#888" }}>Este es un resumen en lenguaje sencillo, pensado para que se entienda de un vistazo. Si tienes dudas sobre cómo se tratan tus datos, contacta con quien administra esta instancia de la app.</p>
+          <p style={{ color: "#64748B" }}>Este es un resumen en lenguaje sencillo, pensado para que se entienda de un vistazo. Si tienes dudas sobre cómo se tratan tus datos, contacta con quien administra esta instancia de la app.</p>
         </div>
       </div>
     </div>

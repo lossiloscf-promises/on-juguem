@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Shield, CalendarDays, Search, LayoutGrid, Trophy, SlidersHorizontal, LogOut } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
@@ -30,7 +31,7 @@ export default function App() {
         <div className="cl-main">
           <div className="cl-auth-box cl-ticket" style={{ textAlign: "center" }}>
             <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>UN MOMENTO...</h2>
-            <p style={{ fontSize: "14px", color: "#666", marginTop: "10px" }}>
+            <p style={{ fontSize: "14px", color: "#64748B", marginTop: "10px" }}>
               {estadoApp.mensaje || "Estamos mejorando la aplicación — en breves momentos podrás volver a utilizarla."}
             </p>
           </div>
@@ -262,7 +263,7 @@ function PantallaActivarNotificaciones({ uid, esNueva, onListo }) {
       <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>
         {esNueva ? "¡CLUB CREADO!" : "ACTIVA LAS NOTIFICACIONES"}
       </h2>
-      <p style={{ fontSize: "13px", color: "#666", marginBottom: "16px" }}>
+      <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>
         Un último paso muy importante — activa los avisos en este dispositivo para enterarte al momento de
         solicitudes nuevas, aceptaciones y cancelaciones. Es la mejor forma de no llevarte un disgusto por no
         haberte enterado a tiempo.
@@ -292,7 +293,7 @@ function PantallaQuienEres({ clubName, escudoUrl, opciones, onListo }) {
   return (
     <div className="cl-auth-box cl-ticket">
       <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>{t("identidad.titulo")}</h2>
-      <p style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>
+      <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "12px" }}>
         {clubName} — {t("identidad.explicacion")}
       </p>
       {!escudoUrl && (
@@ -331,53 +332,70 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos
   };
 
   return (
-    <header className="cl-header">
-      <div className="cl-header-inner">
-        <div className="cl-row" style={{ alignItems: "center" }}>
-          {loggedIn && escudoUrl && (
-            <img src={escudoUrl} alt="" style={{ width: "68px", height: "68px", objectFit: "contain", flexShrink: 0 }} />
-          )}
-          <div>
-            {loggedIn && (
-              <p className="cl-mono" style={{ fontSize: "20px", fontWeight: 700, color: "white", marginBottom: "2px", lineHeight: 1.1 }}>
-                {clubName}
-              </p>
+    <>
+      <header className="cl-header">
+        <div className="cl-header-inner">
+          <div className="cl-row" style={{ alignItems: "center" }}>
+            {loggedIn && escudoUrl && (
+              <img src={escudoUrl} alt="" style={{ width: "44px", height: "44px", objectFit: "contain", flexShrink: 0, borderRadius: "10px" }} />
             )}
-            <h1 className="cl-display cl-title" style={{ fontSize: loggedIn ? "30px" : undefined }}>ON JUGUEM</h1>
-            <p className="cl-mono cl-subtitle">
-              {loggedIn ? t("app.subtitulo_dentro") : t("app.subtitulo_fuera")}
-            </p>
-            <div className="cl-row" style={{ marginTop: "6px" }}>
-              <select
-                className="cl-input"
-                style={{ fontSize: "12px", padding: "3px 6px", width: "auto" }}
-                value={getIdioma()}
-                onChange={(e) => cambiarIdioma(e.target.value)}
-                title="Idioma"
-              >
-                {IDIOMAS.map((i) => <option key={i.codigo} value={i.codigo}>{i.nombre}</option>)}
-              </select>
+            <div>
+              {loggedIn && (
+                <p className="cl-mono" style={{ fontSize: "15px", fontWeight: 700, color: "var(--text)", marginBottom: "0px", lineHeight: 1.1 }}>
+                  {clubName}
+                </p>
+              )}
+              <h1 className="cl-display cl-title" style={{ fontSize: loggedIn ? "13px" : undefined, color: loggedIn ? "var(--text-secondary)" : undefined, fontWeight: loggedIn ? 500 : undefined }}>
+                {loggedIn ? "On Juguem" : "ON JUGUEM"}
+              </h1>
+              {!loggedIn && <p className="cl-mono cl-subtitle">{t("app.subtitulo_fuera")}</p>}
             </div>
           </div>
+          <select
+            className="cl-input"
+            style={{ fontSize: "12px", padding: "6px 10px", width: "auto" }}
+            value={getIdioma()}
+            onChange={(e) => cambiarIdioma(e.target.value)}
+            title="Idioma"
+          >
+            {IDIOMAS.map((i) => <option key={i.codigo} value={i.codigo}>{i.nombre}</option>)}
+          </select>
         </div>
-        {loggedIn && (
-          <div className="cl-tabs">
-            <button className={`cl-tab ${role === "coordinador" ? "active" : ""}`} onClick={() => setRole("coordinador")}>
-              {t("nav.mi_club")}
-              {avisos > 0 && <span className="cl-badge-aviso">{avisos}</span>}
-            </button>
-            <button className={`cl-tab ${role === "temporada" ? "active" : ""}`} onClick={() => setRole("temporada")}>{t("nav.temporada")}</button>
-            <button className={`cl-tab ${role === "club" ? "active" : ""}`} onClick={() => setRole("club")}>
-              {t("nav.busco_rival")}
-              {avisosClub > 0 && <span className="cl-badge-aviso">{avisosClub}</span>}
-            </button>
-            <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>{t("nav.cuadrante")}</button>
-            <button className={`cl-tab ${role === "torneos" ? "active" : ""}`} onClick={() => setRole("torneos")}>{t("nav.torneos")}</button>
-            <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>{t("nav.ajustes")}</button>
-            <button className="cl-tab" onClick={onLogout}>{t("nav.salir")}</button>
-          </div>
-        )}
-      </div>
-    </header>
+      </header>
+      {loggedIn && (
+        <nav className="cl-tabs">
+          <button className={`cl-tab ${role === "coordinador" ? "active" : ""}`} onClick={() => setRole("coordinador")}>
+            <Shield />
+            {t("nav.mi_club")}
+            {avisos > 0 && <span className="cl-badge-aviso">{avisos}</span>}
+          </button>
+          <button className={`cl-tab ${role === "temporada" ? "active" : ""}`} onClick={() => setRole("temporada")}>
+            <CalendarDays />
+            {t("nav.temporada")}
+          </button>
+          <button className={`cl-tab ${role === "club" ? "active" : ""}`} onClick={() => setRole("club")}>
+            <Search />
+            {t("nav.busco_rival")}
+            {avisosClub > 0 && <span className="cl-badge-aviso">{avisosClub}</span>}
+          </button>
+          <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>
+            <LayoutGrid />
+            {t("nav.cuadrante")}
+          </button>
+          <button className={`cl-tab ${role === "torneos" ? "active" : ""}`} onClick={() => setRole("torneos")}>
+            <Trophy />
+            {t("nav.torneos")}
+          </button>
+          <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>
+            <SlidersHorizontal />
+            {t("nav.ajustes")}
+          </button>
+          <button className="cl-tab" onClick={onLogout}>
+            <LogOut />
+            {t("nav.salir")}
+          </button>
+        </nav>
+      )}
+    </>
   );
 }

@@ -79,7 +79,7 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
         <div className="cl-row" style={{ justifyContent: "space-between" }}>
           <div>
             <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-            <div className="cl-mono" style={{ fontSize: "12px", color: "#888" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
+            <div className="cl-mono" style={{ fontSize: "12px", color: "#64748B" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
             {(() => {
               // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
               // Cuenta tanto los partidos donde este equipo es el dueño del hueco
@@ -112,7 +112,7 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
     <div className="cl-ticket">
       <div className="cl-cat-strip" style={{ background: groupColor(t.grupo) }} />
       {tieneHuecos && (
-        <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+        <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
           Este equipo ya tiene huecos publicados — solo puedes cambiar nivel e identificador.
         </p>
       )}
@@ -294,8 +294,8 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
 
       <div>
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>TUS EQUIPOS</h2>
-        {teams.length === 0 && <p style={{ color: "#888" }}>Aún no has añadido ningún equipo.</p>}
-        <p style={{ fontSize: "13px", color: "#666", marginBottom: "10px" }}>
+        {teams.length === 0 && <p style={{ color: "#64748B" }}>Aún no has añadido ningún equipo.</p>}
+        <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "10px" }}>
           Para marcar disponibilidad, gestionar solicitudes y cerrar partidos, ve a la pestaña <b>CUADRANTE</b>.
         </p>
         {[...teams].sort(compararEquipos).map((t) => (

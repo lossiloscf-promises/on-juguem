@@ -98,7 +98,7 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
             <div key={s.id} className="cl-ticket">
               <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
               <p style={{ fontSize: "13px" }}>A <b>{s.clubName}</b> · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · {s.jornadaLabel}</p>
-              <p style={{ fontSize: "12px", color: "#888" }}>Esperando a que acepten o rechacen.</p>
+              <p style={{ fontSize: "12px", color: "#64748B" }}>Esperando a que acepten o rechacen.</p>
             </div>
           ))}
         </>
@@ -109,7 +109,7 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
           <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--clay)" }}>
             PARTIDOS QUE TIENES QUE CERRAR ({porCerrar.length})
           </h2>
-          <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+          <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "8px" }}>
             Se decidió jugar en vuestro campo — di día, hora y campo exactos cuando lo tengas claro.
           </p>
           {porCerrar.map((s) => (
@@ -154,26 +154,45 @@ function DirectorioClubes({ clubes, onEntrar }) {
       </div>
 
       {ordenados.length === 0 && (
-        <p className="cl-ticket" style={{ textAlign: "center", color: "#888" }}>Todavía no hay otros clubes registrados.</p>
+        <p className="cl-ticket" style={{ textAlign: "center", color: "#64748B" }}>Todavía no hay otros clubes registrados.</p>
       )}
 
       <div className="cl-grid-2">
         {ordenados.map((c) => (
-          <div key={c.ownerUid} className="cl-ticket" style={{ cursor: "pointer" }} onClick={() => onEntrar(c.ownerUid, c.clubName)}>
-            <div className="cl-row" style={{ justifyContent: "space-between" }}>
-              <span className="cl-row" style={{ gap: "8px" }}>
-                {c.escudoUrl && <img src={c.escudoUrl} alt="" style={{ width: "28px", height: "28px", objectFit: "contain" }} />}
-                <span className="cl-display" style={{ fontSize: "20px" }}>{c.clubName}</span>
+          <div
+            key={c.ownerUid}
+            className="cl-ticket"
+            style={{ cursor: "pointer", transition: "box-shadow 0.15s ease, transform 0.1s ease" }}
+            onClick={() => onEntrar(c.ownerUid, c.clubName)}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 14px rgba(15,23,42,0.09)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = ""; e.currentTarget.style.transform = ""; }}
+          >
+            <div className="cl-row" style={{ justifyContent: "space-between", marginBottom: "10px" }}>
+              <span className="cl-row" style={{ gap: "10px" }}>
+                {c.escudoUrl ? (
+                  <img src={c.escudoUrl} alt="" style={{ width: "36px", height: "36px", objectFit: "contain", borderRadius: "8px" }} />
+                ) : (
+                  <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "var(--st-disponible)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <LayoutGrid size={16} style={{ color: "var(--primary)" }} />
+                  </div>
+                )}
+                <span className="cl-display" style={{ fontSize: "16px", fontWeight: 700 }}>{c.clubName}</span>
               </span>
-              <LayoutGrid size={16} style={{ color: "var(--pitch)" }} />
             </div>
-            <p style={{ fontSize: "13px", color: "#666" }}>{c.numEquipos} equipo{c.numEquipos !== 1 ? "s" : ""}</p>
-            {c.afinidad > 0 && (
-              <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--gold)" }}>
-                🤝 {c.afinidad} partido{c.afinidad !== 1 ? "s" : ""} posible{c.afinidad !== 1 ? "s" : ""}
-              </p>
-            )}
-            <p className="cl-mono" style={{ fontSize: "12px", color: "var(--pitch)" }}>{c.pctCompletado}% de la temporada cerrado</p>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+              {c.numEquipos} equipo{c.numEquipos !== 1 ? "s" : ""}
+              {c.afinidad > 0 && (
+                <span style={{ fontWeight: 600, color: "var(--secondary)" }}>
+                  {" · 🤝 "}{c.afinidad} posible{c.afinidad !== 1 ? "s" : ""}
+                </span>
+              )}
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ flex: 1, height: "6px", borderRadius: "999px", background: "var(--line)", overflow: "hidden" }}>
+                <div style={{ width: `${c.pctCompletado}%`, height: "100%", background: "var(--secondary)", borderRadius: "999px" }} />
+              </div>
+              <span className="cl-mono" style={{ fontSize: "11.5px", color: "var(--text-secondary)", fontWeight: 600 }}>{c.pctCompletado}%</span>
+            </div>
           </div>
         ))}
       </div>
@@ -234,7 +253,7 @@ function FiltroMultiple({ label, opciones, seleccionados, onCambiar, disabled })
         className="cl-input"
         style={{ maxHeight: "120px", overflowY: "auto", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}
       >
-        {opciones.length === 0 && <span style={{ fontSize: "12px", color: "#888" }}>—</span>}
+        {opciones.length === 0 && <span style={{ fontSize: "12px", color: "#64748B" }}>—</span>}
         {opciones.map((op) => (
           <label key={op} className="cl-row" style={{ fontSize: "13px", padding: "2px 0", cursor: disabled ? "default" : "pointer" }}>
             <input type="checkbox" disabled={disabled} checked={seleccionados.includes(op)} onChange={() => alternar(op)} />
@@ -356,14 +375,14 @@ function BusquedaPorFiltros({ uid, allSlots }) {
 
       <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>RESULTADOS ({visible.length})</h2>
       {visible.length === 0 && (
-        <p className="cl-ticket" style={{ textAlign: "center", color: "#888" }}>No hay huecos libres que coincidan con tu búsqueda.</p>
+        <p className="cl-ticket" style={{ textAlign: "center", color: "#64748B" }}>No hay huecos libres que coincidan con tu búsqueda.</p>
       )}
       <div className="cl-grid-2">
         {visible.map((s) => (
           <div key={s.id} className="cl-ticket" style={{ marginBottom: 0 }}>
             <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
             <span className="cl-display" style={{ fontSize: "19px" }}>{s.clubName} · {s.categoria}</span>
-            <p className="cl-mono" style={{ fontSize: "12px", color: "#888" }}>{s.genero} · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · nivel {s.nivel}</p>
+            <p className="cl-mono" style={{ fontSize: "12px", color: "#64748B" }}>{s.genero} · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · nivel {s.nivel}</p>
             <p style={{ fontSize: "13px" }}>{s.jornadaLabel}</p>
             {(s.ownerTelefono || s.ownerEmail) && (
               <p className="cl-mono" style={{ fontSize: "12px", color: "var(--pitch)" }}>Contacto: {s.ownerTelefono} {s.ownerEmail}</p>

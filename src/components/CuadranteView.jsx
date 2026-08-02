@@ -39,7 +39,7 @@ function HistorialDelHueco({ slotId }) {
         <History size={12} /> {abierto ? "Ocultar historial" : `Ver historial (${historial.length})`}
       </button>
       {abierto && (
-        <ul style={{ fontSize: "11px", color: "#666", marginTop: "6px", paddingLeft: "16px" }}>
+        <ul style={{ fontSize: "11px", color: "#64748B", marginTop: "6px", paddingLeft: "16px" }}>
           {historial.map((h) => (
             <li key={h.id}>
               {h.quienClubName && <b>{h.quienClubName}: </b>}{h.accion}
@@ -144,7 +144,7 @@ function SelectorEquipoPropio({ grupoCelda, misEquipos, onElegir }) {
   const [elegido, setElegido] = useState(ordenados[0]?.id || "");
 
   if (misEquipos.length === 0) {
-    return <p style={{ fontSize: "12px", color: "#888" }}>Necesitas crear un equipo tuyo antes de poder pedir este hueco.</p>;
+    return <p style={{ fontSize: "12px", color: "#64748B" }}>Necesitas crear un equipo tuyo antes de poder pedir este hueco.</p>;
   }
 
   return (
@@ -336,7 +336,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   if (propuestaPorMi) {
     const d = slot.sedePropuestaDetalles;
     return (
-      <p style={{ fontSize: "12px", color: "#888", marginTop: "6px" }}>
+      <p style={{ fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
         Has propuesto jugar {etiqueta(slot.sedePropuesta)}
         {d ? ` el ${d.diaExacto} ${d.horaExacta} en ${d.campoExacto}` : ""} — esperando a que {nombreOtraParte} lo acepte.{" "}
         <a href="#" onClick={(e) => { e.preventDefault(); ejecutar(() => rechazarSede(slot.id)); }}>Retirar propuesta</a>
@@ -455,7 +455,7 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
 
   if (propuestaPorMi) {
     return (
-      <p style={{ fontSize: "12px", color: "#888", marginTop: "6px" }}>
+      <p style={{ fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
         Has propuesto cambiar a {slot.cambioPropuesto?.diaExacto} {slot.cambioPropuesto?.horaExacta} en {slot.cambioPropuesto?.campoExacto} —
         esperando a que {nombreOtraParte} lo acepte.{" "}
         <a href="#" onClick={(e) => { e.preventDefault(); ejecutar(() => rechazarCambioHorario(slot.id)); }}>Retirar propuesta</a>
@@ -525,7 +525,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
   if (propuestaPorMi) {
     return (
       <div style={{ marginTop: "8px" }}>
-        <p style={{ fontSize: "12px", color: "#888" }}>Has propuesto cancelar — esperando a que {nombreOtraParte || "la otra parte"} lo acepte o lo rechace.</p>
+        <p style={{ fontSize: "12px", color: "#64748B" }}>Has propuesto cancelar — esperando a que {nombreOtraParte || "la otra parte"} lo acepte o lo rechace.</p>
         <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rechazarCancelacion(slot.id))}>
           Retirar mi propuesta
         </button>
@@ -696,7 +696,7 @@ export default function CuadranteView({
       )}
 
       {teams.length === 0 || jornadas.length === 0 ? (
-        <p className="cl-ticket" style={{ textAlign: "center", color: "#888" }}>
+        <p className="cl-ticket" style={{ textAlign: "center", color: "#64748B" }}>
           {modo === "ajeno" ? "Este club todavía no tiene equipos o jornadas publicadas." : "Necesitas al menos un equipo y una jornada creada para ver el cuadrante."}
         </p>
       ) : (
@@ -717,7 +717,7 @@ export default function CuadranteView({
                         <span style={{ width: "4px", height: "14px", background: groupColor(t.grupo), display: "inline-block" }} />
                         <div>
                           <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` ${t.identificador}` : ""}</div>
-                          <div className="cl-mono" style={{ fontSize: "11px", color: "#888" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
+                          <div className="cl-mono" style={{ fontSize: "11px", color: "#64748B" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
                         </div>
                       </div>
                     </td>
@@ -765,7 +765,7 @@ export default function CuadranteView({
                             <div style={{ fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>📍 SEDE PROPUESTA</div>
                           )}
                           <div style={{ fontSize: "12px", fontWeight: c.texto ? 600 : 400 }}>{c.texto}</div>
-                          {c.sub && <div className="cl-mono" style={{ fontSize: "10px", color: "#666" }}>{c.sub}</div>}
+                          {c.sub && <div className="cl-mono" style={{ fontSize: "10px", color: "#64748B" }}>{c.sub}</div>}
                         </td>
                       );
                     })}
@@ -859,7 +859,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoDueño && s?.status === "pactado" && s.sede === "visitante" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#666" }}>
+                              <p style={{ fontSize: "13px", color: "#64748B" }}>
                                 Pactado contra <b>{s.requestedByClubName}</b> — falta que ellos cierren día/hora/campo
                                 (juegan en su campo, así que lo deciden ellos).
                               </p>
@@ -904,7 +904,7 @@ export default function CuadranteView({
                               propio cuadrante, o vista entrando en "Busco rival" sobre ese club. */}
                           {mostrarComoSolicitante && s.status === "pendiente" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#666" }}>
+                              <p style={{ fontSize: "13px", color: "#64748B" }}>
                                 Solicitud enviada a <b>{s.clubName}</b> — esperando a que acepten o rechacen.
                               </p>
                               <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
@@ -920,7 +920,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoSolicitante && s.status === "pactado" && s.sede === "visitante" && (
                             <>
-                              <p style={{ fontSize: "13px", color: "#666" }}>Se decidió jugar en vuestro campo — cerrad día, hora y campo.</p>
+                              <p style={{ fontSize: "13px", color: "#64748B" }}>Se decidió jugar en vuestro campo — cerrad día, hora y campo.</p>
                               <FormularioCierreInline
                                 slot={s}
                                 allSlots={allSlots}
@@ -934,7 +934,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoSolicitante && s.status === "pactado" && s.sede === "local" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#666" }}>
+                              <p style={{ fontSize: "13px", color: "#64748B" }}>
                                 Pactado con <b>{s.clubName}</b> — juega en su campo, falta que ellos cierren día/hora/campo.
                               </p>
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
@@ -944,7 +944,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoSolicitante && s.status === "confirmado" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#666" }}>
+                              <p style={{ fontSize: "13px", color: "#64748B" }}>
                                 Cerrado con <b>{s.clubName}</b> · {s.diaExacto} {s.horaExacta} · {s.campoExacto}
                               </p>
                               {enlaceGoogleCalendar(s, misClubName, s.clubName) && (

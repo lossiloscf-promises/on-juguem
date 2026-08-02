@@ -51,7 +51,7 @@ function PanelAvisoGlobal() {
   return (
     <div className="cl-ticket" style={{ marginBottom: "16px" }}>
       <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>Aviso a todos los clubes</p>
-      <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
         Manda una notificación push a todos los dispositivos activados de la plataforma, sea cual sea su
         categoría — para avisos generales, novedades, o cuando termine el mantenimiento.
       </p>
@@ -99,7 +99,7 @@ function PanelMantenimiento() {
       <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
         Modo mantenimiento {estado.mantenimiento && <span style={{ color: "var(--clay)" }}>— ACTIVO AHORA MISMO</span>}
       </p>
-      <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
         Mientras esté activo, nadie puede usar la app (ni siquiera entrar) — solo ven el mensaje que pongas
         aquí. Úsalo mientras arreglamos algo importante.
       </p>
@@ -214,7 +214,7 @@ function PanelAdmin({ onVerificar }) {
       )}
 
       <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "16px" }}>VERIFICAR TELÉFONOS</h3>
-      <p style={{ fontSize: "12px", color: "#888", marginBottom: "10px" }}>
+      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "10px" }}>
         Un club no puede reservar ni ser reservado hasta que confirmes su teléfono a mano (llamada o WhatsApp) y le des el visto bueno aquí.
       </p>
       <div className="cl-ticket">
@@ -222,7 +222,7 @@ function PanelAdmin({ onVerificar }) {
           <div key={c.uid} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
             <div>
               <b>{c.clubName}</b>{" "}
-              <span className="cl-mono" style={{ fontSize: "12px", color: "#888" }}>· {c.telefono} · {c.email}</span>
+              <span className="cl-mono" style={{ fontSize: "12px", color: "#64748B" }}>· {c.telefono} · {c.email}</span>
             </div>
             {c.verificado ? (
               <button className="cl-btn cl-btn-ghost" onClick={() => cambiar(c.uid, false)}>Quitar verificación</button>
@@ -263,7 +263,7 @@ function PanelAdmin({ onVerificar }) {
         <div style={{ maxHeight: "200px", overflowY: "auto" }}>
           {clubesOficiales.map((c) => (
             <div key={c.id} className="cl-row" style={{ justifyContent: "space-between", padding: "3px 0" }}>
-              <span style={{ fontSize: "13px" }}>{c.nombre} {c.localidad && <span style={{ color: "#888" }}>· {c.localidad}</span>}</span>
+              <span style={{ fontSize: "13px" }}>{c.nombre} {c.localidad && <span style={{ color: "#64748B" }}>· {c.localidad}</span>}</span>
               <button className="cl-btn cl-btn-ghost" style={{ padding: "2px 6px" }} onClick={() => eliminarClubOficial(c.id)}><Trash2 size={12} /></button>
             </div>
           ))}
@@ -295,7 +295,7 @@ function PanelNotificaciones({ uid }) {
 
   return (
     <div className="cl-ticket">
-      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+      <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "8px" }}>
         Activa los avisos en este dispositivo concreto para enterarte al momento de solicitudes nuevas, aceptaciones,
         propuestas de sede/horario y cancelaciones — sin tener que estar mirando la app.
       </p>
@@ -352,7 +352,7 @@ function PanelEscudo({ uid, profile, onEscudoCambiado }) {
         {profile.escudoUrl ? (
           <img src={profile.escudoUrl} alt="Escudo del club" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "4px", border: "1px solid var(--line)" }} />
         ) : (
-          <div style={{ width: "64px", height: "64px", borderRadius: "4px", border: "1px dashed var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#888" }}>
+          <div style={{ width: "64px", height: "64px", borderRadius: "4px", border: "1px dashed var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#64748B" }}>
             Sin escudo
           </div>
         )}
@@ -366,7 +366,7 @@ function PanelEscudo({ uid, profile, onEscudoCambiado }) {
           )}
         </div>
       </div>
-      <p style={{ fontSize: "11px", color: "#888", marginTop: "6px" }}>Imagen cuadrada, máximo 2 MB. Se ve en el directorio de clubes y en el enlace público.</p>
+      <p style={{ fontSize: "11px", color: "#64748B", marginTop: "6px" }}>Imagen cuadrada, máximo 2 MB. Se ve en el directorio de clubes y en el enlace público.</p>
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
     </div>
   );
@@ -585,7 +585,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           <input className="cl-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} maxLength={LIMITES.telefono} style={{ marginBottom: "8px" }} />
           <label className="cl-label">CORREO DEL CLUB</label>
           <input className="cl-input" type="email" value={emailContacto} onChange={(e) => setEmailContacto(e.target.value)} maxLength={100} style={{ marginBottom: "8px" }} placeholder="Distinto del correo de acceso, si hace falta" />
-          <p style={{ fontSize: "11px", color: "#888", marginBottom: "8px" }}>
+          <p style={{ fontSize: "11px", color: "#64748B", marginBottom: "8px" }}>
             Los equipos que ya has publicado no se actualizan solos con el nuevo teléfono — solo afecta a lo nuevo que publiques a partir de ahora.
           </p>
           <button className="cl-btn cl-btn-primary" onClick={guardar} disabled={guardando} style={{ width: "100%", justifyContent: "center" }}>
@@ -607,7 +607,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ENLACE PÚBLICO DE TU CUADRANTE</h2>
         <div className="cl-ticket">
-          <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+          <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
             Compártelo con quien quieras (directiva, padres, otros clubes) — se ve sin necesitar cuenta, y nunca muestra teléfonos ni emails.
           </p>
           <div className="cl-row">
@@ -666,7 +666,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "24px" }}>TUS INSTALACIONES</h2>
         <div className="cl-ticket">
-          <p style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>
+          <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "10px" }}>
             Guarda aquí los campos que usáis habitualmente, para elegirlos rápido al cerrar un partido en vez de escribirlos cada vez.
           </p>
           <div className="cl-row" style={{ marginBottom: "10px", flexWrap: "wrap" }}>
@@ -688,11 +688,11 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           </div>
           {errorInstalacion && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{errorInstalacion}</p>}
           {instalaciones.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "#888" }}>Todavía no has añadido ninguna.</p>
+            <p style={{ fontSize: "13px", color: "#64748B" }}>Todavía no has añadido ninguna.</p>
           ) : (
             instalaciones.map((i) => (
               <div key={i.id} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
-                <span style={{ fontSize: "13px" }}>{i.nombre}{i.direccion && <span style={{ color: "#888" }}> · {i.direccion}</span>}</span>
+                <span style={{ fontSize: "13px" }}>{i.nombre}{i.direccion && <span style={{ color: "#64748B" }}> · {i.direccion}</span>}</span>
                 <button className="cl-btn cl-btn-ghost" style={{ padding: "2px 6px" }} onClick={() => deleteInstalacion(i.id)}>
                   <Trash2 size={12} />
                 </button>
@@ -702,7 +702,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         </div>
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "24px" }}>COORDINADORES DE CONTACTO</h2>
-        <p style={{ fontSize: "12px", color: "#888", marginBottom: "10px" }}>
+        <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "10px" }}>
           Rellena al menos el "Coordinador general" — si tenéis a alguien distinto por categoría, rellénalo también y
           se usará ese en vez del general para esa categoría. Los partidos de una categoría sin ningún contacto
           rellenado (ni específico ni general) no se pueden reservar ni aceptar.

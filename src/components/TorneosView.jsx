@@ -187,17 +187,17 @@ function TarjetaTorneoAbierto({ torneo, uid, clubName, telefono, email, misEquip
     <div className="cl-ticket">
       <div className="cl-cat-strip" style={{ background: groupColor(torneo.categoria) }} />
       <p style={{ fontSize: "15px", fontWeight: 700 }}>{torneo.nombre}</p>
-      <p style={{ fontSize: "13px", color: "#666" }}>
+      <p style={{ fontSize: "13px", color: "#64748B" }}>
         {torneo.genero} · {torneo.formato} · {torneo.categoria} · {torneo.nivel}
       </p>
       <p style={{ fontSize: "13px" }}>
         <Calendar size={13} style={{ verticalAlign: "-2px" }} /> {torneo.dia} · {torneo.horaInicio}-{torneo.horaFin} · {torneo.instalacion}
       </p>
-      <p style={{ fontSize: "13px", color: "#888" }}>Organiza <b>{torneo.organizadorClubName}</b></p>
+      <p style={{ fontSize: "13px", color: "#64748B" }}>Organiza <b>{torneo.organizadorClubName}</b></p>
       <p style={{ fontSize: "13px" }}>
         <Users size={13} style={{ verticalAlign: "-2px" }} /> {(torneo.participantes || []).length} / {torneo.maxEquipos} equipos apuntados
         {(torneo.participantes || []).length > 0 && (
-          <span style={{ color: "#888" }}> — {(torneo.participantes || []).map((p) => p.clubName).join(", ")}</span>
+          <span style={{ color: "#64748B" }}> — {(torneo.participantes || []).map((p) => p.clubName).join(", ")}</span>
         )}
       </p>
       {yaApuntado ? (
@@ -305,7 +305,7 @@ function PanelTorneoOrganizado({ torneo, teamsPorClub }) {
           {torneo.estado === "abierto" ? "ABIERTO" : "PROGRAMADO"}
         </span>
       </div>
-      <p style={{ fontSize: "13px", color: "#666" }}>{torneo.dia} · {torneo.horaInicio}-{torneo.horaFin} · {torneo.instalacion}</p>
+      <p style={{ fontSize: "13px", color: "#64748B" }}>{torneo.dia} · {torneo.horaInicio}-{torneo.horaFin} · {torneo.instalacion}</p>
       <p style={{ fontSize: "13px" }}>
         <Users size={13} style={{ verticalAlign: "-2px" }} /> {participantes.map((p) => p.clubName).join(", ") || "Nadie apuntado todavía"}
       </p>
@@ -382,7 +382,7 @@ export default function TorneosView({ uid, clubName, telefono, email, misEquipos
 
       <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "20px" }}>TORNEOS ABIERTOS PARA APUNTARSE</h3>
       {torneosAbiertos.length === 0 ? (
-        <p style={{ fontSize: "13px", color: "#888" }}>No hay ningún torneo abierto ahora mismo.</p>
+        <p style={{ fontSize: "13px", color: "#64748B" }}>No hay ningún torneo abierto ahora mismo.</p>
       ) : (
         torneosAbiertos.map((t) => (
           <TarjetaTorneoAbierto key={t.id} torneo={t} uid={uid} clubName={clubName} telefono={telefono} email={email} misEquipos={misEquipos} />

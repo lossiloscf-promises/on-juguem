@@ -58,7 +58,7 @@ function BuscadorDeClub({ clubElegido, setClubElegido }) {
     }
     return (
       <div className="cl-ticket">
-        <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+        <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
           Dinos el nombre de tu club y un contacto, y lo añadimos a la lista para que puedas registrarte.
         </p>
         <input className="cl-input" placeholder="Nombre del club" value={nombreSolicitado} onChange={(e) => setNombreSolicitado(e.target.value)} maxLength={100} style={{ marginBottom: "6px" }} />
@@ -92,11 +92,11 @@ function BuscadorDeClub({ clubElegido, setClubElegido }) {
                 style={{ padding: "6px 4px", cursor: "pointer", borderBottom: "1px solid var(--line)" }}
                 onClick={() => { setClubElegido(c); setMostrarLista(false); setTexto(""); }}
               >
-                {c.nombre} {c.localidad && <span style={{ color: "#888", fontSize: "12px" }}>· {c.localidad}</span>}
+                {c.nombre} {c.localidad && <span style={{ color: "#64748B", fontSize: "12px" }}>· {c.localidad}</span>}
               </div>
             ))
           ) : (
-            <p style={{ fontSize: "13px", color: "#888" }}>No aparece ningún club con ese nombre.</p>
+            <p style={{ fontSize: "13px", color: "#64748B" }}>No aparece ningún club con ese nombre.</p>
           )}
           <button type="button" className="cl-btn cl-btn-ghost" style={{ marginTop: "6px", width: "100%", justifyContent: "center" }} onClick={() => { setPidiendoAlta(true); setMostrarLista(false); }}>
             Mi club no está en la lista

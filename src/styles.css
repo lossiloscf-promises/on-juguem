@@ -1,13 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --pitch-dark: #16302B;
-  --pitch: #2F6D5C;
-  --chalk: #F7F5EF;
-  --ink: #1C1C1C;
-  --gold: #E3B23C;
-  --clay: #C1502E;
-  --line: #D8D2C4;
+  /* Paleta — sistema SaaS premium */
+  --primary: #0F4C81;
+  --primary-dark: #0B3A64;
+  --secondary: #16A34A;
+  --bg: #F8FAFC;
+  --text: #0F172A;
+  --text-secondary: #64748B;
+  --danger: #DC2626;
+  --danger-bg: #FEE2E2;
+  --line: #E2E8F0;
+
+  /* Estados */
+  --st-disponible: #E0F2FE;
+  --st-disponible-ink: #075985;
+  --st-cerrado: #DCFCE7;
+  --st-cerrado-ink: #166534;
+  --st-pendiente: #FEF3C7;
+  --st-pendiente-ink: #92400E;
+  --st-pactado: #E0E7FF;
+  --st-pactado-ink: #3730A3;
+
+  /* Alias retrocompatibles con nombres antiguos usados en el código */
+  --pitch-dark: var(--primary-dark);
+  --pitch: var(--primary);
+  --chalk: #FFFFFF;
+  --ink: var(--text);
+  --gold: var(--secondary);
+  --clay: var(--danger);
 }
 
 * { box-sizing: border-box; }
@@ -16,21 +37,26 @@ html, body { overflow-x: hidden; max-width: 100%; }
 
 body {
   margin: 0;
-  background: var(--chalk);
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--text);
   font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.cl-display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.04em; }
-.cl-mono { font-family: 'Space Mono', monospace; }
+/* Los nombres de clase "display"/"mono" se conservan por compatibilidad con
+   el resto del código, pero ahora todo usa Inter — sin tipografías de marca
+   retro, tal como pide el rediseño. */
+.cl-display { font-family: 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+.cl-mono { font-family: 'Inter', sans-serif; font-weight: 500; }
 
-.cl-shell { min-height: 100vh; }
+.cl-shell { min-height: 100vh; padding-bottom: 84px; }
 
 .cl-header {
-  background: var(--pitch-dark);
-  color: var(--chalk);
-  padding: 20px 24px;
+  background: white;
+  color: var(--text);
+  padding: 20px 20px 12px;
   overflow-x: hidden;
+  border-bottom: 1px solid var(--line);
 }
 .cl-header-inner {
   max-width: 960px;
@@ -42,119 +68,146 @@ body {
   gap: 16px;
   min-width: 0;
 }
-.cl-title { font-size: 46px; line-height: 1; margin: 0; }
-.cl-subtitle { font-size: 14px; opacity: 0.8; margin-top: 4px; }
+.cl-title { font-size: 22px; line-height: 1.1; margin: 0; font-weight: 700; color: var(--primary); }
+.cl-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; font-weight: 400; }
 
-.cl-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
-.cl-tab {
-  font-family: 'Bebas Neue', sans-serif;
-  letter-spacing: 0.06em;
-  padding: 10px 22px;
-  border: 2px solid var(--chalk);
-  background: transparent;
-  color: var(--chalk);
-  cursor: pointer;
-  font-size: 18px;
-  border-radius: 3px;
+/* Navegación — barra fija inferior con iconos, estilo app móvil moderna */
+.cl-tabs {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  gap: 0;
+  background: white;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  overflow-x: auto;
 }
-.cl-tab.active { background: var(--gold); color: var(--ink); border-color: var(--gold); }
-.cl-tab { position: relative; }
+.cl-tab {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 10.5px;
+  border-radius: 12px;
+  flex: 1;
+  min-width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.cl-tab svg { width: 20px; height: 20px; }
+.cl-tab.active { background: var(--st-disponible); color: var(--primary); font-weight: 600; }
+.cl-tab:hover { color: var(--primary); }
 @media (max-width: 640px) {
-  .cl-tab { padding: 8px 12px; font-size: 14px; }
+  .cl-tab { font-size: 9.5px; padding: 6px 2px; }
 }
 .cl-badge-aviso {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  background: var(--clay);
+  top: 0px;
+  right: 10px;
+  background: var(--danger);
   color: white;
   border-radius: 50%;
-  min-width: 18px;
-  height: 18px;
-  font-size: 11px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 10px;
   font-family: 'Inter', sans-serif;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0 3px;
+  font-weight: 700;
 }
 
-.cl-main { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+.cl-main { max-width: 960px; margin: 0 auto; padding: 24px 16px 32px; }
 
+/* Botones — grandes, redondeados, modernos */
 .cl-btn {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 14px;
-  padding: 8px 16px;
-  border-radius: 3px;
+  padding: 11px 20px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
 }
-.cl-btn-primary { background: var(--pitch); color: var(--chalk); }
-.cl-btn-primary:hover { background: var(--pitch-dark); }
-.cl-btn-gold { background: var(--gold); color: var(--ink); }
-.cl-btn-ghost { background: transparent; color: var(--clay); border: 1.5px solid var(--clay); }
-.cl-btn-ghost:hover { background: var(--clay); color: var(--chalk); }
+.cl-btn:active { transform: scale(0.98); }
+.cl-btn-primary { background: var(--primary); color: white; box-shadow: 0 1px 2px rgba(15, 76, 129, 0.25); }
+.cl-btn-primary:hover { background: var(--primary-dark); }
+.cl-btn-gold { background: var(--secondary); color: white; box-shadow: 0 1px 2px rgba(22, 163, 74, 0.25); }
+.cl-btn-gold:hover { filter: brightness(0.92); }
+.cl-btn-ghost { background: white; color: var(--text-secondary); border: 1.5px solid var(--line); }
+.cl-btn-ghost:hover { background: #F1F5F9; color: var(--text); border-color: #CBD5E1; }
 .cl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Inputs — minimalistas */
 .cl-input {
   font-family: 'Inter', sans-serif;
   border: 1.5px solid var(--line);
-  border-radius: 3px;
-  padding: 7px 10px;
+  border-radius: 10px;
+  padding: 10px 12px;
   font-size: 14px;
   background: white;
   width: 100%;
+  color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.cl-input:focus { outline: 2px solid var(--pitch); border-color: var(--pitch); }
-.cl-label { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--pitch); display: block; margin-bottom: 4px; }
+.cl-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.12); }
+.cl-label { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-secondary); display: block; margin-bottom: 6px; }
 
+/* Tarjetas — elevadas, esquinas de 14px, sombra suave, sin bordes duros */
 .cl-ticket {
   background: white;
-  border: 1.5px solid var(--line);
-  border-radius: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
   position: relative;
   overflow: hidden;
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
 }
-.cl-cat-strip { width: 6px; position: absolute; left: 0; top: 0; bottom: 0; }
+.cl-cat-strip { width: 5px; position: absolute; left: 0; top: 0; bottom: 0; border-radius: 14px 0 0 14px; }
 
+/* El estilo "billete perforado" ya no encaja con la nueva estética — se
+   sustituye por un simple separador suave. */
 .cl-perforation {
-  border-top: 2px dashed var(--line);
+  border-top: 1px solid var(--line);
   position: relative;
   margin-top: 12px;
   padding-top: 12px;
 }
-.cl-perforation::before, .cl-perforation::after {
-  content: '';
-  position: absolute;
-  top: -8px;
-  width: 16px;
-  height: 16px;
-  background: var(--chalk);
-  border-radius: 50%;
-}
-.cl-perforation::before { left: -20px; }
-.cl-perforation::after { right: -20px; }
+.cl-perforation::before, .cl-perforation::after { content: none; }
 
 .cl-stamp {
-  font-family: 'Bebas Neue', sans-serif;
-  letter-spacing: 0.08em;
-  font-size: 13px;
-  padding: 3px 10px;
-  border-radius: 3px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
   display: inline-block;
 }
-.cl-stamp-libre { background: #E7F0EA; color: var(--pitch); }
-.cl-stamp-pendiente { background: #FBEFD9; color: #9A6B12; }
-.cl-stamp-confirmado { background: #EAF3EC; color: var(--pitch-dark); }
+.cl-stamp-libre { background: var(--st-disponible); color: var(--st-disponible-ink); }
+.cl-stamp-pendiente { background: var(--st-pendiente); color: var(--st-pendiente-ink); }
+.cl-stamp-confirmado { background: var(--st-cerrado); color: var(--st-cerrado-ink); }
 
-.cl-grid-3 { display: grid; grid-template-columns: 1fr; gap: 24px; }
-.cl-grid-2 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.cl-grid-3 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.cl-grid-2 { display: grid; grid-template-columns: 1fr; gap: 14px; }
 @media (min-width: 720px) {
   .cl-grid-3 { grid-template-columns: 1fr 2fr; }
   .cl-grid-2 { grid-template-columns: 1fr 1fr; }
@@ -165,49 +218,55 @@ body {
 
 .cl-auth-box {
   max-width: 380px;
-  margin: 60px auto;
+  margin: 48px auto;
 }
 
+/* Tabla del cuadrante — más aire, esquinas suaves, sin líneas duras */
 .cl-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
-  border: 2px solid var(--pitch-dark);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: white;
 }
 .cl-table th {
   text-align: center;
   vertical-align: middle;
-  font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  color: var(--pitch);
-  border-bottom: 3px solid var(--pitch-dark);
-  border-right: 1px solid var(--pitch-dark);
-  padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 12px;
   white-space: nowrap;
   line-height: 1.5;
 }
 .cl-table th:first-child { text-align: left; white-space: normal; }
-.cl-table th:last-child { border-right: none; }
 .cl-table td {
-  padding: 10px 12px;
-  border-bottom: 2px solid var(--pitch-dark);
-  border-right: 1px solid #B8B2A4;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
   vertical-align: middle;
   text-align: center;
 }
 .cl-table td:first-child { text-align: left; vertical-align: top; }
-.cl-table td:last-child { border-right: none; }
 .cl-table tr:last-child td { border-bottom: none; }
-.cl-table tr:hover td { background: #FAFAF7; }
+.cl-table tr:hover td { background: #FAFBFC; }
 
 .cl-print-title { margin-bottom: 12px; }
 
 @media print {
-  .no-print, .cl-header { display: none !important; }
+  .no-print, .cl-header, .cl-tabs { display: none !important; }
   .cl-print-title { display: block !important; }
   body { background: white; }
   .cl-main { max-width: 100%; padding: 0; }
-  .cl-ticket { border: none; padding: 0; }
+  .cl-shell { padding-bottom: 0; }
+  .cl-ticket { border: none; padding: 0; box-shadow: none; }
   .cl-table { font-size: 11px; }
   .cl-stamp { border: 1px solid #999; }
 }
