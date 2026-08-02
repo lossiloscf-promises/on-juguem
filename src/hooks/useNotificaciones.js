@@ -44,6 +44,17 @@ export async function activarNotificaciones(uid) {
   const registro = await navigator.serviceWorker.register("/on-juguem/firebase-messaging-sw.js");
   const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registro });
   if (!token) throw new Error("No se ha podido activar — inténtalo de nuevo en un momento.");
+
+  // Si este mismo dispositivo ya se había activado antes (con un token
+  // distinto de una vez anterior), se limpia primero — así no se quedan
+  // varios tokens del mismo móvil acumulados, que provocarían recibir cada
+  // aviso duplicado.
+  const tokenAnterior = localStorage.getItem("cl_fcm_token");
+  if (tokenAnterior && tokenAnterior !== token) {
+    await desactivarNotificaciones(uid, tokenAnterior);
+  }
+  localStorage.setItem("cl_fcm_token", token);
+
   const clave = claveDelDispositivoActual();
   await updateDoc(doc(db, "users", uid), { [`fcmTokensPorCategoria.${clave}`]: arrayUnion(token) });
   return token;
@@ -59,6 +70,18 @@ export async function desactivarNotificaciones(uid, token) {
     actualizacion[`fcmTokensPorCategoria.${c.clave}`] = arrayRemove(token);
   });
   await updateDoc(doc(db, "users", uid), actualizacion);
+}
+
+// Borra TODOS los dispositivos guardados del club de golpe — útil para
+// empezar de cero si se han quedado tokens antiguos/duplicados de pruebas
+// anteriores, provocando avisos repetidos.
+export async function reiniciarTodosLosDispositivos(uid) {
+  const actualizacion = {};
+  CLAVES_COORDINADOR.forEach((c) => {
+    actualizacion[`fcmTokensPorCategoria.${c.clave}`] = [];
+  });
+  await updateDoc(doc(db, "users", uid), actualizacion);
+  localStorage.removeItem("cl_fcm_token");
 }
 
 // Con la app ABIERTA en primer plano, las notificaciones no las muestra el

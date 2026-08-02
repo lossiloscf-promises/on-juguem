@@ -368,6 +368,19 @@ service cloud.firestore {
                   'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail', 'requestedByTeamId',
                   'cancelacionPropuestaPor', 'sedePropuestaPor', 'sedePropuesta', 'sedePropuestaDetalles',
                   'cambioPropuestoPor', 'cambioPropuesto', 'avisoEquipoBorrado', 'avisoTexto']
+               )) ||
+
+          // 14) Zona peligrosa (lado del solicitante): retira de golpe su
+          //     propia reserva/pacto/cierre en un hueco de OTRO club, desde
+          //     cualquier estado — para que "Limpiar pre/postemporada"
+          //     también cubra lo que reservaste fuera, no solo lo tuyo.
+          (request.auth.uid == resource.data.requestedByUid
+            && request.resource.data.status == 'libre'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                 ['status', 'sede', 'diaExacto', 'horaExacta', 'campoExacto',
+                  'requestedByUid', 'requestedByClubName', 'requestedByTelefono', 'requestedByEmail', 'requestedByTeamId',
+                  'cancelacionPropuestaPor', 'sedePropuestaPor', 'sedePropuesta', 'sedePropuestaDetalles',
+                  'cambioPropuestoPor', 'cambioPropuesto', 'avisoEquipoBorrado', 'avisoTexto']
                ))
         );
 

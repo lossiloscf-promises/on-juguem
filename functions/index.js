@@ -370,16 +370,28 @@ exports.avisosDeHuecos = onDocumentWritten({ document: "slots/{slotId}", region:
 
   // 8) Un hueco que tenía algo en marcha (solicitud, pactado o ya cerrado) ha
   //    vuelto a "libre" — por el motivo que sea: cancelación aceptada, un
-  //    equipo borrado, o el dueño usando "Limpiar pre/postemporada". Avisa a
-  //    quien había reservado, porque para él/ella esto rompe su compromiso
-  //    sin que lo haya decidido — nunca debe enterarse solo si mira la app.
-  if (antes && ["pendiente", "pactado", "confirmado"].includes(antes.status) && despues.status === "libre" && antes.requestedByUid) {
+  //    equipo borrado, o cualquiera de las dos partes usando "Limpiar
+  //    pre/postemporada". Se avisa a las dos partes (no se puede saber aquí
+  //    quién lo inició) — para quien no lo inició, esto rompe su compromiso
+  //    sin que lo haya decidido, así que nunca debe enterarse solo si mira
+  //    la app.
+  //    EXCEPCIÓN: si la jornada de ese hueco ya pasó, no se avisa a nadie —
+  //    a esas alturas es limpieza rutinaria de fin de temporada.
+  const jornadaYaPaso = antes?.jornadaOrderDate && antes.jornadaOrderDate < new Date().toISOString().slice(0, 10);
+  if (antes && ["pendiente", "pactado", "confirmado"].includes(antes.status) && despues.status === "libre" && antes.requestedByUid && !jornadaYaPaso) {
     const nombreDueñoAntes = antes.clubName || "Un club";
+    const nombreSolicitanteAntes = antes.requestedByClubName || "Un club";
     const equipoAntes = antes.grupo ? `${antes.grupo}${antes.anyo ? ` (${antes.anyo})` : ""}` : "vuestro amistoso";
     await enviarAviso(
       antes.requestedByUid,
       "Un partido ha quedado libre otra vez",
       `Vuestro amistoso de ${equipoAntes} con ${nombreDueñoAntes} (${antes.jornadaLabel || ""}) ya no está en marcha — el hueco ha vuelto a estar disponible.`,
+      { genero: antes.genero, formato: antes.formato }
+    );
+    await enviarAviso(
+      antes.ownerUid,
+      "Un partido ha quedado libre otra vez",
+      `Vuestro amistoso de ${equipoAntes} con ${nombreSolicitanteAntes} (${antes.jornadaLabel || ""}) ya no está en marcha — el hueco ha vuelto a estar disponible.`,
       { genero: antes.genero, formato: antes.formato }
     );
   }

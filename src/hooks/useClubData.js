@@ -622,9 +622,18 @@ async function cerrarPartidoAtomico(slotId, datosNuevos, allSlots, teamId) {
 // en marcha con otros clubes SIN pedirles acuerdo (es una acción fuerte y
 // deliberada, por eso vive en Zona Peligrosa).
 export async function limpiarTemporada(uid) {
-  const q = query(collection(db, "slots"), where("ownerUid", "==", uid));
-  const snap = await getDocs(q);
-  const docs = snap.docs;
+  // Dos grupos de huecos: los que son míos de verdad (los reinicio del
+  // todo), y los que son de OTRO club pero que YO reservé — ahí solo retiro
+  // mi propia reserva/pacto/cierre, dejando el hueco libre para su dueño.
+  const qDueño = query(collection(db, "slots"), where("ownerUid", "==", uid));
+  const qSolicitante = query(
+    collection(db, "slots"),
+    where("requestedByUid", "==", uid),
+    where("status", "in", ["pendiente", "pactado", "confirmado"])
+  );
+  const [snapDueño, snapSolicitante] = await Promise.all([getDocs(qDueño), getDocs(qSolicitante)]);
+  const docs = [...snapDueño.docs, ...snapSolicitante.docs];
+
   // Firestore permite como mucho 500 escrituras por lote.
   for (let i = 0; i < docs.length; i += 450) {
     const lote = docs.slice(i, i + 450);

@@ -7,7 +7,7 @@ import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
 import { CLAVES_COORDINADOR } from "../constants";
 import { subirEscudo, borrarEscudo } from "../hooks/useEscudo";
-import { activarNotificaciones, notificacionesSoportadas } from "../hooks/useNotificaciones";
+import { activarNotificaciones, notificacionesSoportadas, reiniciarTodosLosDispositivos } from "../hooks/useNotificaciones";
 import { useEstadoApp, cambiarMantenimiento } from "../hooks/useEstadoApp";
 import { limpiarTemporada } from "../hooks/useClubData";
 import { useTodosLosClubes } from "../hooks/useAuth";
@@ -276,6 +276,8 @@ function PanelAdmin({ onVerificar }) {
 function PanelNotificaciones({ uid }) {
   const [estado, setEstado] = useState("inicial"); // inicial | activando | activado | error | no_soportado
   const [error, setError] = useState("");
+  const [reiniciando, setReiniciando] = useState(false);
+  const [avisoReinicio, setAvisoReinicio] = useState("");
 
   useEffect(() => {
     notificacionesSoportadas().then((ok) => { if (!ok) setEstado("no_soportado"); });
@@ -291,6 +293,19 @@ function PanelNotificaciones({ uid }) {
       setError(err.message || "No se ha podido activar.");
       setEstado("error");
     }
+  };
+
+  const reiniciar = async () => {
+    if (!window.confirm("Esto desactiva las notificaciones en TODOS tus dispositivos (útil si te llegan repetidas). Tendrás que volver a activarlas en cada uno. ¿Continuar?")) return;
+    setReiniciando(true);
+    try {
+      await reiniciarTodosLosDispositivos(uid);
+      setAvisoReinicio("Hecho — vuelve a activarlas en este dispositivo cuando quieras.");
+      setEstado("inicial");
+    } catch (err) {
+      setError(err.message || "No se ha podido reiniciar.");
+    }
+    setReiniciando(false);
   };
 
   return (
@@ -312,6 +327,14 @@ function PanelNotificaciones({ uid }) {
       )}
       {estado === "activado" && <p style={{ fontSize: "13px", color: "var(--pitch)" }}>✓ Notificaciones activadas en este dispositivo.</p>}
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
+
+      <p style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px solid var(--line)", fontSize: "12px", color: "#64748B" }}>
+        ¿Te llegan los avisos duplicados o repetidos? Reinicia todos los dispositivos guardados y vuelve a activar.
+      </p>
+      <button className="cl-btn cl-btn-ghost" onClick={reiniciar} disabled={reiniciando}>
+        {reiniciando ? "Reiniciando..." : "Reiniciar todos los dispositivos"}
+      </button>
+      {avisoReinicio && <p style={{ fontSize: "12px", color: "var(--pitch)", marginTop: "6px" }}>{avisoReinicio}</p>}
     </div>
   );
 }
