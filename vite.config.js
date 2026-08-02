@@ -18,8 +18,8 @@ export default defineConfig({
         name: 'On Juguem',
         short_name: 'On Juguem',
         description: 'Amistosos de pretemporada sin lios de WhatsApp',
-        theme_color: '#16302B',
-        background_color: '#F7F5EF',
+        theme_color: '#0F4C81',
+        background_color: '#F8FAFC',
         display: 'standalone',
         start_url: `/${REPO_NAME}/`,
         icons: [
