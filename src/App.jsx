@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "./hooks/useAuth";
 import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
@@ -14,6 +14,7 @@ import TemporadaView from "./components/TemporadaView";
 import AjustesView from "./components/AjustesView";
 import TorneosView from "./components/TorneosView";
 import CuadrantePublico from "./components/CuadrantePublico";
+import { escucharEnPrimerPlano } from "./hooks/useNotificaciones";
 import "./styles.css";
 
 export default function App() {
@@ -37,6 +38,9 @@ export default function App() {
   const jornadas = useJornadas(user?.uid);
 
   useCierreSesionPorInactividad(!!user, logout);
+  useEffect(() => {
+    if (user) escucharEnPrimerPlano();
+  }, [user]);
 
   if (loading) return null;
 

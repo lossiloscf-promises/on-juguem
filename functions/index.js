@@ -1,10 +1,12 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
 const db = admin.firestore();
+const messaging = admin.messaging();
 
 // La clave de la API de Claude se guarda como "secret" de Firebase, nunca en
 // el código ni en el navegador. Se configura una vez con:
@@ -226,4 +228,88 @@ exports.comprobarClubDuplicado = onCall({ region: "europe-west1" }, async (reque
   if (!nombre) return { existe: false };
   const snap = await db.collection("users").where("clubNameLower", "==", nombre).limit(1).get();
   return { existe: !snap.empty };
+});
+
+// Envía un aviso push a todos los dispositivos guardados de un club — y
+// limpia solo los tokens que ya no sirven (dispositivo desinstalado, etc.),
+// sin tocar los demás.
+async function enviarAviso(uid, titulo, cuerpo) {
+  if (!uid) return;
+  try {
+    const userSnap = await db.collection("users").doc(uid).get();
+    const tokens = userSnap.data()?.fcmTokens || [];
+    if (tokens.length === 0) return;
+    const respuesta = await messaging.sendEachForMulticast({
+      tokens,
+      notification: { title: titulo, body: cuerpo },
+    });
+    const tokensInvalidos = [];
+    respuesta.responses.forEach((r, i) => {
+      const codigo = r.error?.code;
+      if (!r.success && (codigo === "messaging/registration-token-not-registered" || codigo === "messaging/invalid-registration-token")) {
+        tokensInvalidos.push(tokens[i]);
+      }
+    });
+    if (tokensInvalidos.length > 0) {
+      await db.collection("users").doc(uid).update({
+        fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokensInvalidos),
+      });
+    }
+  } catch (err) {
+    logger.error("Error enviando notificación push", err);
+  }
+}
+
+// Se dispara con CUALQUIER cambio en un hueco/partido, y decide si hay que
+// avisar a alguien según qué ha cambiado exactamente.
+exports.avisosDeHuecos = onDocumentWritten({ document: "slots/{slotId}", region: "europe-west1" }, async (event) => {
+  const antes = event.data.before.exists ? event.data.before.data() : null;
+  const despues = event.data.after.exists ? event.data.after.data() : null;
+  if (!despues) return; // el hueco se ha borrado, no aplica
+
+  const nombreDueño = despues.clubName || "Un club";
+  const nombreSolicitante = despues.requestedByClubName || "Un club";
+
+  // 1) Nueva solicitud pendiente — avisa al dueño del hueco.
+  if ((!antes || antes.status !== "pendiente") && despues.status === "pendiente") {
+    await enviarAviso(despues.ownerUid, "Nueva solicitud de amistoso", `${nombreSolicitante} quiere reservar un hueco de ${despues.grupo || "tu equipo"}.`);
+  }
+
+  // 2) El dueño acepta (pendiente → pactado) — avisa a quien reservó.
+  if (antes?.status === "pendiente" && despues.status === "pactado") {
+    await enviarAviso(despues.requestedByUid, "Solicitud aceptada", `${nombreDueño} ha aceptado vuestra solicitud de amistoso.`);
+  }
+
+  // 3) Propuesta de sede nueva — avisa a la otra parte.
+  if (despues.sedePropuestaPor && antes?.sedePropuestaPor !== despues.sedePropuestaPor) {
+    const soyDueñoQuienPropone = despues.sedePropuestaPor === despues.ownerUid;
+    const destinatario = soyDueñoQuienPropone ? despues.requestedByUid : despues.ownerUid;
+    const quienPropone = soyDueñoQuienPropone ? nombreDueño : nombreSolicitante;
+    await enviarAviso(destinatario, "Propuesta de dónde jugar", `${quienPropone} ha propuesto dónde jugar el partido.`);
+  }
+
+  // 4) Sede aceptada — avisa a quien la había propuesto.
+  if (antes?.sedePropuestaPor && !despues.sedePropuestaPor && despues.sede) {
+    await enviarAviso(antes.sedePropuestaPor, "Sede aceptada", "Han aceptado tu propuesta de dónde jugar.");
+  }
+
+  // 5) Propuesta de cancelación — avisa a la otra parte.
+  if (despues.cancelacionPropuestaPor && antes?.cancelacionPropuestaPor !== despues.cancelacionPropuestaPor) {
+    const soyDueñoQuienPropone = despues.cancelacionPropuestaPor === despues.ownerUid;
+    const destinatario = soyDueñoQuienPropone ? despues.requestedByUid : despues.ownerUid;
+    await enviarAviso(destinatario, "Propuesta de cancelación", "Alguien ha propuesto cancelar un partido — entra a revisarlo.");
+  }
+
+  // 6) Propuesta de cambio de día/hora/campo — avisa a la otra parte.
+  if (despues.cambioPropuestoPor && antes?.cambioPropuestoPor !== despues.cambioPropuestoPor) {
+    const soyDueñoQuienPropone = despues.cambioPropuestoPor === despues.ownerUid;
+    const destinatario = soyDueñoQuienPropone ? despues.requestedByUid : despues.ownerUid;
+    await enviarAviso(destinatario, "Cambio de horario propuesto", "Alguien ha propuesto cambiar día, hora o campo de un partido.");
+  }
+
+  // 7) Partido cerrado del todo (día/hora/campo ya fijos) — avisa a las dos partes.
+  if (antes?.status !== "confirmado" && despues.status === "confirmado") {
+    await enviarAviso(despues.ownerUid, "Partido cerrado", `Vuestro partido contra ${nombreSolicitante} ya tiene día, hora y campo.`);
+    await enviarAviso(despues.requestedByUid, "Partido cerrado", `Vuestro partido contra ${nombreDueño} ya tiene día, hora y campo.`);
+  }
 });

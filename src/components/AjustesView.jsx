@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Trash2, Plus, ShieldCheck, AlertTriangle, Download, Check } from "lucide-react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
 import { CLAVES_COORDINADOR } from "../constants";
 import { subirEscudo, borrarEscudo } from "../hooks/useEscudo";
+import { activarNotificaciones, notificacionesSoportadas } from "../hooks/useNotificaciones";
 import { limpiarTemporada } from "../hooks/useClubData";
 import { useTodosLosClubes } from "../hooks/useAuth";
 import {
@@ -155,6 +156,49 @@ function PanelAdmin({ onVerificar }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PanelNotificaciones({ uid }) {
+  const [estado, setEstado] = useState("inicial"); // inicial | activando | activado | error | no_soportado
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    notificacionesSoportadas().then((ok) => { if (!ok) setEstado("no_soportado"); });
+  }, []);
+
+  const activar = async () => {
+    setEstado("activando");
+    setError("");
+    try {
+      await activarNotificaciones(uid);
+      setEstado("activado");
+    } catch (err) {
+      setError(err.message || "No se ha podido activar.");
+      setEstado("error");
+    }
+  };
+
+  return (
+    <div className="cl-ticket">
+      <p style={{ fontSize: "13px", color: "#666", marginBottom: "8px" }}>
+        Activa los avisos en este dispositivo concreto para enterarte al momento de solicitudes nuevas, aceptaciones,
+        propuestas de sede/horario y cancelaciones — sin tener que estar mirando la app.
+      </p>
+      {estado === "no_soportado" && (
+        <p style={{ fontSize: "12px", color: "var(--clay)" }}>
+          Este navegador no admite notificaciones push. En iPhone, primero tienes que añadir la app a la pantalla de
+          inicio (compartir → "Añadir a pantalla de inicio") y abrirla desde ahí.
+        </p>
+      )}
+      {estado !== "no_soportado" && estado !== "activado" && (
+        <button className="cl-btn cl-btn-primary" onClick={activar} disabled={estado === "activando"}>
+          {estado === "activando" ? "Activando..." : "Activar notificaciones en este dispositivo"}
+        </button>
+      )}
+      {estado === "activado" && <p style={{ fontSize: "13px", color: "var(--pitch)" }}>✓ Notificaciones activadas en este dispositivo.</p>}
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
     </div>
   );
 }
@@ -430,6 +474,9 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         <p style={{ fontSize: "13px" }}>
           <a href="#" onClick={(e) => { e.preventDefault(); setVerPolitica(true); }}>Ver política de privacidad</a>
         </p>
+
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>NOTIFICACIONES</h2>
+        <PanelNotificaciones uid={uid} />
 
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ESCUDO DEL CLUB</h2>
         <PanelEscudo uid={uid} profile={profile} onEscudoCambiado={onEscudoCambiado} />
