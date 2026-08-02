@@ -234,14 +234,25 @@ exports.comprobarClubDuplicado = onCall({ region: "europe-west1" }, async (reque
 // limpia solo los tokens que ya no sirven (dispositivo desinstalado, etc.),
 // sin tocar los demás.
 async function enviarAviso(uid, titulo, cuerpo) {
-  if (!uid) return;
+  if (!uid) {
+    logger.info("enviarAviso: sin uid destinatario, no se envía nada");
+    return;
+  }
   try {
     const userSnap = await db.collection("users").doc(uid).get();
     const tokens = userSnap.data()?.fcmTokens || [];
-    if (tokens.length === 0) return;
+    logger.info(`enviarAviso: destinatario=${uid}, tokens guardados=${tokens.length}, titulo="${titulo}"`);
+    if (tokens.length === 0) {
+      logger.info("enviarAviso: este club no tiene ningún dispositivo con notificaciones activadas, no hay nada que enviar");
+      return;
+    }
     const respuesta = await messaging.sendEachForMulticast({
       tokens,
       notification: { title: titulo, body: cuerpo },
+    });
+    logger.info(`enviarAviso: enviados=${respuesta.successCount}, fallidos=${respuesta.failureCount}`);
+    respuesta.responses.forEach((r, i) => {
+      if (!r.success) logger.info(`enviarAviso: fallo en un token — ${r.error?.code}: ${r.error?.message}`);
     });
     const tokensInvalidos = [];
     respuesta.responses.forEach((r, i) => {
@@ -266,6 +277,8 @@ exports.avisosDeHuecos = onDocumentWritten({ document: "slots/{slotId}", region:
   const antes = event.data.before.exists ? event.data.before.data() : null;
   const despues = event.data.after.exists ? event.data.after.data() : null;
   if (!despues) return; // el hueco se ha borrado, no aplica
+
+  logger.info(`avisosDeHuecos: status ${antes?.status ?? "(nuevo)"} → ${despues.status}, sedePropuestaPor ${antes?.sedePropuestaPor ?? "-"} → ${despues.sedePropuestaPor ?? "-"}, cancelacionPropuestaPor ${antes?.cancelacionPropuestaPor ?? "-"} → ${despues.cancelacionPropuestaPor ?? "-"}`);
 
   const nombreDueño = despues.clubName || "Un club";
   const nombreSolicitante = despues.requestedByClubName || "Un club";
