@@ -631,7 +631,8 @@ export default function CuadranteView({
         const local = slotDe(t.id, j.id);
         const externo = buscarCompromisoExterno(allSlots, t.id, t.ownerUid, uid, j.orderDate, local?.id);
         const s = externo || local;
-        const c = s ? (externo ? contenidoCeldaExterna(externo) : contenidoCelda(local, modo)) : { texto: "", sub: "" };
+        const soyDueñoDeS = !!externo && s?.ownerUid === uid;
+        const c = s ? (externo && !soyDueñoDeS ? contenidoCeldaExterna(s) : contenidoCelda(local, modo)) : { texto: "", sub: "" };
         const cell = row.getCell(i + 2);
         cell.value = c.texto + (c.sub ? `\n${c.sub}` : "");
         cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
@@ -730,7 +731,14 @@ export default function CuadranteView({
                       // todo el detalle en vez de anonimizado como "Ocupado".
                       const esVistaExterna = !!externo;
                       const s = externo || local;
-                      const c = esVistaExterna ? contenidoCeldaExterna(s) : contenidoCelda(local, modo);
+                      // Ojo: "vista externa" no significa "yo soy quien reservó" — puede
+                      // ser al revés (el equipo que se ve es quien reservó UN HUECO MÍO).
+                      // En ese caso soy el DUEÑO de verdad, y tengo que ver el panel de
+                      // dueño (con su botón de Aceptar), no el de quien solo espera.
+                      const soyDueñoDeS = esVistaExterna && s?.ownerUid === uid;
+                      const c = esVistaExterna
+                        ? (soyDueñoDeS ? contenidoCelda(s, "propio") : contenidoCeldaExterna(s))
+                        : contenidoCelda(local, modo);
                       const clicable = esVistaExterna || puedeExpandir(local) || (modo === "ajeno" && local?.status === "libre");
                       const activa = celdaAbierta === `${t.id}:${j.id}`;
                       const hayCancelacionPendiente = s?.cancelacionPropuestaPor;
@@ -768,6 +776,13 @@ export default function CuadranteView({
                     const externo = buscarCompromisoExterno(allSlots, t.id, t.ownerUid, uid, j.orderDate, local?.id);
                     const esVistaExterna = !!externo;
                     const s = externo || local;
+                    // Si el hueco cruzado es en realidad mío (soy el dueño, el otro club
+                    // solo lo reservó), tengo que gestionar como dueño de verdad — no como
+                    // quien solo espera una respuesta.
+                    const soyDueñoDeS = esVistaExterna && s?.ownerUid === uid;
+                    const mostrarComoDueño = !esVistaExterna || soyDueñoDeS;
+                    const mostrarComoSolicitante = esVistaExterna && !soyDueñoDeS;
+                    const miNombreClub = modo === "propio" ? clubName : misClubName;
                     return (
                       <tr key={`${t.id}:${j.id}:panel`}>
                         <td colSpan={jornadas.length + 1} style={{ background: "#FAFAF7", padding: "10px" }}>
@@ -801,63 +816,63 @@ export default function CuadranteView({
                               )}
                             </div>
                           )}
-                          {!esVistaExterna && modo === "propio" && local?.status === "pendiente" && (
+                          {mostrarComoDueño && s?.status === "pendiente" && (
                             <div className="cl-row" style={{ flexWrap: "wrap" }}>
                               <span style={{ fontSize: "13px" }}>
-                                <b>{local.requestedByClubName}</b> quiere reservar este hueco
-                                {(local.requestedByTelefono || local.requestedByEmail) && (
-                                  <> · {local.requestedByTelefono} {local.requestedByEmail}</>
+                                <b>{s.requestedByClubName}</b> quiere reservar este hueco
+                                {(s.requestedByTelefono || s.requestedByEmail) && (
+                                  <> · {s.requestedByTelefono} {s.requestedByEmail}</>
                                 )}
                               </span>
-                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rejectRequest(local.id))}><X size={14} /> Rechazar</button>
-                              {tieneContactoParaCategoria(miProfile, local.genero, local.formato) ? (
-                                <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarPartido(local.id))}><Check size={14} /> Aceptar</button>
+                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rejectRequest(s.id))}><X size={14} /> Rechazar</button>
+                              {tieneContactoParaCategoria(miProfile, s.genero, s.formato) ? (
+                                <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarPartido(s.id))}><Check size={14} /> Aceptar</button>
                               ) : (
                                 <p style={{ fontSize: "12px", color: "var(--clay)", width: "100%" }}>
                                   Para aceptar, rellena antes en Ajustes → Coordinadores de contacto al menos el
-                                  general (o el de {local.genero} {local.formato}).
+                                  general (o el de {s.genero} {s.formato}).
                                 </p>
                               )}
-                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
+                              <BotonWhatsApp otroClubUid={s.requestedByUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: miNombreClub, rivalClub: s.requestedByClubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
                           )}
-                          {!esVistaExterna && modo === "propio" && local?.status === "pactado" && !local.sede && (
+                          {mostrarComoDueño && s?.status === "pactado" && !s.sede && (
                             <div>
-                              <p style={{ fontSize: "13px" }}>Pactado con <b>{local.requestedByClubName}</b> — ¿dónde se juega?</p>
-                              <GestionSede slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
-                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel }} />
+                              <p style={{ fontSize: "13px" }}>Pactado con <b>{s.requestedByClubName}</b> — ¿dónde se juega?</p>
+                              <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp otroClubUid={s.requestedByUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: miNombreClub, rivalClub: s.requestedByClubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
                           )}
-                          {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "local" && (
+                          {mostrarComoDueño && s?.status === "pactado" && s.sede === "local" && (
                             <>
                               <FormularioCierreInline
-                                slot={local}
+                                slot={s}
                                 allSlots={allSlots}
                                 uid={uid}
-                                onConfirmar={(datos) => cerrarComoLocal(local.id, { ...datos, grupo: local.grupo, teamId: local.teamId }, allSlots)}
+                                onConfirmar={(datos) => cerrarComoLocal(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
                               />
-                              <GestionSede slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
-                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en vuestro campo" }} />
+                              <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp otroClubUid={s.requestedByUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: miNombreClub, rivalClub: s.requestedByClubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
                           )}
-                          {!esVistaExterna && modo === "propio" && local?.status === "pactado" && local.sede === "visitante" && (
+                          {mostrarComoDueño && s?.status === "pactado" && s.sede === "visitante" && (
                             <div>
                               <p style={{ fontSize: "13px", color: "#666" }}>
-                                Pactado contra <b>{local.requestedByClubName}</b> — falta que ellos cierren día/hora/campo
+                                Pactado contra <b>{s.requestedByClubName}</b> — falta que ellos cierren día/hora/campo
                                 (juegan en su campo, así que lo deciden ellos).
                               </p>
-                              <GestionSede slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
-                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
-                              <BotonWhatsApp otroClubUid={local.requestedByUid} genero={local.genero} formato={local.formato} datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, jornada: local.jornadaLabel, sede: "en su campo" }} />
+                              <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
+                              <BotonWhatsApp otroClubUid={s.requestedByUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: miNombreClub, rivalClub: s.requestedByClubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en su campo" }} />
                             </div>
                           )}
-                          {!esVistaExterna && modo === "propio" && local?.status === "confirmado" && (
+                          {mostrarComoDueño && s?.status === "confirmado" && (
                             <>
-                              {enlaceGoogleCalendar(local, clubName, local.requestedByClubName) && (
+                              {enlaceGoogleCalendar(s, miNombreClub, s.requestedByClubName) && (
                                 <a
-                                  href={enlaceGoogleCalendar(local, clubName, local.requestedByClubName)}
+                                  href={enlaceGoogleCalendar(s, miNombreClub, s.requestedByClubName)}
                                   target="_blank" rel="noreferrer"
                                   className="cl-btn cl-btn-ghost"
                                   style={{ marginBottom: "6px", display: "inline-flex" }}
@@ -865,21 +880,21 @@ export default function CuadranteView({
                                   📅 Añadir a Google Calendar
                                 </a>
                               )}
-                              <GestionCambioHorario slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
-                              <GestionSede slot={local} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
-                              <GestionCancelacion slot={local} uid={uid} ejecutar={ejecutar} />
+                              <GestionCambioHorario slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
+                              <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
+                              <GestionCancelacion slot={s} uid={uid} ejecutar={ejecutar} />
                               <BotonWhatsApp
-                                otroClubUid={local.requestedByUid}
-                                genero={local.genero}
-                                formato={local.formato}
-                                datosPartido={{ miClub: clubName, rivalClub: local.requestedByClubName, grupo: local.grupo, dia: local.diaExacto, hora: local.horaExacta, campo: local.campoExacto }}
+                                otroClubUid={s.requestedByUid}
+                                genero={s.genero}
+                                formato={s.formato}
+                                datosPartido={{ miClub: miNombreClub, rivalClub: s.requestedByClubName, grupo: s.grupo, dia: s.diaExacto, hora: s.horaExacta, campo: s.campoExacto }}
                               />
                             </>
                           )}
-                          {!esVistaExterna && modo === "propio" && local?.avisoEquipoBorrado && (
+                          {mostrarComoDueño && s?.avisoEquipoBorrado && (
                             <div style={{ marginTop: "8px", background: "#FDECEA", padding: "8px", borderRadius: "4px" }}>
-                              <p style={{ fontSize: "13px" }}>⚠️ {local.avisoTexto}</p>
-                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => descartarAviso(local.id))}>
+                              <p style={{ fontSize: "13px" }}>⚠️ {s.avisoTexto}</p>
+                              <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => descartarAviso(s.id))}>
                                 Entendido
                               </button>
                             </div>
@@ -887,7 +902,7 @@ export default function CuadranteView({
 
                           {/* Mi propia negociación como quien reservó — venga superpuesta en mi
                               propio cuadrante, o vista entrando en "Busco rival" sobre ese club. */}
-                          {esVistaExterna && s.status === "pendiente" && (
+                          {mostrarComoSolicitante && s.status === "pendiente" && (
                             <div>
                               <p style={{ fontSize: "13px", color: "#666" }}>
                                 Solicitud enviada a <b>{s.clubName}</b> — esperando a que acepten o rechacen.
@@ -895,7 +910,7 @@ export default function CuadranteView({
                               <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
                           )}
-                          {esVistaExterna && s.status === "pactado" && !s.sede && (
+                          {mostrarComoSolicitante && s.status === "pactado" && !s.sede && (
                             <div>
                               <p style={{ fontSize: "13px" }}>Pactado con <b>{s.clubName}</b> — ¿dónde se juega?</p>
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
@@ -903,7 +918,7 @@ export default function CuadranteView({
                               <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
                             </div>
                           )}
-                          {esVistaExterna && s.status === "pactado" && s.sede === "visitante" && (
+                          {mostrarComoSolicitante && s.status === "pactado" && s.sede === "visitante" && (
                             <>
                               <p style={{ fontSize: "13px", color: "#666" }}>Se decidió jugar en vuestro campo — cerrad día, hora y campo.</p>
                               <FormularioCierreInline
@@ -917,7 +932,7 @@ export default function CuadranteView({
                               <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en vuestro campo" }} />
                             </>
                           )}
-                          {esVistaExterna && s.status === "pactado" && s.sede === "local" && (
+                          {mostrarComoSolicitante && s.status === "pactado" && s.sede === "local" && (
                             <div>
                               <p style={{ fontSize: "13px", color: "#666" }}>
                                 Pactado con <b>{s.clubName}</b> — juega en su campo, falta que ellos cierren día/hora/campo.
@@ -927,7 +942,7 @@ export default function CuadranteView({
                               <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel, sede: "en su campo" }} />
                             </div>
                           )}
-                          {esVistaExterna && s.status === "confirmado" && (
+                          {mostrarComoSolicitante && s.status === "confirmado" && (
                             <div>
                               <p style={{ fontSize: "13px", color: "#666" }}>
                                 Cerrado con <b>{s.clubName}</b> · {s.diaExacto} {s.horaExacta} · {s.campoExacto}
