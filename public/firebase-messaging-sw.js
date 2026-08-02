@@ -20,10 +20,13 @@ const messaging = firebase.messaging();
 // Qué hacer cuando llega una notificación con la app cerrada o en segundo
 // plano (con la app abierta en primer plano, se gestiona desde el propio
 // código de la app, no desde aquí).
+// IMPORTANTE: el servidor manda el mensaje como "data" (no "notification") a
+// propósito — si llevara "notification", el navegador la mostraría él solo
+// ADEMÁS de esta, duplicando cada aviso.
 messaging.onBackgroundMessage((payload) => {
-  const titulo = payload.notification?.title || "On Juguem";
+  const titulo = payload.data?.title || "On Juguem";
   const opciones = {
-    body: payload.notification?.body || "",
+    body: payload.data?.body || "",
     icon: "/on-juguem/icon-192.png",
     badge: "/on-juguem/icon-192.png",
   };

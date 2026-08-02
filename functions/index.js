@@ -269,7 +269,8 @@ async function enviarAviso(uid, titulo, cuerpo, categoria) {
     }
     const respuesta = await messaging.sendEachForMulticast({
       tokens,
-      notification: { title: titulo, body: cuerpo },
+      data: { title: titulo, body: cuerpo },
+      webpush: { fcmOptions: { link: "/on-juguem/" } },
     });
     logger.info(`enviarAviso: enviados=${respuesta.successCount}, fallidos=${respuesta.failureCount}`);
     respuesta.responses.forEach((r) => {
@@ -432,7 +433,8 @@ exports.enviarAvisoGlobal = onCall({ region: "europe-west1" }, async (request) =
     const lote = tokens.slice(i, i + 500);
     const respuesta = await messaging.sendEachForMulticast({
       tokens: lote,
-      notification: { title: titulo, body: cuerpo },
+      data: { title: titulo, body: cuerpo },
+      webpush: { fcmOptions: { link: "/on-juguem/" } },
     });
     enviados += respuesta.successCount;
   }

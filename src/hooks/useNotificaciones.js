@@ -92,8 +92,8 @@ export function escucharEnPrimerPlano() {
     if (!ok) return;
     const messaging = getMessaging(app);
     onMessage(messaging, (payload) => {
-      const titulo = payload.notification?.title || "On Juguem";
-      const cuerpo = payload.notification?.body || "";
+      const titulo = payload.data?.title || "On Juguem";
+      const cuerpo = payload.data?.body || "";
       if (Notification.permission === "granted") {
         new Notification(titulo, { body: cuerpo, icon: "/on-juguem/icon-192.png" });
       }
