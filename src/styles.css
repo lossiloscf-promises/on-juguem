@@ -130,6 +130,26 @@ body {
   font-weight: 700;
 }
 
+/* Interruptores internos dentro de una pantalla (p.ej. "Explorar clubes" vs
+   "Búsqueda por filtros") — con nombre propio para no chocar con el menú
+   principal fijo de abajo. */
+.cl-subtabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.cl-subtab {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  padding: 9px 16px;
+  border: 1.5px solid var(--line);
+  background: white;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+.cl-subtab.active { background: var(--st-disponible); color: var(--primary); border-color: var(--st-disponible); }
+.cl-subtab:hover { border-color: var(--primary); }
+
 .cl-main { max-width: 960px; margin: 0 auto; padding: 24px 16px 32px; }
 
 /* Botones — grandes, redondeados, modernos */

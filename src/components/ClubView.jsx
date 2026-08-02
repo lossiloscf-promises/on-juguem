@@ -71,10 +71,9 @@ function CierrePartido({ slot, allSlots, onCerrar, uid }) {
 // calendario del club dueño, no en el tuyo).
 function TusGestionesComoVisitante({ uid, allSlots }) {
   const [error, setError] = useState("");
-  const pendientes = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pendiente");
   const porCerrar = allSlots.filter((s) => s.requestedByUid === uid && s.status === "pactado" && s.sede === "visitante");
 
-  if (pendientes.length + porCerrar.length === 0) return null;
+  if (porCerrar.length === 0) return null;
 
   const ejecutar = async (fn) => {
     setError("");
@@ -88,21 +87,6 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
   return (
     <div style={{ marginBottom: "24px" }}>
       {error && <p className="cl-ticket" style={{ color: "var(--clay)", borderColor: "var(--clay)", fontSize: "13px" }}>{error}</p>}
-
-      {pendientes.length > 0 && (
-        <>
-          <h2 className="cl-display" style={{ fontSize: "20px", color: "var(--pitch)" }}>
-            SOLICITUDES ENVIADAS, ESPERANDO RESPUESTA ({pendientes.length})
-          </h2>
-          {pendientes.map((s) => (
-            <div key={s.id} className="cl-ticket">
-              <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
-              <p style={{ fontSize: "13px" }}>A <b>{s.clubName}</b> · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · {s.jornadaLabel}</p>
-              <p style={{ fontSize: "12px", color: "#64748B" }}>Esperando a que acepten o rechacen.</p>
-            </div>
-          ))}
-        </>
-      )}
 
       {porCerrar.length > 0 && (
         <>
@@ -469,12 +453,12 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
         />
       ) : (
         <>
-          <div className="cl-tabs" style={{ marginBottom: "16px" }}>
-            <button className={`cl-tab ${modoVista === "directorio" ? "active" : ""}`} onClick={() => setModoVista("directorio")}>
-              <LayoutGrid size={14} style={{ marginRight: "4px" }} /> EXPLORAR CLUBES
+          <div className="cl-subtabs" style={{ marginBottom: "16px" }}>
+            <button className={`cl-subtab ${modoVista === "directorio" ? "active" : ""}`} onClick={() => setModoVista("directorio")}>
+              <LayoutGrid size={14} style={{ marginRight: "4px" }} /> Explorar clubes
             </button>
-            <button className={`cl-tab ${modoVista === "filtros" ? "active" : ""}`} onClick={() => setModoVista("filtros")}>
-              <Search size={14} style={{ marginRight: "4px" }} /> BÚSQUEDA POR FILTROS
+            <button className={`cl-subtab ${modoVista === "filtros" ? "active" : ""}`} onClick={() => setModoVista("filtros")}>
+              <Search size={14} style={{ marginRight: "4px" }} /> Búsqueda por filtros
             </button>
           </div>
 
