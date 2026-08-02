@@ -7,12 +7,12 @@ importScripts("https://www.gstatic.com/firebasejs/12.16.0/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/12.16.0/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "AIzaSyDJcTrdeMxw3PFXWgwhdKBMlwdOczV_HL8",
-  authDomain: "partitscv.firebaseapp.com",
-  projectId: "partitscv",
-  storageBucket: "partitscv.firebasestorage.app",
-  messagingSenderId: "628851831451",
-  appId: "1:628851831451:web:311fa5730475a76a558c3e",
+  apiKey: "PON_AQUI_TU_VITE_FIREBASE_API_KEY",
+  authDomain: "PON_AQUI_TU_VITE_FIREBASE_AUTH_DOMAIN",
+  projectId: "PON_AQUI_TU_VITE_FIREBASE_PROJECT_ID",
+  storageBucket: "PON_AQUI_TU_VITE_FIREBASE_STORAGE_BUCKET",
+  messagingSenderId: "PON_AQUI_TU_VITE_FIREBASE_MESSAGING_SENDER_ID",
+  appId: "PON_AQUI_TU_VITE_FIREBASE_APP_ID",
 });
 
 const messaging = firebase.messaging();

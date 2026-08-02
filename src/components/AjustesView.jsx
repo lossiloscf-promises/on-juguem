@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../firebase";
 import { Save, Trash2, Plus, ShieldCheck, AlertTriangle, Download, Check } from "lucide-react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
@@ -6,6 +8,7 @@ import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/us
 import { CLAVES_COORDINADOR } from "../constants";
 import { subirEscudo, borrarEscudo } from "../hooks/useEscudo";
 import { activarNotificaciones, notificacionesSoportadas } from "../hooks/useNotificaciones";
+import { useEstadoApp, cambiarMantenimiento } from "../hooks/useEstadoApp";
 import { limpiarTemporada } from "../hooks/useClubData";
 import { useTodosLosClubes } from "../hooks/useAuth";
 import {
@@ -16,6 +19,113 @@ import {
   importarClubesSemilla,
   marcarSolicitudAtendida,
 } from "../hooks/useClubesOficiales";
+
+function PanelAvisoGlobal() {
+  const [titulo, setTitulo] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [resultado, setResultado] = useState("");
+  const [error, setError] = useState("");
+
+  const enviar = async () => {
+    if (!titulo.trim() || !mensaje.trim()) {
+      setError("Rellena título y mensaje.");
+      return;
+    }
+    if (!window.confirm(`¿Enviar este aviso a TODOS los clubes de la plataforma?\n\n"${titulo}"\n${mensaje}`)) return;
+    setEnviando(true);
+    setError("");
+    setResultado("");
+    try {
+      const fn = httpsCallable(functions, "enviarAvisoGlobal");
+      const r = await fn({ titulo: titulo.trim(), cuerpo: mensaje.trim() });
+      setResultado(`Enviado a ${r.data.enviados} de ${r.data.total} dispositivos.`);
+      setTitulo("");
+      setMensaje("");
+    } catch (err) {
+      setError(err.message || "No se ha podido enviar.");
+    }
+    setEnviando(false);
+  };
+
+  return (
+    <div className="cl-ticket" style={{ marginBottom: "16px" }}>
+      <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>Aviso a todos los clubes</p>
+      <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+        Manda una notificación push a todos los dispositivos activados de la plataforma, sea cual sea su
+        categoría — para avisos generales, novedades, o cuando termine el mantenimiento.
+      </p>
+      <input className="cl-input" placeholder="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={60} style={{ marginBottom: "6px" }} />
+      <textarea className="cl-input" placeholder="Mensaje" value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={2} maxLength={200} style={{ marginBottom: "8px", width: "100%" }} />
+      <button className="cl-btn cl-btn-primary" onClick={enviar} disabled={enviando}>
+        {enviando ? "Enviando..." : "Enviar a todos"}
+      </button>
+      {resultado && <p style={{ color: "var(--pitch)", fontSize: "12px", marginTop: "6px" }}>{resultado}</p>}
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
+    </div>
+  );
+}
+
+function PanelMantenimiento() {
+  const estado = useEstadoApp();
+  const [mensaje, setMensaje] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+
+  const activarBloqueo = async () => {
+    setGuardando(true);
+    setError("");
+    try {
+      await cambiarMantenimiento(true, mensaje.trim() || "Estamos mejorando la aplicación — en breves momentos podrás volver a utilizarla.");
+    } catch (err) {
+      setError(err.message || "No se ha podido activar.");
+    }
+    setGuardando(false);
+  };
+
+  const quitarBloqueo = async () => {
+    setGuardando(true);
+    setError("");
+    try {
+      await cambiarMantenimiento(false, "");
+    } catch (err) {
+      setError(err.message || "No se ha podido desactivar.");
+    }
+    setGuardando(false);
+  };
+
+  return (
+    <div className="cl-ticket" style={{ borderColor: estado.mantenimiento ? "var(--clay)" : "var(--line)", marginBottom: "16px" }}>
+      <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
+        Modo mantenimiento {estado.mantenimiento && <span style={{ color: "var(--clay)" }}>— ACTIVO AHORA MISMO</span>}
+      </p>
+      <p style={{ fontSize: "12px", color: "#888", marginBottom: "8px" }}>
+        Mientras esté activo, nadie puede usar la app (ni siquiera entrar) — solo ven el mensaje que pongas
+        aquí. Úsalo mientras arreglamos algo importante.
+      </p>
+      {!estado.mantenimiento ? (
+        <>
+          <textarea
+            className="cl-input"
+            placeholder="Mensaje a mostrar (opcional, hay uno por defecto)"
+            value={mensaje}
+            onChange={(e) => setMensaje(e.target.value)}
+            rows={2}
+            style={{ marginBottom: "8px", width: "100%" }}
+          />
+          <button className="cl-btn" style={{ background: "var(--clay)", color: "white" }} onClick={activarBloqueo} disabled={guardando}>
+            {guardando ? "Activando..." : "Activar modo mantenimiento"}
+          </button>
+        </>
+      ) : (
+        <button className="cl-btn cl-btn-primary" onClick={quitarBloqueo} disabled={guardando}>
+          {guardando ? "Quitando..." : "Ya está arreglado — quitar bloqueo"}
+        </button>
+      )}
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
+    </div>
+  );
+}
 
 function PanelAdmin({ onVerificar }) {
   const clubes = useTodosLosClubes();
@@ -86,6 +196,9 @@ function PanelAdmin({ onVerificar }) {
         <ShieldCheck size={18} style={{ verticalAlign: "-3px" }} /> ADMINISTRACIÓN
       </h2>
       {error && <p style={{ color: "var(--clay)", fontSize: "12px" }}>{error}</p>}
+
+      <PanelAvisoGlobal />
+      <PanelMantenimiento />
 
       {clubesDuplicados.length > 0 && (
         <div className="cl-ticket" style={{ borderColor: "var(--clay)", background: "#FDECEA" }}>
@@ -363,8 +476,10 @@ function PanelLimpiarTemporada({ uid }) {
       ) : (
         <>
           <p style={{ fontSize: "13px", marginBottom: "8px", color: "var(--clay)" }}>
-            ⚠️ Esto rompe también cualquier partido ya pactado o cerrado con otros clubes, sin avisarles ni pedirles
-            acuerdo — si tienes partidos reales en marcha, avísales tú por tu cuenta antes de hacerlo. No se puede deshacer.
+            ⚠️ Esto rompe también cualquier partido ya pactado o cerrado con otros clubes, sin pedirles acuerdo —
+            aunque a los clubes implicados les llegará un aviso automático de que su partido ha vuelto a estar
+            libre (si tienen las notificaciones activadas). Si tienes partidos importantes en marcha, avísales
+            también tú por WhatsApp para asegurarte. No se puede deshacer.
           </p>
           <div className="cl-row">
             <button className="cl-btn cl-btn-ghost" onClick={() => setConfirmando(false)}>Cancelar</button>
@@ -447,6 +562,15 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
       )}
       <div className="cl-grid-3">
       <div>
+        <div className="cl-ticket" style={{ background: "#EAF3EC", borderColor: "var(--pitch)" }}>
+          <p style={{ fontSize: "13px" }}>
+            <Download size={14} style={{ verticalAlign: "-2px" }} />{" "}
+            <a href={`${window.location.pathname.replace(/\/$/, "")}/On-Juguem-Manual.pdf`} target="_blank" rel="noreferrer" download>
+              <b>Descargar el manual completo de instrucciones (PDF)</b>
+            </a>
+          </p>
+        </div>
+
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>DATOS DE CONTACTO</h2>
         <div className="cl-ticket">
           <label className="cl-label">NOMBRE DEL CLUB</label>

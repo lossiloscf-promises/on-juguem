@@ -14,12 +14,30 @@ import TemporadaView from "./components/TemporadaView";
 import AjustesView from "./components/AjustesView";
 import TorneosView from "./components/TorneosView";
 import CuadrantePublico from "./components/CuadrantePublico";
-import { escucharEnPrimerPlano } from "./hooks/useNotificaciones";
+import { escucharEnPrimerPlano, activarNotificaciones } from "./hooks/useNotificaciones";
+import { useEstadoApp } from "./hooks/useEstadoApp";
 import "./styles.css";
 
 export default function App() {
   const uidPublico = new URLSearchParams(window.location.search).get("publico");
   if (uidPublico) return <CuadrantePublico uidClub={uidPublico} />;
+
+  const estadoApp = useEstadoApp();
+  if (estadoApp.mantenimiento) {
+    return (
+      <div className="cl-shell">
+        <Header role="coordinador" setRole={() => {}} loggedIn={false} />
+        <div className="cl-main">
+          <div className="cl-auth-box cl-ticket" style={{ textAlign: "center" }}>
+            <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>UN MOMENTO...</h2>
+            <p style={{ fontSize: "14px", color: "#666", marginTop: "10px" }}>
+              {estadoApp.mensaje || "Estamos mejorando la aplicación — en breves momentos podrás volver a utilizarla."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const {
     user, profile, loading, signup, login, logout,
@@ -37,6 +55,23 @@ export default function App() {
   const allSlots = useAllSlots();
   const jornadas = useJornadas(user?.uid);
 
+  const [recienRegistrado, setRecienRegistrado] = useState(false);
+  const onSignupYRecordar = async (...args) => {
+    await signup(...args);
+    setRecienRegistrado(true);
+  };
+  // Para no repetir esto en cada pantalla dentro de la misma sesión una vez
+  // que ya se ha visto (aceptada o no) — pero si vuelve a entrar otro día y
+  // sigue sin tener ningún dispositivo guardado, se lo volvemos a ofrecer.
+  const [notifVistaEstaSesion, setNotifVistaEstaSesion] = useState(() => {
+    try { return sessionStorage.getItem("cl_notif_vista") === "1"; } catch { return false; }
+  });
+  const marcarNotifVista = () => {
+    try { sessionStorage.setItem("cl_notif_vista", "1"); } catch { /* nada */ }
+    setNotifVistaEstaSesion(true);
+    setRecienRegistrado(false);
+  };
+
   useCierreSesionPorInactividad(!!user, logout);
   useEffect(() => {
     if (user) escucharEnPrimerPlano();
@@ -49,7 +84,22 @@ export default function App() {
       <div className="cl-shell">
         <Header role={role} setRole={setRole} loggedIn={false} />
         <div className="cl-main">
-          <Login onLogin={login} onSignup={signup} onRecuperar={recuperarContrasena} onComprobarDuplicado={comprobarNombreDuplicado} />
+          <Login onLogin={login} onSignup={onSignupYRecordar} onRecuperar={recuperarContrasena} onComprobarDuplicado={comprobarNombreDuplicado} />
+        </div>
+      </div>
+    );
+  }
+
+  const tieneAlgunDispositivoActivado = !!(
+    profile.fcmTokensPorCategoria && Object.values(profile.fcmTokensPorCategoria).some((arr) => Array.isArray(arr) && arr.length > 0)
+  );
+
+  if (recienRegistrado || (!tieneAlgunDispositivoActivado && !notifVistaEstaSesion)) {
+    return (
+      <div className="cl-shell">
+        <Header role={role} setRole={setRole} loggedIn={false} />
+        <div className="cl-main">
+          <PantallaActivarNotificaciones uid={user.uid} esNueva={recienRegistrado} onListo={marcarNotifVista} />
         </div>
       </div>
     );
@@ -183,6 +233,49 @@ export default function App() {
           />
         )}
       </div>
+    </div>
+  );
+}
+
+function PantallaActivarNotificaciones({ uid, esNueva, onListo }) {
+  const [estado, setEstado] = useState("inicial"); // inicial | activando | error
+  const [error, setError] = useState("");
+
+  const activar = async () => {
+    setEstado("activando");
+    setError("");
+    try {
+      await activarNotificaciones(uid);
+      onListo();
+    } catch (err) {
+      // No dejamos a nadie encallado aquí para siempre: si el navegador no
+      // puede activarlas (o la persona lo rechaza en el aviso del sistema),
+      // avisamos y dejamos seguir de todas formas — podrá intentarlo otra
+      // vez cuando quiera desde Ajustes.
+      setError((err.message || "No se ha podido activar.") + " Puedes intentarlo más tarde desde Ajustes → Notificaciones.");
+      setEstado("error");
+    }
+  };
+
+  return (
+    <div className="cl-auth-box cl-ticket">
+      <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>
+        {esNueva ? "¡CLUB CREADO!" : "ACTIVA LAS NOTIFICACIONES"}
+      </h2>
+      <p style={{ fontSize: "13px", color: "#666", marginBottom: "16px" }}>
+        Un último paso muy importante — activa los avisos en este dispositivo para enterarte al momento de
+        solicitudes nuevas, aceptaciones y cancelaciones. Es la mejor forma de no llevarte un disgusto por no
+        haberte enterado a tiempo.
+      </p>
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "10px" }}>{error}</p>}
+      <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={activar} disabled={estado === "activando"}>
+        {estado === "activando" ? "Activando..." : estado === "error" ? "Reintentar" : "Activar notificaciones"}
+      </button>
+      {estado === "error" && (
+        <button className="cl-btn cl-btn-ghost" style={{ width: "100%", justifyContent: "center", marginTop: "8px" }} onClick={onListo}>
+          Continuar de todas formas
+        </button>
+      )}
     </div>
   );
 }
