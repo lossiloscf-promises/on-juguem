@@ -233,17 +233,38 @@ exports.comprobarClubDuplicado = onCall({ region: "europe-west1" }, async (reque
 // Envía un aviso push a todos los dispositivos guardados de un club — y
 // limpia solo los tokens que ya no sirven (dispositivo desinstalado, etc.),
 // sin tocar los demás.
-async function enviarAviso(uid, titulo, cuerpo) {
+// Misma clave que usa el cliente para guardar coordinadores y contactos.
+function claveCategoria(genero, formato) {
+  const f = formato === "Fútbol 8" ? "f8" : "f11";
+  const g = genero === "Femenino" ? "f" : "m";
+  return `${f}_${g}`;
+}
+
+// Envía un aviso solo a quien le corresponde: el coordinador general SIEMPRE
+// lo recibe (supervisa todo el club), y además el coordinador específico de
+// esa categoría si el partido tiene una (genero/formato). Si no se sabe la
+// categoría del partido, se manda a todos los dispositivos guardados, sea
+// cual sea su categoría, para no perder el aviso.
+async function enviarAviso(uid, titulo, cuerpo, categoria) {
   if (!uid) {
     logger.info("enviarAviso: sin uid destinatario, no se envía nada");
     return;
   }
   try {
     const userSnap = await db.collection("users").doc(uid).get();
-    const tokens = userSnap.data()?.fcmTokens || [];
-    logger.info(`enviarAviso: destinatario=${uid}, tokens guardados=${tokens.length}, titulo="${titulo}"`);
+    const porCategoria = userSnap.data()?.fcmTokensPorCategoria || {};
+
+    let claves;
+    if (categoria?.genero && categoria?.formato) {
+      claves = ["general", claveCategoria(categoria.genero, categoria.formato)];
+    } else {
+      claves = Object.keys(porCategoria);
+    }
+    const tokens = [...new Set(claves.flatMap((c) => porCategoria[c] || []))];
+
+    logger.info(`enviarAviso: destinatario=${uid}, categoria=${categoria ? claveCategoria(categoria.genero, categoria.formato) : "(todas)"}, tokens=${tokens.length}, titulo="${titulo}"`);
     if (tokens.length === 0) {
-      logger.info("enviarAviso: este club no tiene ningún dispositivo con notificaciones activadas, no hay nada que enviar");
+      logger.info("enviarAviso: no hay ningún dispositivo guardado para avisar aquí");
       return;
     }
     const respuesta = await messaging.sendEachForMulticast({
@@ -251,7 +272,7 @@ async function enviarAviso(uid, titulo, cuerpo) {
       notification: { title: titulo, body: cuerpo },
     });
     logger.info(`enviarAviso: enviados=${respuesta.successCount}, fallidos=${respuesta.failureCount}`);
-    respuesta.responses.forEach((r, i) => {
+    respuesta.responses.forEach((r) => {
       if (!r.success) logger.info(`enviarAviso: fallo en un token — ${r.error?.code}: ${r.error?.message}`);
     });
     const tokensInvalidos = [];
@@ -262,9 +283,12 @@ async function enviarAviso(uid, titulo, cuerpo) {
       }
     });
     if (tokensInvalidos.length > 0) {
-      await db.collection("users").doc(uid).update({
-        fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokensInvalidos),
+      // Se quita de todas las categorías donde pudiera estar, por si acaso.
+      const limpieza = {};
+      Object.keys(porCategoria).forEach((clave) => {
+        limpieza[`fcmTokensPorCategoria.${clave}`] = admin.firestore.FieldValue.arrayRemove(...tokensInvalidos);
       });
+      await db.collection("users").doc(uid).update(limpieza);
     }
   } catch (err) {
     logger.error("Error enviando notificación push", err);
@@ -282,47 +306,124 @@ exports.avisosDeHuecos = onDocumentWritten({ document: "slots/{slotId}", region:
 
   const nombreDueño = despues.clubName || "Un club";
   const nombreSolicitante = despues.requestedByClubName || "Un club";
+  const equipo = despues.grupo ? `${despues.grupo}${despues.anyo ? ` (${despues.anyo})` : ""}` : "vuestro amistoso";
+  const categoria = { genero: despues.genero, formato: despues.formato };
 
   // 1) Nueva solicitud pendiente — avisa al dueño del hueco.
   if ((!antes || antes.status !== "pendiente") && despues.status === "pendiente") {
-    await enviarAviso(despues.ownerUid, "Nueva solicitud de amistoso", `${nombreSolicitante} quiere reservar un hueco de ${despues.grupo || "tu equipo"}.`);
+    await enviarAviso(despues.ownerUid, "Nueva solicitud de amistoso",
+      `${nombreSolicitante} quiere reservar un hueco de ${equipo}.`, categoria);
   }
 
   // 2) El dueño acepta (pendiente → pactado) — avisa a quien reservó.
   if (antes?.status === "pendiente" && despues.status === "pactado") {
-    await enviarAviso(despues.requestedByUid, "Solicitud aceptada", `${nombreDueño} ha aceptado vuestra solicitud de amistoso.`);
+    await enviarAviso(despues.requestedByUid, "Solicitud aceptada",
+      `${nombreDueño} ha aceptado vuestra solicitud de amistoso para ${equipo}.`, categoria);
   }
 
-  // 3) Propuesta de sede nueva — avisa a la otra parte.
+  // 3) Propuesta de sede nueva — avisa a la otra parte, diciendo si venía
+  //    con día/hora/campo ya incluidos o solo la sede.
   if (despues.sedePropuestaPor && antes?.sedePropuestaPor !== despues.sedePropuestaPor) {
     const soyDueñoQuienPropone = despues.sedePropuestaPor === despues.ownerUid;
     const destinatario = soyDueñoQuienPropone ? despues.requestedByUid : despues.ownerUid;
     const quienPropone = soyDueñoQuienPropone ? nombreDueño : nombreSolicitante;
-    await enviarAviso(destinatario, "Propuesta de dónde jugar", `${quienPropone} ha propuesto dónde jugar el partido.`);
+    const d = despues.sedePropuestaDetalles;
+    const cuerpo = d
+      ? `${quienPropone} te ha propuesto campo, día y hora para ${equipo}: ${d.diaExacto} ${d.horaExacta} en ${d.campoExacto}.`
+      : `${quienPropone} te ha propuesto sede para ${equipo} — entra a ver dónde.`;
+    await enviarAviso(destinatario, "Propuesta de dónde jugar", cuerpo, categoria);
   }
 
   // 4) Sede aceptada — avisa a quien la había propuesto.
   if (antes?.sedePropuestaPor && !despues.sedePropuestaPor && despues.sede) {
-    await enviarAviso(antes.sedePropuestaPor, "Sede aceptada", "Han aceptado tu propuesta de dónde jugar.");
+    const quienAcepta = antes.sedePropuestaPor === despues.ownerUid ? nombreSolicitante : nombreDueño;
+    await enviarAviso(antes.sedePropuestaPor, "Sede aceptada",
+      `${quienAcepta} ha aceptado tu propuesta de dónde jugar para ${equipo}.`, categoria);
   }
 
   // 5) Propuesta de cancelación — avisa a la otra parte.
   if (despues.cancelacionPropuestaPor && antes?.cancelacionPropuestaPor !== despues.cancelacionPropuestaPor) {
     const soyDueñoQuienPropone = despues.cancelacionPropuestaPor === despues.ownerUid;
     const destinatario = soyDueñoQuienPropone ? despues.requestedByUid : despues.ownerUid;
-    await enviarAviso(destinatario, "Propuesta de cancelación", "Alguien ha propuesto cancelar un partido — entra a revisarlo.");
+    const quienPropone = soyDueñoQuienPropone ? nombreDueño : nombreSolicitante;
+    await enviarAviso(destinatario, "Propuesta de cancelación",
+      `${quienPropone} ha propuesto cancelar el amistoso de ${equipo} — entra a revisarlo.`, categoria);
   }
 
   // 6) Propuesta de cambio de día/hora/campo — avisa a la otra parte.
   if (despues.cambioPropuestoPor && antes?.cambioPropuestoPor !== despues.cambioPropuestoPor) {
     const soyDueñoQuienPropone = despues.cambioPropuestoPor === despues.ownerUid;
     const destinatario = soyDueñoQuienPropone ? despues.requestedByUid : despues.ownerUid;
-    await enviarAviso(destinatario, "Cambio de horario propuesto", "Alguien ha propuesto cambiar día, hora o campo de un partido.");
+    const quienPropone = soyDueñoQuienPropone ? nombreDueño : nombreSolicitante;
+    const d = despues.cambioPropuesto;
+    await enviarAviso(destinatario, "Cambio de horario propuesto",
+      `${quienPropone} te ha propuesto cambiar ${equipo} a ${d?.diaExacto || ""} ${d?.horaExacta || ""} en ${d?.campoExacto || ""}.`, categoria);
   }
 
   // 7) Partido cerrado del todo (día/hora/campo ya fijos) — avisa a las dos partes.
   if (antes?.status !== "confirmado" && despues.status === "confirmado") {
-    await enviarAviso(despues.ownerUid, "Partido cerrado", `Vuestro partido contra ${nombreSolicitante} ya tiene día, hora y campo.`);
-    await enviarAviso(despues.requestedByUid, "Partido cerrado", `Vuestro partido contra ${nombreDueño} ya tiene día, hora y campo.`);
+    await enviarAviso(despues.ownerUid, "Partido cerrado",
+      `Vuestro amistoso de ${equipo} contra ${nombreSolicitante} ya tiene día, hora y campo: ${despues.diaExacto} ${despues.horaExacta} en ${despues.campoExacto}.`, categoria);
+    await enviarAviso(despues.requestedByUid, "Partido cerrado",
+      `Vuestro amistoso de ${equipo} contra ${nombreDueño} ya tiene día, hora y campo: ${despues.diaExacto} ${despues.horaExacta} en ${despues.campoExacto}.`, categoria);
   }
+
+  // 8) Un hueco que tenía algo en marcha (solicitud, pactado o ya cerrado) ha
+  //    vuelto a "libre" — por el motivo que sea: cancelación aceptada, un
+  //    equipo borrado, o el dueño usando "Limpiar pre/postemporada". Avisa a
+  //    quien había reservado, porque para él/ella esto rompe su compromiso
+  //    sin que lo haya decidido — nunca debe enterarse solo si mira la app.
+  if (antes && ["pendiente", "pactado", "confirmado"].includes(antes.status) && despues.status === "libre" && antes.requestedByUid) {
+    const nombreDueñoAntes = antes.clubName || "Un club";
+    const equipoAntes = antes.grupo ? `${antes.grupo}${antes.anyo ? ` (${antes.anyo})` : ""}` : "vuestro amistoso";
+    await enviarAviso(
+      antes.requestedByUid,
+      "Un partido ha quedado libre otra vez",
+      `Vuestro amistoso de ${equipoAntes} con ${nombreDueñoAntes} (${antes.jornadaLabel || ""}) ya no está en marcha — el hueco ha vuelto a estar disponible.`,
+      { genero: antes.genero, formato: antes.formato }
+    );
+  }
+});
+
+// Aviso general a TODOS los clubes de la plataforma — solo lo puede llamar
+// un administrador de verdad (se comprueba contra su propio documento, no
+// contra lo que diga el propio navegador). Pensado para avisos tipo
+// mantenimiento, novedades importantes, etc.
+exports.enviarAvisoGlobal = onCall({ region: "europe-west1" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Necesitas sesión iniciada.");
+
+  const llamanteSnap = await db.collection("users").doc(uid).get();
+  if (!llamanteSnap.data()?.esAdmin) {
+    throw new HttpsError("permission-denied", "Solo un administrador puede enviar avisos generales.");
+  }
+
+  const titulo = (request.data?.titulo || "").trim();
+  const cuerpo = (request.data?.cuerpo || "").trim();
+  if (!titulo || !cuerpo) {
+    throw new HttpsError("invalid-argument", "Falta el título o el mensaje.");
+  }
+
+  const usersSnap = await db.collection("users").get();
+  let tokens = [];
+  usersSnap.docs.forEach((doc) => {
+    const porCategoria = doc.data().fcmTokensPorCategoria || {};
+    Object.values(porCategoria).forEach((arr) => { tokens = tokens.concat(arr || []); });
+  });
+  tokens = [...new Set(tokens)];
+
+  if (tokens.length === 0) return { enviados: 0, total: 0 };
+
+  // FCM solo admite 500 tokens por llamada — se manda en lotes si hace falta.
+  let enviados = 0;
+  for (let i = 0; i < tokens.length; i += 500) {
+    const lote = tokens.slice(i, i + 500);
+    const respuesta = await messaging.sendEachForMulticast({
+      tokens: lote,
+      notification: { title: titulo, body: cuerpo },
+    });
+    enviados += respuesta.successCount;
+  }
+  logger.info(`enviarAvisoGlobal: enviados=${enviados} de ${tokens.length} dispositivos totales`);
+  return { enviados, total: tokens.length };
 });
