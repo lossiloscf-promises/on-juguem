@@ -235,10 +235,6 @@ function PanelAdmin({ onVerificar }) {
     <div>
       {error && <p style={{ color: "var(--clay)", fontSize: "12px" }}>{error}</p>}
 
-      <PanelGeocodificar />
-      <PanelAvisoGlobal />
-      <PanelMantenimiento />
-
       {clubesDuplicados.length > 0 && (
         <div className="cl-ticket" style={{ borderColor: "var(--clay)", background: "#FDECEA" }}>
           <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--clay)" }}>
