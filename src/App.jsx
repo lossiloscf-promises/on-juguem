@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, CalendarDays, Search, LayoutGrid, Trophy, SlidersHorizontal, LogOut } from "lucide-react";
+import { Shield, ShieldCheck, CalendarDays, Search, LayoutGrid, Trophy, SlidersHorizontal, LogOut } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
@@ -13,6 +13,8 @@ import ClubView from "./components/ClubView";
 import CuadranteView from "./components/CuadranteView";
 import TemporadaView from "./components/TemporadaView";
 import AjustesView from "./components/AjustesView";
+import AdminView from "./components/AdminView";
+import OnboardingWizard from "./components/OnboardingWizard";
 import TorneosView from "./components/TorneosView";
 import CuadrantePublico from "./components/CuadrantePublico";
 import { escucharEnPrimerPlano, activarNotificaciones } from "./hooks/useNotificaciones";
@@ -91,16 +93,27 @@ export default function App() {
     );
   }
 
-  const tieneAlgunDispositivoActivado = !!(
-    profile.fcmTokensPorCategoria && Object.values(profile.fcmTokensPorCategoria).some((arr) => Array.isArray(arr) && arr.length > 0)
-  );
-
-  if (recienRegistrado || (!tieneAlgunDispositivoActivado && !notifVistaEstaSesion)) {
+  if (recienRegistrado) {
     return (
       <div className="cl-shell">
         <Header role={role} setRole={setRole} loggedIn={false} />
         <div className="cl-main">
-          <PantallaActivarNotificaciones uid={user.uid} esNueva={recienRegistrado} onListo={marcarNotifVista} />
+          <OnboardingWizard uid={user.uid} profile={profile} onTerminado={marcarNotifVista} />
+        </div>
+      </div>
+    );
+  }
+
+  const tieneAlgunDispositivoActivado = !!(
+    profile.fcmTokensPorCategoria && Object.values(profile.fcmTokensPorCategoria).some((arr) => Array.isArray(arr) && arr.length > 0)
+  );
+
+  if (!tieneAlgunDispositivoActivado && !notifVistaEstaSesion) {
+    return (
+      <div className="cl-shell">
+        <Header role={role} setRole={setRole} loggedIn={false} />
+        <div className="cl-main">
+          <PantallaActivarNotificaciones uid={user.uid} esNueva={false} onListo={marcarNotifVista} />
         </div>
       </div>
     );
@@ -144,6 +157,7 @@ export default function App() {
         loggedIn={true}
         clubName={profile.clubName}
         escudoUrl={profile.escudoUrl}
+        esAdmin={profile.esAdmin}
         onLogout={logout}
         avisos={mySlots.filter((s) =>
           s.status === "pendiente" ||
@@ -230,8 +244,10 @@ export default function App() {
             onGuardarCoordinadores={(uid, datos) => updateCoordinadores(uid, datos)}
             onEscudoCambiado={actualizarEscudoLocal}
             onBorrarCuenta={(password) => deleteAccount(password)}
-            onVerificar={verificarClub}
           />
+        )}
+        {role === "admin" && profile.esAdmin && (
+          <AdminView onVerificar={verificarClub} />
         )}
       </div>
     </div>
@@ -325,7 +341,7 @@ function PantallaQuienEres({ clubName, escudoUrl, opciones, onListo }) {
   );
 }
 
-function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos, avisosClub }) {
+function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos, avisosClub, esAdmin }) {
   const cambiarIdioma = (codigo) => {
     setIdioma(codigo);
     window.location.reload();
@@ -390,6 +406,12 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos
             <SlidersHorizontal />
             {t("nav.ajustes")}
           </button>
+          {esAdmin && (
+            <button className={`cl-tab ${role === "admin" ? "active" : ""}`} onClick={() => setRole("admin")}>
+              <ShieldCheck />
+              ADMIN
+            </button>
+          )}
           <button className="cl-tab" onClick={onLogout}>
             <LogOut />
             {t("nav.salir")}

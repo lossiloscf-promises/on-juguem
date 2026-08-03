@@ -1,283 +1,19 @@
 import { useState, useEffect } from "react";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "../firebase";
-import { Save, Trash2, Plus, ShieldCheck, AlertTriangle, Download, Check } from "lucide-react";
+import { t } from "../i18n";
+import { Save, Trash2, Plus, Download } from "lucide-react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
 import { CLAVES_COORDINADOR } from "../constants";
 import { subirEscudo, borrarEscudo } from "../hooks/useEscudo";
-import { activarNotificaciones, notificacionesSoportadas, reiniciarTodosLosDispositivos } from "../hooks/useNotificaciones";
-import { useEstadoApp, cambiarMantenimiento } from "../hooks/useEstadoApp";
+import { activarNotificaciones, notificacionesSoportadas } from "../hooks/useNotificaciones";
 import { limpiarTemporada } from "../hooks/useClubData";
-import { useTodosLosClubes } from "../hooks/useAuth";
-import {
-  useClubesOficiales,
-  useSolicitudesClub,
-  añadirClubOficial,
-  eliminarClubOficial,
-  importarClubesSemilla,
-  marcarSolicitudAtendida,
-} from "../hooks/useClubesOficiales";
+import { useClubesOficiales } from "../hooks/useClubesOficiales";
 
-function PanelAvisoGlobal() {
-  const [titulo, setTitulo] = useState("");
-  const [mensaje, setMensaje] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [resultado, setResultado] = useState("");
-  const [error, setError] = useState("");
-
-  const enviar = async () => {
-    if (!titulo.trim() || !mensaje.trim()) {
-      setError("Rellena título y mensaje.");
-      return;
-    }
-    if (!window.confirm(`¿Enviar este aviso a TODOS los clubes de la plataforma?\n\n"${titulo}"\n${mensaje}`)) return;
-    setEnviando(true);
-    setError("");
-    setResultado("");
-    try {
-      const fn = httpsCallable(functions, "enviarAvisoGlobal");
-      const r = await fn({ titulo: titulo.trim(), cuerpo: mensaje.trim() });
-      setResultado(`Enviado a ${r.data.enviados} de ${r.data.total} dispositivos.`);
-      setTitulo("");
-      setMensaje("");
-    } catch (err) {
-      setError(err.message || "No se ha podido enviar.");
-    }
-    setEnviando(false);
-  };
-
-  return (
-    <div className="cl-ticket" style={{ marginBottom: "16px" }}>
-      <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>Aviso a todos los clubes</p>
-      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
-        Manda una notificación push a todos los dispositivos activados de la plataforma, sea cual sea su
-        categoría — para avisos generales, novedades, o cuando termine el mantenimiento.
-      </p>
-      <input className="cl-input" placeholder="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={60} style={{ marginBottom: "6px" }} />
-      <textarea className="cl-input" placeholder="Mensaje" value={mensaje} onChange={(e) => setMensaje(e.target.value)} rows={2} maxLength={200} style={{ marginBottom: "8px", width: "100%" }} />
-      <button className="cl-btn cl-btn-primary" onClick={enviar} disabled={enviando}>
-        {enviando ? "Enviando..." : "Enviar a todos"}
-      </button>
-      {resultado && <p style={{ color: "var(--pitch)", fontSize: "12px", marginTop: "6px" }}>{resultado}</p>}
-      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
-    </div>
-  );
-}
-
-function PanelMantenimiento() {
-  const estado = useEstadoApp();
-  const [mensaje, setMensaje] = useState("");
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState("");
-
-  const activarBloqueo = async () => {
-    setGuardando(true);
-    setError("");
-    try {
-      await cambiarMantenimiento(true, mensaje.trim() || "Estamos mejorando la aplicación — en breves momentos podrás volver a utilizarla.");
-    } catch (err) {
-      setError(err.message || "No se ha podido activar.");
-    }
-    setGuardando(false);
-  };
-
-  const quitarBloqueo = async () => {
-    setGuardando(true);
-    setError("");
-    try {
-      await cambiarMantenimiento(false, "");
-    } catch (err) {
-      setError(err.message || "No se ha podido desactivar.");
-    }
-    setGuardando(false);
-  };
-
-  return (
-    <div className="cl-ticket" style={{ borderColor: estado.mantenimiento ? "var(--clay)" : "var(--line)", marginBottom: "16px" }}>
-      <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
-        Modo mantenimiento {estado.mantenimiento && <span style={{ color: "var(--clay)" }}>— ACTIVO AHORA MISMO</span>}
-      </p>
-      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
-        Mientras esté activo, nadie puede usar la app (ni siquiera entrar) — solo ven el mensaje que pongas
-        aquí. Úsalo mientras arreglamos algo importante.
-      </p>
-      {!estado.mantenimiento ? (
-        <>
-          <textarea
-            className="cl-input"
-            placeholder="Mensaje a mostrar (opcional, hay uno por defecto)"
-            value={mensaje}
-            onChange={(e) => setMensaje(e.target.value)}
-            rows={2}
-            style={{ marginBottom: "8px", width: "100%" }}
-          />
-          <button className="cl-btn" style={{ background: "var(--clay)", color: "white" }} onClick={activarBloqueo} disabled={guardando}>
-            {guardando ? "Activando..." : "Activar modo mantenimiento"}
-          </button>
-        </>
-      ) : (
-        <button className="cl-btn cl-btn-primary" onClick={quitarBloqueo} disabled={guardando}>
-          {guardando ? "Quitando..." : "Ya está arreglado — quitar bloqueo"}
-        </button>
-      )}
-      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
-    </div>
-  );
-}
-
-function PanelAdmin({ onVerificar }) {
-  const clubes = useTodosLosClubes();
-  const clubesOficiales = useClubesOficiales();
-  const solicitudes = useSolicitudesClub();
-  const [error, setError] = useState("");
-  const [nuevoNombre, setNuevoNombre] = useState("");
-  const [nuevaLocalidad, setNuevaLocalidad] = useState("");
-  const [importando, setImportando] = useState(false);
-  const [avisoImport, setAvisoImport] = useState("");
-
-  const cambiar = async (uidClub, valor) => {
-    setError("");
-    try {
-      await onVerificar(uidClub, valor);
-    } catch (err) {
-      setError(err.message || "No se ha podido cambiar.");
-    }
-  };
-
-  // Detectar posibles duplicados por nombre de club, para la alarma.
-  const contador = {};
-  clubes.forEach((c) => {
-    const key = (c.clubNameLower || c.clubName || "").trim();
-    if (!key) return;
-    contador[key] = (contador[key] || 0) + 1;
-  });
-  const nombresDuplicados = new Set(Object.keys(contador).filter((k) => contador[k] > 1));
-  const clubesDuplicados = clubes.filter((c) => nombresDuplicados.has((c.clubNameLower || c.clubName || "").trim()));
-
-  const importar = async () => {
-    setImportando(true);
-    setAvisoImport("");
-    try {
-      const n = await importarClubesSemilla();
-      setAvisoImport(`Importados ${n} clubes nuevos (los que ya existían no se han tocado).`);
-    } catch (err) {
-      setAvisoImport(err.message || "No se ha podido importar.");
-    }
-    setImportando(false);
-  };
-
-  const añadirManual = async () => {
-    if (!nuevoNombre.trim()) return;
-    setError("");
-    try {
-      await añadirClubOficial(nuevoNombre, nuevaLocalidad);
-      setNuevoNombre("");
-      setNuevaLocalidad("");
-    } catch (err) {
-      setError(err.message || "No se ha podido añadir.");
-    }
-  };
-
-  const atenderSolicitud = async (s) => {
-    setError("");
-    try {
-      await añadirClubOficial(s.nombreSolicitado, "");
-      await marcarSolicitudAtendida(s.id);
-    } catch (err) {
-      setError(err.message || "No se ha podido procesar la solicitud.");
-    }
-  };
-
-  return (
-    <div>
-      <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>
-        <ShieldCheck size={18} style={{ verticalAlign: "-3px" }} /> ADMINISTRACIÓN
-      </h2>
-      {error && <p style={{ color: "var(--clay)", fontSize: "12px" }}>{error}</p>}
-
-      <PanelAvisoGlobal />
-      <PanelMantenimiento />
-
-      {clubesDuplicados.length > 0 && (
-        <div className="cl-ticket" style={{ borderColor: "var(--clay)", background: "#FDECEA" }}>
-          <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--clay)" }}>
-            <AlertTriangle size={14} style={{ verticalAlign: "-2px" }} /> Nombres de club duplicados — revisar antes de verificar
-          </p>
-          {clubesDuplicados.map((c) => (
-            <p key={c.uid} style={{ fontSize: "13px", marginTop: "4px" }}>
-              <b>{c.clubName}</b> · {c.telefono} · {c.email} {c.verificado && "✅ ya verificado"}
-            </p>
-          ))}
-        </div>
-      )}
-
-      <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "16px" }}>VERIFICAR TELÉFONOS</h3>
-      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "10px" }}>
-        Un club no puede reservar ni ser reservado hasta que confirmes su teléfono a mano (llamada o WhatsApp) y le des el visto bueno aquí.
-      </p>
-      <div className="cl-ticket">
-        {clubes.map((c) => (
-          <div key={c.uid} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
-            <div>
-              <b>{c.clubName}</b>{" "}
-              <span className="cl-mono" style={{ fontSize: "12px", color: "#64748B" }}>· {c.telefono} · {c.email}</span>
-            </div>
-            {c.verificado ? (
-              <button className="cl-btn cl-btn-ghost" onClick={() => cambiar(c.uid, false)}>Quitar verificación</button>
-            ) : (
-              <button className="cl-btn cl-btn-primary" onClick={() => cambiar(c.uid, true)}>Verificar</button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {solicitudes.length > 0 && (
-        <>
-          <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--gold)", marginTop: "16px" }}>
-            SOLICITUDES DE ALTA EN LA LISTA ({solicitudes.length})
-          </h3>
-          <div className="cl-ticket">
-            {solicitudes.map((s) => (
-              <div key={s.id} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
-                <span style={{ fontSize: "13px" }}><b>{s.nombreSolicitado}</b> · {s.telefono} · {s.email}</span>
-                <button className="cl-btn cl-btn-primary" onClick={() => atenderSolicitud(s)}><Check size={13} /> Añadir a la lista</button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "16px" }}>LISTA OFICIAL DE CLUBES ({clubesOficiales.length})</h3>
-      <div className="cl-ticket">
-        <button className="cl-btn cl-btn-gold" onClick={importar} disabled={importando} style={{ marginBottom: "8px" }}>
-          <Download size={14} /> {importando ? "Importando..." : "Importar/actualizar lista base"}
-        </button>
-        {avisoImport && <p style={{ fontSize: "12px", color: "var(--pitch)", marginBottom: "8px" }}>{avisoImport}</p>}
-        <div className="cl-row" style={{ marginBottom: "10px" }}>
-          <input className="cl-input" placeholder="Nombre del club" value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} maxLength={100} />
-          <input className="cl-input" placeholder="Localidad (opcional)" value={nuevaLocalidad} onChange={(e) => setNuevaLocalidad(e.target.value)} style={{ maxWidth: "160px" }} />
-          <button className="cl-btn cl-btn-primary" onClick={añadirManual}><Plus size={14} /> Añadir</button>
-        </div>
-        <div style={{ maxHeight: "200px", overflowY: "auto" }}>
-          {clubesOficiales.map((c) => (
-            <div key={c.id} className="cl-row" style={{ justifyContent: "space-between", padding: "3px 0" }}>
-              <span style={{ fontSize: "13px" }}>{c.nombre} {c.localidad && <span style={{ color: "#64748B" }}>· {c.localidad}</span>}</span>
-              <button className="cl-btn cl-btn-ghost" style={{ padding: "2px 6px" }} onClick={() => eliminarClubOficial(c.id)}><Trash2 size={12} /></button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function PanelNotificaciones({ uid }) {
   const [estado, setEstado] = useState("inicial"); // inicial | activando | activado | error | no_soportado
   const [error, setError] = useState("");
-  const [reiniciando, setReiniciando] = useState(false);
-  const [avisoReinicio, setAvisoReinicio] = useState("");
 
   useEffect(() => {
     notificacionesSoportadas().then((ok) => { if (!ok) setEstado("no_soportado"); });
@@ -293,19 +29,6 @@ function PanelNotificaciones({ uid }) {
       setError(err.message || "No se ha podido activar.");
       setEstado("error");
     }
-  };
-
-  const reiniciar = async () => {
-    if (!window.confirm("Esto desactiva las notificaciones en TODOS tus dispositivos (útil si te llegan repetidas). Tendrás que volver a activarlas en cada uno. ¿Continuar?")) return;
-    setReiniciando(true);
-    try {
-      await reiniciarTodosLosDispositivos(uid);
-      setAvisoReinicio("Hecho — vuelve a activarlas en este dispositivo cuando quieras.");
-      setEstado("inicial");
-    } catch (err) {
-      setError(err.message || "No se ha podido reiniciar.");
-    }
-    setReiniciando(false);
   };
 
   return (
@@ -327,14 +50,6 @@ function PanelNotificaciones({ uid }) {
       )}
       {estado === "activado" && <p style={{ fontSize: "13px", color: "var(--pitch)" }}>✓ Notificaciones activadas en este dispositivo.</p>}
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
-
-      <p style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px solid var(--line)", fontSize: "12px", color: "#64748B" }}>
-        ¿Te llegan los avisos duplicados o repetidos? Reinicia todos los dispositivos guardados y vuelve a activar.
-      </p>
-      <button className="cl-btn cl-btn-ghost" onClick={reiniciar} disabled={reiniciando}>
-        {reiniciando ? "Reiniciando..." : "Reiniciar todos los dispositivos"}
-      </button>
-      {avisoReinicio && <p style={{ fontSize: "12px", color: "var(--pitch)", marginTop: "6px" }}>{avisoReinicio}</p>}
     </div>
   );
 }
@@ -518,7 +233,7 @@ function PanelLimpiarTemporada({ uid }) {
   );
 }
 
-export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta, onVerificar }) {
+export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta }) {
   const instalaciones = useInstalaciones(uid);
   const [nuevaInstalacion, setNuevaInstalacion] = useState("");
   const [nuevaDireccion, setNuevaDireccion] = useState("");
@@ -578,11 +293,6 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
 
   return (
     <div>
-      {profile.esAdmin && (
-        <div style={{ marginBottom: "24px" }}>
-          <PanelAdmin onVerificar={onVerificar} />
-        </div>
-      )}
       <div className="cl-grid-3">
       <div>
         <div className="cl-ticket" style={{ background: "#EAF3EC", borderColor: "var(--pitch)" }}>
@@ -594,7 +304,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           </p>
         </div>
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>DATOS DE CONTACTO</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("ajustes.datos_contacto")}</h2>
         <div className="cl-ticket">
           <label className="cl-label">NOMBRE DEL CLUB</label>
           <select className="cl-input" value={clubName} onChange={(e) => setClubName(e.target.value)} style={{ marginBottom: "8px" }}>
@@ -622,13 +332,13 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           <a href="#" onClick={(e) => { e.preventDefault(); setVerPolitica(true); }}>Ver política de privacidad</a>
         </p>
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>NOTIFICACIONES</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>{t("ajustes.notificaciones")}</h2>
         <PanelNotificaciones uid={uid} />
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ESCUDO DEL CLUB</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>{t("ajustes.escudo")}</h2>
         <PanelEscudo uid={uid} profile={profile} onEscudoCambiado={onEscudoCambiado} />
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>ENLACE PÚBLICO DE TU CUADRANTE</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "20px" }}>{t("ajustes.enlace_publico")}</h2>
         <div className="cl-ticket">
           <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
             Compártelo con quien quieras (directiva, padres, otros clubes) — se ve sin necesitar cuenta, y nunca muestra teléfonos ni emails.
@@ -650,7 +360,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
       </div>
 
       <div>
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--clay)" }}>ZONA PELIGROSA</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--clay)" }}>{t("ajustes.zona_peligrosa")}</h2>
 
         <PanelLimpiarTemporada uid={uid} />
 
@@ -687,7 +397,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           </div>
         )}
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "24px" }}>TUS INSTALACIONES</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "24px" }}>{t("ajustes.instalaciones")}</h2>
         <div className="cl-ticket">
           <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "10px" }}>
             Guarda aquí los campos que usáis habitualmente, para elegirlos rápido al cerrar un partido en vez de escribirlos cada vez.
@@ -724,7 +434,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           )}
         </div>
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "24px" }}>COORDINADORES DE CONTACTO</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "24px" }}>{t("ajustes.coordinadores")}</h2>
         <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "10px" }}>
           Rellena al menos el "Coordinador general" — si tenéis a alguien distinto por categoría, rellénalo también y
           se usará ese en vez del general para esa categoría. Los partidos de una categoría sin ningún contacto

@@ -1,5 +1,5 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onDocumentWritten, onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -11,6 +11,10 @@ const messaging = admin.messaging();
 // La clave de la API de Claude se guarda como "secret" de Firebase, nunca en
 // el código ni en el navegador. Se configura una vez con:
 //   firebase functions:secrets:set ANTHROPIC_API_KEY
+// Para configurar la clave de Google Geocoding (solo la primera vez):
+//   firebase functions:secrets:set GOOGLE_GEOCODING_API_KEY
+const GOOGLE_GEOCODING_API_KEY = defineSecret("GOOGLE_GEOCODING_API_KEY");
+
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
 const MODELO = "claude-sonnet-5";
 
@@ -441,3 +445,176 @@ exports.enviarAvisoGlobal = onCall({ region: "europe-west1" }, async (request) =
   logger.info(`enviarAvisoGlobal: enviados=${enviados} de ${tokens.length} dispositivos totales`);
   return { enviados, total: tokens.length };
 });
+
+// Convierte "Torrellano de Alicante" (o cualquier localidad) en un punto del
+// mapa (latitud/longitud) usando el geocodificador de Google — se le añade
+// siempre ", Comunitat Valenciana, España" para no confundir localidades con
+// el mismo nombre en otras partes del mundo.
+// Cuando un club no tiene localidad guardada, muchos nombres llevan el
+// pueblo dentro (p.ej. "At. Lliria", "Benimamet C.F.") — esto quita las
+// siglas y palabras típicas de tipo de club para quedarse solo con lo que
+// probablemente sea el nombre del pueblo. No es perfecto, pero Google suele
+// encontrar el sitio correcto aunque quede algo de "ruido" en la búsqueda.
+function limpiarNombreClub(nombre) {
+  let n = nombre;
+  const prefijos = /^(C\.?\s?D\.?|C\.?\s?F\.?|A\.?\s?D\.?|U\.?\s?D\.?|S\.?\s?D\.?|At\.?l?\.?|Atl[eé]tico|Athletic|A\.?\s?C\.?|C\.?\s?A\.?E\.?|Peña|Escuela( de f[uú]tbol)?|Antiguos Alumnos)\s+/i;
+  const sufijos = /\s+(C\.?\s?F\.?|F\.?\s?C\.?|C\.?\s?D\.?)\.?$/i;
+  // Se repite varias veces por si hay más de una sigla seguida (p.ej. "Athletic C.F. Xeresa").
+  for (let i = 0; i < 3; i++) {
+    const antes = n;
+    n = n.replace(prefijos, "").replace(sufijos, "").replace(/\s+(C\.?F\.?|F\.?C\.?)\s+/gi, " ");
+    if (n === antes) break;
+  }
+  n = n.replace(/\s+\d{4}$/, ""); // años sueltos al final (fundación, etc.)
+  return n.trim().replace(/^\.+|\.+$/g, "").trim();
+}
+
+// Intenta primero con la localidad guardada; si no hay, o si Google no
+// encuentra nada con ella, prueba con el nombre del club ya limpiado de
+// siglas — para no dejar sin geocodificar a los que no tienen localidad.
+async function geocodificarClub(apiKey, datos) {
+  if (datos.localidad?.trim()) {
+    const porLocalidad = await geocodificarDireccion(apiKey, datos.localidad.trim());
+    if (porLocalidad) return porLocalidad;
+  }
+  const nombreLimpio = limpiarNombreClub(datos.nombre || "");
+  if (!nombreLimpio) return null;
+  return geocodificarDireccion(apiKey, nombreLimpio);
+}
+
+async function geocodificarDireccion(apiKey, localidad) {
+  const query = encodeURIComponent(`${localidad}, Comunitat Valenciana, España`);
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${apiKey}`;
+  const respuesta = await fetch(url);
+  const datos = await respuesta.json();
+  if (datos.status !== "OK" || !datos.results?.[0]) {
+    logger.info(`geocodificarDireccion: sin resultado para "${localidad}" (${datos.status})`);
+    return null;
+  }
+  const { lat, lng } = datos.results[0].geometry.location;
+  return { lat, lng };
+}
+
+// Cuando se añade un club nuevo a la lista oficial (a mano por un admin, o al
+// aceptar una solicitud), se geocodifica solo, sin que nadie tenga que
+// acordarse de hacerlo.
+exports.geocodificarClubNuevo = onDocumentCreated(
+  { document: "clubesOficiales/{id}", region: "europe-west1", secrets: [GOOGLE_GEOCODING_API_KEY] },
+  async (event) => {
+    const datos = event.data.data();
+    if (datos.lat) return; // ya geocodificado
+    try {
+      const coords = await geocodificarClub(GOOGLE_GEOCODING_API_KEY.value(), datos);
+      if (coords) await event.data.ref.update(coords);
+    } catch (err) {
+      logger.error(`geocodificarClubNuevo: error con "${datos.nombre}"`, err);
+    }
+  }
+);
+
+// Geocodifica de golpe los clubes de la lista oficial que todavía no tengan
+// coordenadas — pensado para el repaso inicial de los 357 ya existentes.
+// Solo un administrador puede llamarlo. Se limita a un lote cada vez (Google
+// permite muchas peticiones por segundo, pero así evitamos que la función
+// tarde demasiado en una sola llamada).
+exports.geocodificarLoteClubes = onCall(
+  { region: "europe-west1", secrets: [GOOGLE_GEOCODING_API_KEY], timeoutSeconds: 300 },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Necesitas sesión iniciada.");
+    const llamanteSnap = await db.collection("users").doc(uid).get();
+    if (!llamanteSnap.data()?.esAdmin) {
+      throw new HttpsError("permission-denied", "Solo un administrador puede hacer esto.");
+    }
+
+    const limite = Math.min(request.data?.limite || 50, 100);
+    // Firestore no permite buscar "el campo no existe" directamente, así que
+    // se trae todo y se filtra aquí — la lista de clubes oficiales es lo
+    // bastante pequeña (unos cientos) para que esto sea rápido y barato.
+    // Se incluyen TODOS los que no tienen coordenadas, tengan o no localidad
+    // guardada — para los que no la tienen, se intenta con el nombre del
+    // club limpiado de siglas (ver geocodificarClub).
+    const todos = await db.collection("clubesOficiales").limit(2000).get();
+    const pendientes = todos.docs.filter((d) => d.data().lat === undefined).slice(0, limite);
+
+    let hechos = 0;
+    let fallidos = 0;
+    for (const doc of pendientes) {
+      try {
+        const coords = await geocodificarClub(GOOGLE_GEOCODING_API_KEY.value(), doc.data());
+        if (coords) {
+          await doc.ref.update(coords);
+          hechos++;
+        } else {
+          // Se marca como "intentado sin éxito" (no simplemente "sin
+          // intentar") para no volver a probarlo cada vez en bucle — si el
+          // nombre no da para geocodificarlo, hará falta rellenar la
+          // localidad a mano en su ficha para que lo consiga la próxima vez.
+          await doc.ref.update({ lat: null, lng: null });
+          fallidos++;
+        }
+      } catch (err) {
+        logger.error(`geocodificarLoteClubes: error con "${doc.data().nombre}"`, err);
+        await doc.ref.update({ lat: null, lng: null }).catch(() => {});
+        fallidos++;
+      }
+    }
+
+    const restantesSnap = await db.collection("clubesOficiales").limit(2000).get();
+    const restantes = restantesSnap.docs.filter((d) => d.data().lat === undefined).length;
+
+    logger.info(`geocodificarLoteClubes: hechos=${hechos}, fallidos=${fallidos}, restantes=${restantes}`);
+    return { hechos, fallidos, restantes };
+  }
+);
+
+// Autocompletado de direcciones (para el buscador de "dirección de tu campo"
+// en la configuración inicial) — pasa por el servidor para no tener que
+// exponer la clave de Google en el navegador. Sin sesión ni permiso de
+// admin: cualquiera que esté rellenando su ficha puede usarlo.
+exports.autocompletarDireccion = onCall(
+  { region: "europe-west1", secrets: [GOOGLE_GEOCODING_API_KEY] },
+  async (request) => {
+    const texto = (request.data?.texto || "").trim();
+    if (texto.length < 3) return { sugerencias: [] };
+    const query = encodeURIComponent(texto);
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}&components=country:es&language=es&key=${GOOGLE_GEOCODING_API_KEY.value()}`;
+    try {
+      const respuesta = await fetch(url);
+      const datos = await respuesta.json();
+      const sugerencias = (datos.predictions || []).slice(0, 5).map((p) => ({
+        descripcion: p.description,
+        placeId: p.place_id,
+      }));
+      return { sugerencias };
+    } catch (err) {
+      logger.error("autocompletarDireccion: error", err);
+      return { sugerencias: [] };
+    }
+  }
+);
+
+// Dado un "place_id" elegido del autocompletado, devuelve sus datos
+// completos: dirección, localidad, código postal y coordenadas exactas.
+exports.detalleDireccion = onCall(
+  { region: "europe-west1", secrets: [GOOGLE_GEOCODING_API_KEY] },
+  async (request) => {
+    const placeId = request.data?.placeId;
+    if (!placeId) throw new HttpsError("invalid-argument", "Falta el lugar elegido.");
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&language=es&fields=address_component,formatted_address,geometry&key=${GOOGLE_GEOCODING_API_KEY.value()}`;
+    const respuesta = await fetch(url);
+    const datos = await respuesta.json();
+    if (datos.status !== "OK") throw new HttpsError("not-found", "No se ha podido cargar esa dirección.");
+
+    const componentes = datos.result.address_components || [];
+    const buscar = (tipo) => componentes.find((c) => c.types.includes(tipo))?.long_name || "";
+
+    return {
+      direccion: datos.result.formatted_address || "",
+      localidad: buscar("locality") || buscar("administrative_area_level_3") || buscar("postal_town"),
+      codigoPostal: buscar("postal_code"),
+      lat: datos.result.geometry?.location?.lat ?? null,
+      lng: datos.result.geometry?.location?.lng ?? null,
+    };
+  }
+);

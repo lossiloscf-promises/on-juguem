@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { t } from "../i18n";
 import { Plus, Pencil, Trash2, Check, X, Sparkles } from "lucide-react";
 import { addTeam, updateTeam, deleteTeam, crearHuecosLibresEnBloque } from "../hooks/useClubData";
 import { interpretarDisponibilidad } from "../hooks/useIA";
@@ -233,7 +234,7 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
   return (
     <div className="cl-grid-3">
       <div>
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>AÑADIR EQUIPO</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("mi_club.anadir_equipo")}</h2>
         <div className="cl-ticket">
           <div className="cl-row" style={{ marginBottom: "8px" }}>
             <input
@@ -293,7 +294,7 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
       </div>
 
       <div>
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>TUS EQUIPOS</h2>
+        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("mi_club.titulo")}</h2>
         {teams.length === 0 && <p style={{ color: "#64748B" }}>Aún no has añadido ningún equipo.</p>}
         <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "10px" }}>
           Para marcar disponibilidad, gestionar solicitudes y cerrar partidos, ve a la pestaña <b>CUADRANTE</b>.

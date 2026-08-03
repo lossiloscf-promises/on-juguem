@@ -245,12 +245,9 @@ body {
 .cl-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0;
+  border-spacing: 8px 10px;
   font-size: 13px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  overflow: hidden;
-  background: white;
+  background: transparent;
 }
 .cl-table th {
   text-align: center;
@@ -261,24 +258,35 @@ body {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  background: #F8FAFC;
-  border-bottom: 1px solid var(--line);
-  padding: 14px 12px;
+  padding: 0 6px 4px;
   white-space: nowrap;
   line-height: 1.5;
 }
-.cl-table th:first-child { text-align: left; white-space: normal; }
+.cl-table th:first-child { text-align: left; white-space: normal; padding-left: 2px; }
 .cl-table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--line);
+  padding: 12px 12px;
   vertical-align: middle;
   text-align: center;
+  line-height: 1.35;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 1px 1px rgba(15, 23, 42, .04);
+  background: white;
 }
-.cl-table td:first-child { text-align: left; vertical-align: top; }
-.cl-table tr:last-child td { border-bottom: none; }
-.cl-table tr:hover td { background: #FAFBFC; }
+.cl-table td:first-child {
+  text-align: left;
+  vertical-align: top;
+  box-shadow: none;
+  background: transparent;
+  padding: 6px 6px 6px 2px;
+}
+
+/* Un poco más de aire entre líneas dentro de una misma celda (nombre del
+   rival + estado + una tercera línea de detalle, como sede o campo). */
+.cl-table td > div + div { margin-top: 3px; }
 
 .cl-print-title { margin-bottom: 12px; }
+.cl-table { min-width: 700px; }
+
 
 @media print {
   .no-print, .cl-header, .cl-tabs { display: none !important; }

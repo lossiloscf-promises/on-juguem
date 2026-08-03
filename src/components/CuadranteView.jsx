@@ -701,7 +701,7 @@ export default function CuadranteView({
         </p>
       ) : (
         <div className="cl-ticket" style={{ overflowX: "auto" }}>
-          <table className="cl-table" style={{ minWidth: "700px" }}>
+          <table className="cl-table">
             <thead>
               <tr>
                 <th style={{ position: "sticky", left: 0, background: "white" }}>{t("cuadrante.equipo")}</th>
@@ -747,6 +747,7 @@ export default function CuadranteView({
                       return (
                         <td
                           key={j.id}
+                          data-label={j.label}
                           onClick={() => clicable && setCeldaAbierta(activa ? null : `${t.id}:${j.id}`)}
                           style={{
                             background: hayCancelacionPendiente ? COLOR_CANCELACION_PENDIENTE : CELL_BG[s?.status || "vacio"],
@@ -784,8 +785,8 @@ export default function CuadranteView({
                     const mostrarComoSolicitante = esVistaExterna && !soyDueñoDeS;
                     const miNombreClub = modo === "propio" ? clubName : misClubName;
                     return (
-                      <tr key={`${t.id}:${j.id}:panel`}>
-                        <td colSpan={jornadas.length + 1} style={{ background: "#FAFAF7", padding: "10px" }}>
+                      <tr key={`${t.id}:${j.id}:panel`} className="cl-panel-row">
+                        <td colSpan={jornadas.length + 1} className="cl-panel-cell" style={{ background: "#FAFAF7", padding: "10px" }}>
                           {!esVistaExterna && modo === "propio" && (!local || ["libre", "no_disponible"].includes(local.status)) && (
                             <div className="cl-row">
                               <button

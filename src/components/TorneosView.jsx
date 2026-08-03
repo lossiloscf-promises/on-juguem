@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { t } from "../i18n";
 import { Trophy, Plus, Users, Calendar, X, Check } from "lucide-react";
 import { GENEROS, FORMATOS, AGE_GROUPS_BY_FORMATO, CATEGORIAS, NIVELES, HORARIOS_VALIDOS, groupColor } from "../constants";
 import { useInstalaciones } from "../hooks/useInstalaciones";
@@ -70,7 +71,7 @@ function FormularioCrearTorneo({ uid, clubName, telefono, email, misEquipos, jor
 
   return (
     <div className="cl-ticket">
-      <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)" }}>NUEVO TORNEO</h3>
+      <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)" }}>{t("torneos.nuevo")}</h3>
       <label className="cl-label">NOMBRE</label>
       <input className="cl-input" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={100} style={{ marginBottom: "8px" }} placeholder="Ej. Triangular de pretemporada" />
 
@@ -366,21 +367,21 @@ export default function TorneosView({ uid, clubName, telefono, email, misEquipos
   return (
     <div>
       <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>
-        <Trophy size={18} style={{ verticalAlign: "-3px" }} /> TORNEOS Y TRIANGULARES
+        <Trophy size={18} style={{ verticalAlign: "-3px" }} /> {t("torneos.titulo")}
       </h2>
 
       <FormularioCrearTorneo uid={uid} clubName={clubName} telefono={telefono} email={email} misEquipos={misEquipos} jornadas={jornadas} />
 
       {misTorneos.length > 0 && (
         <>
-          <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "20px" }}>TUS TORNEOS ORGANIZADOS</h3>
+          <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "20px" }}>{t("torneos.organizados")}</h3>
           {misTorneos.map((t) => (
             <PanelTorneoOrganizado key={t.id} torneo={t} teamsPorClub={teamsPorClub} />
           ))}
         </>
       )}
 
-      <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "20px" }}>TORNEOS ABIERTOS PARA APUNTARSE</h3>
+      <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "20px" }}>{t("torneos.abiertos")}</h3>
       {torneosAbiertos.length === 0 ? (
         <p style={{ fontSize: "13px", color: "#64748B" }}>No hay ningún torneo abierto ahora mismo.</p>
       ) : (

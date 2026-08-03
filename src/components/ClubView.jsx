@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { t } from "../i18n";
 import { ArrowLeft, Search, LayoutGrid, X } from "lucide-react";
+import { useClubesOficiales } from "../hooks/useClubesOficiales";
 import { useAllTeams, cerrarComoVisitante, hayConflictoDeHorario } from "../hooks/useClubData";
 import { useClubProfile, useTodosLosClubes } from "../hooks/useAuth";
 import { useInstalaciones } from "../hooks/useInstalaciones";
@@ -116,13 +118,35 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
 }
 
 // --- Directorio: un club por tarjeta, con acceso a su cuadrante completo ---
+
+// Distancia en línea recta entre dos puntos del mapa (fórmula de Haversine) —
+// suficiente para "cuál está más cerca", no hace falta la distancia real por
+// carretera.
+function distanciaKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const rad = (g) => (g * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLng = rad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function DirectorioClubes({ clubes, onEntrar }) {
-  const [orden, setOrden] = useState("afinidad");
+  const [orden, setOrden] = useState("distancia");
 
   const ordenados = [...clubes].sort((a, b) => {
     if (orden === "alfabetico") return a.clubName.localeCompare(b.clubName);
     if (orden === "porcentaje") return b.pctCompletado - a.pctCompletado;
     if (orden === "afinidad") return b.afinidad - a.afinidad;
+    if (orden === "distancia") {
+      // Cercanía primero — si no se conoce la distancia de alguno, se manda
+      // al final (mejor no destacar un club que igual está a 300 km).
+      if (a.distanciaKm == null && b.distanciaKm == null) return b.afinidad - a.afinidad;
+      if (a.distanciaKm == null) return 1;
+      if (b.distanciaKm == null) return -1;
+      if (Math.abs(a.distanciaKm - b.distanciaKm) < 5) return b.afinidad - a.afinidad; // a distancia parecida, gana la afinidad
+      return a.distanciaKm - b.distanciaKm;
+    }
     return 0;
   });
 
@@ -131,6 +155,7 @@ function DirectorioClubes({ clubes, onEntrar }) {
       <div className="cl-row" style={{ marginBottom: "16px" }}>
         <label className="cl-label" style={{ marginBottom: 0 }}>ORDENAR POR</label>
         <select className="cl-input" style={{ width: "auto" }} value={orden} onChange={(e) => setOrden(e.target.value)}>
+          <option value="distancia">Más cerca primero</option>
           <option value="afinidad">Afinidad (más partidos posibles)</option>
           <option value="alfabetico">Alfabético</option>
           <option value="porcentaje">% de temporada completado</option>
@@ -165,6 +190,9 @@ function DirectorioClubes({ clubes, onEntrar }) {
             </div>
             <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
               {c.numEquipos} equipo{c.numEquipos !== 1 ? "s" : ""}
+              {c.distanciaKm != null && (
+                <span> {" · 📍 "}{c.distanciaKm < 1 ? "menos de 1 km" : `${c.distanciaKm} km`}</span>
+              )}
               {c.afinidad > 0 && (
                 <span style={{ fontWeight: 600, color: "var(--secondary)" }}>
                   {" · 🤝 "}{c.afinidad} posible{c.afinidad !== 1 ? "s" : ""}
@@ -195,7 +223,7 @@ function CuadranteDeClub({ ownerUid, clubName, allSlots, misEquipos, misJornadas
   return (
     <div>
       <button className="cl-btn cl-btn-ghost" onClick={onVolver} style={{ marginBottom: "12px" }}>
-        <ArrowLeft size={14} /> Volver al directorio
+        <ArrowLeft size={14} /> {t("busco_rival.volver")}
       </button>
       {!puedeReservar && (
         <p className="cl-ticket" style={{ borderColor: "var(--gold)", fontSize: "13px" }}>
@@ -357,7 +385,7 @@ function BusquedaPorFiltros({ uid, allSlots }) {
         </div>
       </div>
 
-      <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>RESULTADOS ({visible.length})</h2>
+      <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("busco_rival.resultados")} ({visible.length})</h2>
       {visible.length === 0 && (
         <p className="cl-ticket" style={{ textAlign: "center", color: "#64748B" }}>No hay huecos libres que coincidan con tu búsqueda.</p>
       )}
@@ -416,6 +444,15 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
   const todosLosPerfiles = useTodosLosClubes();
   const escudoPorUid = Object.fromEntries(todosLosPerfiles.map((p) => [p.uid, p.escudoUrl]));
 
+  // Coordenadas de cada localidad, para calcular distancias reales — se
+  // buscan por nombre de club en la lista oficial (que es donde se
+  // geocodificó cada localidad una vez).
+  const clubesOficiales = useClubesOficiales();
+  const coordsPorNombre = Object.fromEntries(
+    clubesOficiales.filter((c) => c.lat != null && c.lng != null).map((c) => [c.nombreLower, { lat: c.lat, lng: c.lng }])
+  );
+  const misCoords = coordsPorNombre[(clubName || "").trim().toLowerCase()];
+
   const clubes = Object.values(
     allTeams
       .filter((t) => t.ownerUid !== uid)
@@ -429,7 +466,15 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
     const cerrados = slotsDelClub.filter((s) => ["pendiente", "pactado", "confirmado"].includes(s.status)).length;
     const pct = slotsDelClub.length > 0 ? Math.round((cerrados / slotsDelClub.length) * 100) : 0;
     const susLibres = slotsDelClub.filter((s) => s.status === "libre");
-    return { ...c, pctCompletado: pct, afinidad: calcularAfinidad(susLibres), escudoUrl: escudoPorUid[c.ownerUid] };
+    const susCoords = coordsPorNombre[(c.clubName || "").trim().toLowerCase()];
+    const dist = misCoords && susCoords ? distanciaKm(misCoords.lat, misCoords.lng, susCoords.lat, susCoords.lng) : null;
+    return {
+      ...c,
+      pctCompletado: pct,
+      afinidad: calcularAfinidad(susLibres),
+      escudoUrl: escudoPorUid[c.ownerUid],
+      distanciaKm: dist != null ? Math.round(dist) : null,
+    };
   });
 
   return (
@@ -455,10 +500,10 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
         <>
           <div className="cl-subtabs" style={{ marginBottom: "16px" }}>
             <button className={`cl-subtab ${modoVista === "directorio" ? "active" : ""}`} onClick={() => setModoVista("directorio")}>
-              <LayoutGrid size={14} style={{ marginRight: "4px" }} /> Explorar clubes
+              <LayoutGrid size={14} style={{ marginRight: "4px" }} /> {t("busco_rival.explorar")}
             </button>
             <button className={`cl-subtab ${modoVista === "filtros" ? "active" : ""}`} onClick={() => setModoVista("filtros")}>
-              <Search size={14} style={{ marginRight: "4px" }} /> Búsqueda por filtros
+              <Search size={14} style={{ marginRight: "4px" }} /> {t("busco_rival.filtros")}
             </button>
           </div>
 

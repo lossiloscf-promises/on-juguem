@@ -104,8 +104,16 @@
   .mock-body { padding: 28px; }
   .mock-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
   .mock-table th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .02em; background: #F8FAFC; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  .mock-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: center; }
+  .mock-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; }
   .mock-table tr:last-child td { border-bottom: none; }
+  .cell-fill { display: block; border-radius: 8px; padding: 8px 10px; }
+  .cell-title { display: block; font-weight: 700; font-size: 12.5px; line-height: 1.3; }
+  .cell-sub { display: block; font-size: 11px; opacity: .85; margin-top: 2px; line-height: 1.3; }
+  .speed-note {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    margin-top: 20px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap;
+  }
+  .speed-note b { color: var(--secondary); font-weight: 700; }
   .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: 12px; }
   .pill-disp { background: var(--st-disponible); color: var(--st-disponible-ink); }
   .pill-cerr { background: var(--st-cerrado); color: var(--st-cerrado-ink); }
@@ -194,12 +202,32 @@
             <tr><th>Equipo</th><th>29-30 agosto</th><th>5-6 septiembre</th><th>12-13 septiembre</th></tr>
           </thead>
           <tbody>
-            <tr><td style="text-align:left;font-weight:600">Juvenil</td><td><span class="pill pill-disp">Disponible</span></td><td><span class="pill pill-pend">Pendiente</span></td><td><span class="pill pill-cerr">Cerrado</span></td></tr>
-            <tr><td style="text-align:left;font-weight:600">Cadete</td><td><span class="pill pill-cerr">Cerrado</span></td><td><span class="pill pill-disp">Disponible</span></td><td><span class="pill pill-disp">Disponible</span></td></tr>
-            <tr><td style="text-align:left;font-weight:600">Infantil</td><td><span class="pill pill-disp">Disponible</span></td><td><span class="pill pill-cerr">Cerrado</span></td><td><span class="pill pill-pend">Pendiente</span></td></tr>
+            <tr>
+              <td style="text-align:left;font-weight:600">Juvenil</td>
+              <td><span class="cell-fill pill-disp"><span class="cell-title">Disponible</span></span></td>
+              <td><span class="cell-fill pill-pend"><span class="cell-title">Torrellano CF</span><span class="cell-sub">quiere reservar — pincha</span></span></td>
+              <td><span class="cell-fill" style="background:#E0E7FF;color:#3730A3"><span class="cell-title">Propuesta de Torrellano CF</span><span class="cell-sub">sede: su campo — esperando respuesta</span></span></td>
+            </tr>
+            <tr>
+              <td style="text-align:left;font-weight:600">Cadete</td>
+              <td><span class="cell-fill pill-cerr"><span class="cell-title">🏠 Los Silos CF</span><span class="cell-sub">30-08 · 17:00 · Camp. Municipal</span></span></td>
+              <td><span class="cell-fill pill-disp"><span class="cell-title">Disponible</span></span></td>
+              <td><span class="cell-fill pill-disp"><span class="cell-title">Disponible</span></span></td>
+            </tr>
+            <tr>
+              <td style="text-align:left;font-weight:600">Infantil</td>
+              <td><span class="cell-fill pill-disp"><span class="cell-title">Disponible</span></span></td>
+              <td><span class="cell-fill pill-cerr"><span class="cell-title">✈️ Cerrado con Rotova CF</span><span class="cell-sub">06-09 · 12:00 · Poli. Municipal</span></span></td>
+              <td><span class="cell-fill pill-pend"><span class="cell-title">Benimaclet CF</span><span class="cell-sub">quiere reservar — pincha</span></span></td>
+            </tr>
           </tbody>
         </table>
       </div>
+    </div>
+    <div class="speed-note">
+      <span>📲 Por WhatsApp: días esperando respuesta</span>
+      <span>→</span>
+      <span><b>Aquí: cerrado en un par de minutos</b></span>
     </div>
   </div>
 </section>
