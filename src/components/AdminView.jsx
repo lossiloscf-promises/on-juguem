@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { t } from "../i18n";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../firebase";
-import { ShieldCheck, AlertTriangle, Check, Download, Plus } from "lucide-react";
+import { ShieldCheck, AlertTriangle, Check, Download, Plus, Trash2 } from "lucide-react";
 import { useEstadoApp, cambiarMantenimiento } from "../hooks/useEstadoApp";
 import { useTodosLosClubes } from "../hooks/useAuth";
 import {
