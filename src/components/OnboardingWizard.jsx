@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { httpsCallable } from "firebase/functions";
 import { doc, updateDoc } from "firebase/firestore";
 import { functions, db } from "../firebase";
@@ -27,20 +27,25 @@ function PasoClub({ uid, profile, onSiguiente }) {
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
-  let temporizador = null;
+  const temporizadorRef = useRef(null);
+  const peticionActual = useRef(0);
   const buscarDireccion = (texto) => {
     setBusqueda(texto);
     setDireccion("");
-    if (temporizador) clearTimeout(temporizador);
+    if (temporizadorRef.current) clearTimeout(temporizadorRef.current);
     if (texto.trim().length < 3) { setSugerencias([]); return; }
-    temporizador = setTimeout(async () => {
+    const idPeticion = ++peticionActual.current;
+    temporizadorRef.current = setTimeout(async () => {
       setBuscando(true);
       try {
         const fn = httpsCallable(functions, "autocompletarDireccion");
         const r = await fn({ texto });
-        setSugerencias(r.data.sugerencias || []);
+        // Si mientras esperábamos la respuesta ya se ha escrito algo más
+        // reciente, se ignora esta — evita que una búsqueda vieja y lenta
+        // pise a una más nueva que llegó antes.
+        if (idPeticion === peticionActual.current) setSugerencias(r.data.sugerencias || []);
       } catch {
-        setSugerencias([]);
+        if (idPeticion === peticionActual.current) setSugerencias([]);
       }
       setBuscando(false);
     }, 400);
