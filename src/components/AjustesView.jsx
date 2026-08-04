@@ -11,7 +11,7 @@ import { limpiarTemporada } from "../hooks/useClubData";
 import { useClubesOficiales } from "../hooks/useClubesOficiales";
 
 
-function PanelNotificaciones({ uid }) {
+function PanelNotificaciones({ uid, titulo }) {
   const [estado, setEstado] = useState("inicial"); // inicial | activando | activado | error | no_soportado
   const [error, setError] = useState("");
 
@@ -33,6 +33,7 @@ function PanelNotificaciones({ uid }) {
 
   return (
     <div className="cl-ticket">
+      {titulo && <h2 className="cl-settings-title">{titulo}</h2>}
       <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
         Activa los avisos en este dispositivo concreto para enterarte al momento de solicitudes nuevas, aceptaciones,
         propuestas de sede/horario y cancelaciones — sin tener que estar mirando la app.
@@ -58,7 +59,7 @@ function PanelNotificaciones({ uid }) {
   );
 }
 
-function PanelEscudo({ uid, profile, onEscudoCambiado }) {
+function PanelEscudo({ uid, profile, onEscudoCambiado, titulo }) {
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState("");
 
@@ -90,6 +91,7 @@ function PanelEscudo({ uid, profile, onEscudoCambiado }) {
 
   return (
     <div className="cl-ticket">
+      {titulo && <h2 className="cl-settings-title" style={{ marginBottom: "12px" }}>{titulo}</h2>}
       <div className="cl-row" style={{ alignItems: "center" }}>
         {profile.escudoUrl ? (
           <img src={profile.escudoUrl} alt="Escudo del club" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "8px", border: "1px solid var(--line)" }} />
@@ -114,7 +116,7 @@ function PanelEscudo({ uid, profile, onEscudoCambiado }) {
   );
 }
 
-function PanelCoordinadores({ uid, profile, onGuardar }) {
+function PanelCoordinadores({ uid, profile, onGuardar, titulo, descripcion }) {
   const [datos, setDatos] = useState(() => {
     const inicial = {};
     CLAVES_COORDINADOR.forEach((c) => {
@@ -145,6 +147,8 @@ function PanelCoordinadores({ uid, profile, onGuardar }) {
 
   return (
     <div className="cl-ticket">
+      {titulo && <h2 className="cl-settings-title">{titulo}</h2>}
+      {descripcion && <p className="cl-settings-desc">{descripcion}</p>}
       {CLAVES_COORDINADOR.map((c) => (
         <div key={c.clave} style={{ marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid var(--line)" }}>
           <label className="cl-label">{c.label.toUpperCase()}</label>
@@ -184,7 +188,7 @@ function PanelCoordinadores({ uid, profile, onGuardar }) {
   );
 }
 
-function PanelLimpiarTemporada({ uid }) {
+function PanelLimpiarTemporada({ uid, titulo }) {
   const [confirmando, setConfirmando] = useState(false);
   const [limpiando, setLimpiando] = useState(false);
   const [resultado, setResultado] = useState("");
@@ -204,7 +208,8 @@ function PanelLimpiarTemporada({ uid }) {
   };
 
   return (
-    <div className="cl-ticket" style={{ borderColor: "var(--clay)", marginBottom: "12px" }}>
+    <div className="cl-ticket cl-ticket-danger" style={{ marginBottom: "12px" }}>
+      {titulo && <h2 className="cl-settings-title">{titulo}</h2>}
       {!confirmando ? (
         <>
           <p style={{ fontSize: "13px", marginBottom: "10px" }}>
@@ -300,8 +305,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
 
   return (
     <div>
-      <div className="cl-grid-3">
-      <div>
+      <div className="cl-settings-wrap">
         <div className="cl-ticket" style={{ background: "#EAF3EC", borderColor: "var(--pitch)" }}>
           <p style={{ fontSize: "13px" }}>
             <Download size={14} style={{ verticalAlign: "-2px" }} />{" "}
@@ -311,102 +315,51 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           </p>
         </div>
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("ajustes.datos_contacto")}</h2>
-        <div className="cl-ticket">
-          <label className="cl-label">NOMBRE DEL CLUB</label>
-          <select className="cl-input" value={clubName} onChange={(e) => setClubName(e.target.value)} style={{ marginBottom: "8px" }}>
-            <option value={clubName}>{clubName}</option>
-            {clubesOficiales
-              .filter((c) => c.nombre !== clubName)
-              .sort((a, b) => a.nombre.localeCompare(b.nombre))
-              .map((c) => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
-          </select>
-          <label className="cl-label">TELÉFONO DEL CLUB</label>
-          <input className="cl-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} maxLength={LIMITES.telefono} style={{ marginBottom: "8px" }} />
-          <label className="cl-label">CORREO DEL CLUB</label>
-          <input className="cl-input" type="email" value={emailContacto} onChange={(e) => setEmailContacto(e.target.value)} maxLength={100} style={{ marginBottom: "8px" }} placeholder="Distinto del correo de acceso, si hace falta" />
-          <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "8px" }}>
-            Los equipos que ya has publicado no se actualizan solos con el nuevo teléfono — solo afecta a lo nuevo que publiques a partir de ahora.
-          </p>
-          <button className="cl-btn cl-btn-primary" onClick={guardar} disabled={guardando} style={{ width: "100%", justifyContent: "center" }}>
-            <Save size={14} /> {guardando ? "Guardando..." : "Guardar cambios"}
-          </button>
-          {aviso && <p style={{ color: "var(--pitch)", fontSize: "12px", marginTop: "6px" }}>{aviso}</p>}
-          {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
-        </div>
-
-        <p style={{ fontSize: "13px" }}>
-          <a href="#" onClick={(e) => { e.preventDefault(); setVerPolitica(true); }}>Ver política de privacidad</a>
-        </p>
-
-        <h2 className="cl-subsection-title">{t("ajustes.notificaciones")}</h2>
-        <PanelNotificaciones uid={uid} />
-
-        <h2 className="cl-subsection-title">{t("ajustes.escudo")}</h2>
-        <PanelEscudo uid={uid} profile={profile} onEscudoCambiado={onEscudoCambiado} />
-
-        <h2 className="cl-subsection-title">{t("ajustes.enlace_publico")}</h2>
-        <div className="cl-ticket">
-          <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
-            Compártelo con quien quieras (directiva, padres, otros clubes) — se ve sin necesitar cuenta, y nunca muestra teléfonos ni emails.
-          </p>
-          <div className="cl-row">
-            <input className="cl-input" readOnly value={`${window.location.origin}${window.location.pathname}?publico=${uid}`} onClick={(e) => e.target.select()} />
-            <button
-              className="cl-btn cl-btn-primary"
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?publico=${uid}`);
-                setEnlaceCopiado(true);
-                setTimeout(() => setEnlaceCopiado(false), 2000);
-              }}
-            >
-              {enlaceCopiado ? "¡Copiado!" : "Copiar enlace"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--clay)" }}>{t("ajustes.zona_peligrosa")}</h2>
-
-        <PanelLimpiarTemporada uid={uid} />
-
-        {!borrando ? (
-          <div className="cl-ticket" style={{ borderColor: "var(--clay)" }}>
-            <p style={{ fontSize: "13px", marginBottom: "10px" }}>
-              Borrar tu cuenta elimina de forma permanente tu club, tus equipos, tu calendario de jornadas y todos tus huecos publicados. No se puede deshacer.
+        <section className="cl-settings-section">
+          <div className="cl-ticket">
+            <h2 className="cl-settings-title">{t("ajustes.datos_contacto")}</h2>
+            <p className="cl-settings-desc">Estos datos identifican a tu club dentro de On Juguem.</p>
+            <label className="cl-label">NOMBRE DEL CLUB</label>
+            <select className="cl-input" value={clubName} onChange={(e) => setClubName(e.target.value)} style={{ marginBottom: "8px" }}>
+              <option value={clubName}>{clubName}</option>
+              {clubesOficiales
+                .filter((c) => c.nombre !== clubName)
+                .sort((a, b) => a.nombre.localeCompare(b.nombre))
+                .map((c) => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+            </select>
+            <label className="cl-label">TELÉFONO DEL CLUB</label>
+            <input className="cl-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} maxLength={LIMITES.telefono} style={{ marginBottom: "8px" }} />
+            <label className="cl-label">CORREO DEL CLUB</label>
+            <input className="cl-input" type="email" value={emailContacto} onChange={(e) => setEmailContacto(e.target.value)} maxLength={100} style={{ marginBottom: "8px" }} placeholder="Distinto del correo de acceso, si hace falta" />
+            <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+              Los equipos que ya has publicado no se actualizan solos con el nuevo teléfono — solo afecta a lo nuevo que publiques a partir de ahora.
             </p>
-            <button className="cl-btn cl-btn-ghost" style={{ color: "var(--clay)", borderColor: "var(--danger-bg)" }} onClick={() => setBorrando(true)}>
-              <Trash2 size={14} /> Borrar mi cuenta
+            <button className="cl-btn cl-btn-primary" onClick={guardar} disabled={guardando} style={{ width: "100%", justifyContent: "center" }}>
+              <Save size={14} /> {guardando ? "Guardando..." : "Guardar cambios"}
             </button>
+            {aviso && <p style={{ color: "var(--pitch)", fontSize: "12px", marginTop: "6px" }}>{aviso}</p>}
+            {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
           </div>
-        ) : (
-          <div className="cl-ticket" style={{ borderColor: "var(--clay)" }}>
-            <p style={{ fontSize: "13px", marginBottom: "8px" }}>
-              Para confirmar, escribe tu contraseña actual:
-            </p>
-            <input
-              type="password"
-              className="cl-input"
-              value={passwordBorrar}
-              onChange={(e) => setPasswordBorrar(e.target.value)}
-              style={{ marginBottom: "8px" }}
-            />
-            <div className="cl-row">
-              <button className="cl-btn cl-btn-ghost" onClick={() => { setBorrando(false); setPasswordBorrar(""); setErrorBorrar(""); }}>
-                Cancelar
-              </button>
-              <button className="cl-btn cl-btn-danger" onClick={confirmarBorrado}>
-                <Trash2 size={14} /> Confirmar borrado definitivo
-              </button>
-            </div>
-            {errorBorrar && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{errorBorrar}</p>}
-          </div>
-        )}
 
-        <h2 className="cl-subsection-title">{t("ajustes.instalaciones")}</h2>
+          <p style={{ fontSize: "13px" }}>
+            <a href="#" onClick={(e) => { e.preventDefault(); setVerPolitica(true); }}>Ver política de privacidad</a>
+          </p>
+        </section>
+
+        <section className="cl-settings-section">
+          <PanelCoordinadores
+            uid={uid}
+            profile={profile}
+            onGuardar={onGuardarCoordinadores}
+            titulo={t("ajustes.coordinadores")}
+            descripcion={'Rellena al menos el "Coordinador general" — si tenéis a alguien distinto por categoría, rellénalo también y se usará ese en vez del general para esa categoría. Los partidos de una categoría sin ningún contacto rellenado (ni específico ni general) no se pueden reservar ni aceptar.'}
+          />
+        </section>
+
+        <section className="cl-settings-section">
         <div className="cl-ticket">
-          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>
+          <h2 className="cl-settings-title">{t("ajustes.instalaciones")}</h2>
+          <p className="cl-settings-desc">
             Guarda aquí los campos que usáis habitualmente, para elegirlos rápido al cerrar un partido en vez de escribirlos cada vez.
           </p>
           <div className="cl-row" style={{ marginBottom: "10px", flexWrap: "wrap" }}>
@@ -440,16 +393,74 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
             ))
           )}
         </div>
+        </section>
 
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)", marginTop: "24px" }}>{t("ajustes.coordinadores")}</h2>
-        <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "10px" }}>
-          Rellena al menos el "Coordinador general" — si tenéis a alguien distinto por categoría, rellénalo también y
-          se usará ese en vez del general para esa categoría. Los partidos de una categoría sin ningún contacto
-          rellenado (ni específico ni general) no se pueden reservar ni aceptar.
-        </p>
-        <PanelCoordinadores uid={uid} profile={profile} onGuardar={onGuardarCoordinadores} />
-      </div>
+        <section className="cl-settings-section">
+          <PanelNotificaciones uid={uid} titulo={t("ajustes.notificaciones")} />
+        </section>
 
+        <section className="cl-settings-section">
+          <PanelEscudo uid={uid} profile={profile} onEscudoCambiado={onEscudoCambiado} titulo={t("ajustes.escudo")} />
+        </section>
+
+        <section className="cl-settings-section">
+        <div className="cl-ticket">
+          <h2 className="cl-settings-title">{t("ajustes.enlace_publico")}</h2>
+          <p className="cl-settings-desc">
+            Compártelo con quien quieras (directiva, padres, otros clubes) — se ve sin necesitar cuenta, y nunca muestra teléfonos ni emails.
+          </p>
+          <div className="cl-row">
+            <input className="cl-input" readOnly value={`${window.location.origin}${window.location.pathname}?publico=${uid}`} onClick={(e) => e.target.select()} />
+            <button
+              className="cl-btn cl-btn-primary"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}?publico=${uid}`);
+                setEnlaceCopiado(true);
+                setTimeout(() => setEnlaceCopiado(false), 2000);
+              }}
+            >
+              {enlaceCopiado ? "¡Copiado!" : "Copiar enlace"}
+            </button>
+          </div>
+        </div>
+        </section>
+
+        <section className="cl-settings-section">
+        <PanelLimpiarTemporada uid={uid} titulo={t("ajustes.zona_peligrosa")} />
+
+        {!borrando ? (
+          <div className="cl-ticket cl-ticket-danger">
+            <p style={{ fontSize: "13px", marginBottom: "10px" }}>
+              Borrar tu cuenta elimina de forma permanente tu club, tus equipos, tu calendario de jornadas y todos tus huecos publicados. No se puede deshacer.
+            </p>
+            <button className="cl-btn cl-btn-ghost" style={{ color: "var(--clay)", borderColor: "var(--danger-bg)" }} onClick={() => setBorrando(true)}>
+              <Trash2 size={14} /> Borrar mi cuenta
+            </button>
+          </div>
+        ) : (
+          <div className="cl-ticket cl-ticket-danger">
+            <p style={{ fontSize: "13px", marginBottom: "8px" }}>
+              Para confirmar, escribe tu contraseña actual:
+            </p>
+            <input
+              type="password"
+              className="cl-input"
+              value={passwordBorrar}
+              onChange={(e) => setPasswordBorrar(e.target.value)}
+              style={{ marginBottom: "8px" }}
+            />
+            <div className="cl-row">
+              <button className="cl-btn cl-btn-ghost" onClick={() => { setBorrando(false); setPasswordBorrar(""); setErrorBorrar(""); }}>
+                Cancelar
+              </button>
+              <button className="cl-btn cl-btn-danger" onClick={confirmarBorrado}>
+                <Trash2 size={14} /> Confirmar borrado definitivo
+              </button>
+            </div>
+            {errorBorrar && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{errorBorrar}</p>}
+          </div>
+        )}
+        </section>
       </div>
 
       {verPolitica && <PoliticaPrivacidad onCerrar={() => setVerPolitica(false)} />}

@@ -355,6 +355,22 @@ body {
    que tocas de vez en cuando"). */
 .cl-subsection-title { font-size: 16px; font-weight: 600; color: var(--pitch-dark); margin-top: 20px; }
 
+/* Ajustes — flujo de una sola columna, mismo orden en móvil y escritorio.
+   Antes era una rejilla de 2 columnas que agrupaba secciones sin relación
+   real entre sí (p.ej. "zona peligrosa" junto a "instalaciones" solo por
+   hueco disponible). Ancho de lectura cómodo en escritorio, ancho completo
+   en móvil — que es como se usa la app en la práctica. */
+.cl-settings-wrap { max-width: 640px; margin: 0 auto; }
+.cl-settings-section { margin-bottom: 26px; }
+.cl-settings-section:last-child { margin-bottom: 0; }
+.cl-settings-title { font-size: 16.5px; font-weight: 700; color: var(--pitch-dark); margin: 0 0 4px; }
+.cl-settings-desc { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 14px; line-height: 1.45; }
+
+/* Tarjeta de zona peligrosa — el aviso tiñe toda la tarjeta (no solo el
+   borde) para que se distinga de un vistazo del resto de los ajustes. */
+.cl-ticket-danger { border-color: var(--danger); background: var(--danger-bg); }
+.cl-ticket-danger .cl-settings-title { color: var(--danger); }
+
 /* Modal (p.ej. Política de privacidad) — el fondo hace fade y el contenido
    escala desde el centro (no desde un disparador concreto, por eso el
    transform-origin se queda en el centro, a diferencia de un popover). */
