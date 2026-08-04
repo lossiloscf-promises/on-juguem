@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { CheckCircle2, ArrowRight } from "lucide-react";
 import { httpsCallable } from "firebase/functions";
 import { doc, updateDoc } from "firebase/firestore";
 import { functions, db } from "../firebase";
@@ -111,7 +112,9 @@ function PasoClub({ uid, profile, onSiguiente }) {
         </div>
       )}
       {direccion && (
-        <p style={{ fontSize: "12px", color: "var(--secondary)", marginBottom: "10px" }}>✓ {direccion}</p>
+        <p style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--secondary)", marginBottom: "10px" }}>
+          <CheckCircle2 size={14} /> {direccion}
+        </p>
       )}
 
       <label className="cl-label">NOMBRE DEL CAMPO (opcional)</label>
@@ -130,7 +133,7 @@ function PasoClub({ uid, profile, onSiguiente }) {
 
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "10px" }}>{error}</p>}
       <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={continuar} disabled={guardando}>
-        {guardando ? "Guardando..." : "Continuar"}
+        {guardando ? "Guardando..." : <>Continuar <ArrowRight size={14} /></>}
       </button>
     </div>
   );
@@ -194,8 +197,8 @@ function PasoCoordinadores({ uid, profile, onSiguiente }) {
       )}
 
       {cuantos === 1 && (
-        <p style={{ fontSize: "13px", color: "var(--secondary)", marginBottom: "10px" }}>
-          ✓ Perfecto — usaremos tus propios datos ({profile.telefono}, {profile.email}) como coordinador general.
+        <p style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--secondary)", marginBottom: "10px" }}>
+          <CheckCircle2 size={14} /> Perfecto — usaremos tus propios datos ({profile.telefono}, {profile.email}) como coordinador general.
         </p>
       )}
 
@@ -213,7 +216,7 @@ function PasoCoordinadores({ uid, profile, onSiguiente }) {
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "10px" }}>{error}</p>}
       {cuantos != null && (
         <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={continuar} disabled={guardando}>
-          {guardando ? "Guardando..." : "Continuar"}
+          {guardando ? "Guardando..." : <>Continuar <ArrowRight size={14} /></>}
         </button>
       )}
     </div>
@@ -319,7 +322,7 @@ function PasoEquipo({ uid, profile, onSiguiente }) {
 
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "10px" }}>{error}</p>}
       <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={guardar} disabled={guardando}>
-        {guardando ? "Guardando..." : "Guardar y continuar"}
+        {guardando ? "Guardando..." : <>Guardar y continuar <ArrowRight size={14} /></>}
       </button>
       <button className="cl-btn cl-btn-ghost" style={{ width: "100%", justifyContent: "center", marginTop: "8px" }} onClick={onSiguiente}>
         Saltar por ahora, lo añado más tarde
@@ -372,7 +375,7 @@ function PasoJornada({ uid, onTerminar }) {
 
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "10px" }}>{error}</p>}
       <button className="cl-btn cl-btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={guardar} disabled={guardando}>
-        {guardando ? "Guardando..." : "Crear y entrar en la app"}
+        {guardando ? "Guardando..." : <>Crear y entrar en la app <ArrowRight size={14} /></>}
       </button>
       <button className="cl-btn cl-btn-ghost" style={{ width: "100%", justifyContent: "center", marginTop: "8px" }} onClick={onTerminar}>
         Saltar por ahora, lo añado más tarde
@@ -383,10 +386,17 @@ function PasoJornada({ uid, onTerminar }) {
 
 export default function OnboardingWizard({ uid, profile, onTerminado }) {
   const [paso, setPaso] = useState(1);
+  const irAPaso = (n) => {
+    if (typeof document !== "undefined" && document.startViewTransition) {
+      document.startViewTransition(() => setPaso(n));
+    } else {
+      setPaso(n);
+    }
+  };
 
-  if (paso === 1) return <PasoClub uid={uid} profile={profile} onSiguiente={() => setPaso(2)} />;
-  if (paso === 2) return <PasoCoordinadores uid={uid} profile={profile} onSiguiente={() => setPaso(3)} />;
-  if (paso === 3) return <PasoNotificaciones uid={uid} onSiguiente={() => setPaso(4)} />;
-  if (paso === 4) return <PasoEquipo uid={uid} profile={profile} onSiguiente={() => setPaso(5)} />;
+  if (paso === 1) return <PasoClub uid={uid} profile={profile} onSiguiente={() => irAPaso(2)} />;
+  if (paso === 2) return <PasoCoordinadores uid={uid} profile={profile} onSiguiente={() => irAPaso(3)} />;
+  if (paso === 3) return <PasoNotificaciones uid={uid} onSiguiente={() => irAPaso(4)} />;
+  if (paso === 4) return <PasoEquipo uid={uid} profile={profile} onSiguiente={() => irAPaso(5)} />;
   return <PasoJornada uid={uid} onTerminar={onTerminado} />;
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { t } from "../i18n";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../firebase";
-import { ShieldCheck, AlertTriangle, Check, Download, Plus, Trash2 } from "lucide-react";
+import { ShieldCheck, AlertTriangle, Check, Download, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { useEstadoApp, cambiarMantenimiento } from "../hooks/useEstadoApp";
 import { useTodosLosClubes } from "../hooks/useAuth";
 import {
@@ -42,7 +42,7 @@ function PanelGeocodificar() {
   return (
     <div className="cl-ticket" style={{ marginBottom: "16px" }}>
       <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>Coordenadas de los clubes (para buscar por cercanía)</p>
-      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
         Convierte la localidad de cada club oficial en coordenadas de mapa, para poder ordenar Busco Rival por
         distancia real. Los clubes nuevos se geocodifican solos a partir de ahora — este botón es para poner al día
         los que ya estaban en la lista.
@@ -92,7 +92,7 @@ function PanelAvisoGlobal() {
   return (
     <div className="cl-ticket" style={{ marginBottom: "16px" }}>
       <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>Aviso a todos los clubes</p>
-      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
         Manda una notificación push a todos los dispositivos activados de la plataforma, sea cual sea su
         categoría — para avisos generales, novedades, o cuando termine el mantenimiento.
       </p>
@@ -140,7 +140,7 @@ function PanelMantenimiento() {
       <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
         Modo mantenimiento {estado.mantenimiento && <span style={{ color: "var(--clay)" }}>— ACTIVO AHORA MISMO</span>}
       </p>
-      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
         Mientras esté activo, nadie puede usar la app (ni siquiera entrar) — solo ven el mensaje que pongas
         aquí. Úsalo mientras arreglamos algo importante.
       </p>
@@ -154,7 +154,7 @@ function PanelMantenimiento() {
             rows={2}
             style={{ marginBottom: "8px", width: "100%" }}
           />
-          <button className="cl-btn" style={{ background: "var(--clay)", color: "white" }} onClick={activarBloqueo} disabled={guardando}>
+          <button className="cl-btn cl-btn-danger" onClick={activarBloqueo} disabled={guardando}>
             {guardando ? "Activando..." : "Activar modo mantenimiento"}
           </button>
         </>
@@ -241,15 +241,15 @@ function PanelAdmin({ onVerificar }) {
             <AlertTriangle size={14} style={{ verticalAlign: "-2px" }} /> Nombres de club duplicados — revisar antes de verificar
           </p>
           {clubesDuplicados.map((c) => (
-            <p key={c.uid} style={{ fontSize: "13px", marginTop: "4px" }}>
-              <b>{c.clubName}</b> · {c.telefono} · {c.email} {c.verificado && "✅ ya verificado"}
+            <p key={c.uid} style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", marginTop: "4px" }}>
+              <b>{c.clubName}</b> · {c.telefono} · {c.email} {c.verificado && <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", color: "var(--secondary)" }}><CheckCircle2 size={13} /> ya verificado</span>}
             </p>
           ))}
         </div>
       )}
 
       <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "16px" }}>{t("ajustes.verificar_telefonos")}</h3>
-      <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "10px" }}>
+      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "10px" }}>
         Un club no puede reservar ni ser reservado hasta que confirmes su teléfono a mano (llamada o WhatsApp) y le des el visto bueno aquí.
       </p>
       <div className="cl-ticket">
@@ -257,7 +257,7 @@ function PanelAdmin({ onVerificar }) {
           <div key={c.uid} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
             <div>
               <b>{c.clubName}</b>{" "}
-              <span className="cl-mono" style={{ fontSize: "12px", color: "#64748B" }}>· {c.telefono} · {c.email}</span>
+              <span className="cl-mono" style={{ fontSize: "12px", color: "var(--text-secondary)" }}>· {c.telefono} · {c.email}</span>
             </div>
             {c.verificado ? (
               <button className="cl-btn cl-btn-ghost" onClick={() => cambiar(c.uid, false)}>Quitar verificación</button>
@@ -277,7 +277,7 @@ function PanelAdmin({ onVerificar }) {
             {solicitudes.map((s) => (
               <div key={s.id} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
                 <span style={{ fontSize: "13px" }}><b>{s.nombreSolicitado}</b> · {s.telefono} · {s.email}</span>
-                <button className="cl-btn cl-btn-primary" onClick={() => atenderSolicitud(s)}><Check size={13} /> Añadir a la lista</button>
+                <button className="cl-btn cl-btn-primary" onClick={() => atenderSolicitud(s)}><Check size={14} /> Añadir a la lista</button>
               </div>
             ))}
           </div>
@@ -298,7 +298,7 @@ function PanelAdmin({ onVerificar }) {
         <div style={{ maxHeight: "200px", overflowY: "auto" }}>
           {clubesOficiales.map((c) => (
             <div key={c.id} className="cl-row" style={{ justifyContent: "space-between", padding: "3px 0" }}>
-              <span style={{ fontSize: "13px" }}>{c.nombre} {c.localidad && <span style={{ color: "#64748B" }}>· {c.localidad}</span>}</span>
+              <span style={{ fontSize: "13px" }}>{c.nombre} {c.localidad && <span style={{ color: "var(--text-secondary)" }}>· {c.localidad}</span>}</span>
               <button className="cl-btn cl-btn-ghost" style={{ padding: "2px 6px" }} onClick={() => eliminarClubOficial(c.id)}><Trash2 size={12} /></button>
             </div>
           ))}

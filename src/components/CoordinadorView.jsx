@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { t } from "../i18n";
-import { Plus, Pencil, Trash2, Check, X, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Sparkles, Home, Plane } from "lucide-react";
 import { addTeam, updateTeam, deleteTeam, crearHuecosLibresEnBloque } from "../hooks/useClubData";
 import { interpretarDisponibilidad } from "../hooks/useIA";
 import {
@@ -80,7 +80,7 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
         <div className="cl-row" style={{ justifyContent: "space-between" }}>
           <div>
             <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-            <div className="cl-mono" style={{ fontSize: "12px", color: "#64748B" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
+            <div className="cl-mono" style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
             {(() => {
               // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
               // Cuenta tanto los partidos donde este equipo es el dueño del hueco
@@ -92,16 +92,26 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
               if (casa + fuera === 0) return null;
               const desequilibrado = Math.abs(casa - fuera) >= 2;
               return (
-                <div className="cl-mono" style={{ fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888", marginTop: "2px" }}>
-                  🏠 Casa: {casa} · ✈️ Fuera: {fuera}
-                  {desequilibrado && (casa > fuera ? " — considera buscar más partidos fuera" : " — considera buscar más partidos en casa")}
+                <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }} className="cl-mono">
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
+                    <Home size={11} /> Casa: {casa}
+                  </span>
+                  <span style={{ fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>·</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
+                    <Plane size={11} /> Fuera: {fuera}
+                  </span>
+                  {desequilibrado && (
+                    <span style={{ fontSize: "11px", color: "var(--gold)" }}>
+                      {casa > fuera ? "— considera buscar más partidos fuera" : "— considera buscar más partidos en casa"}
+                    </span>
+                  )}
                 </div>
               );
             })()}
           </div>
           <div className="cl-row">
-            <button className="cl-btn cl-btn-ghost" onClick={() => setEditando(true)}><Pencil size={13} /> Editar</button>
-            <button className="cl-btn cl-btn-ghost" onClick={borrar}><Trash2 size={13} /> Borrar</button>
+            <button className="cl-btn cl-btn-ghost" onClick={() => setEditando(true)}><Pencil size={14} /> Editar</button>
+            <button className="cl-btn cl-btn-ghost" onClick={borrar}><Trash2 size={14} /> Borrar</button>
           </div>
         </div>
         {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
@@ -113,7 +123,7 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
     <div className="cl-ticket">
       <div className="cl-cat-strip" style={{ background: groupColor(t.grupo) }} />
       {tieneHuecos && (
-        <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
           Este equipo ya tiene huecos publicados — solo puedes cambiar nivel e identificador.
         </p>
       )}
@@ -287,7 +297,7 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
             style={{ marginBottom: "8px" }}
           />
           <button className="cl-btn cl-btn-primary" onClick={handleAddTeam} style={{ justifyContent: "center", width: "100%" }}>
-            <Plus size={15} /> Añadir equipo
+            <Plus size={14} /> Añadir equipo
           </button>
           {addError && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{addError}</p>}
         </div>
@@ -295,8 +305,8 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
 
       <div>
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("mi_club.titulo")}</h2>
-        {teams.length === 0 && <p style={{ color: "#64748B" }}>Aún no has añadido ningún equipo.</p>}
-        <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "10px" }}>
+        {teams.length === 0 && <p style={{ color: "var(--text-secondary)" }}>Aún no has añadido ningún equipo.</p>}
+        <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>
           Para marcar disponibilidad, gestionar solicitudes y cerrar partidos, ve a la pestaña <b>CUADRANTE</b>.
         </p>
         {[...teams].sort(compararEquipos).map((t) => (

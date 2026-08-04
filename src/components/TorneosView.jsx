@@ -188,21 +188,21 @@ function TarjetaTorneoAbierto({ torneo, uid, clubName, telefono, email, misEquip
     <div className="cl-ticket">
       <div className="cl-cat-strip" style={{ background: groupColor(torneo.categoria) }} />
       <p style={{ fontSize: "15px", fontWeight: 700 }}>{torneo.nombre}</p>
-      <p style={{ fontSize: "13px", color: "#64748B" }}>
+      <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
         {torneo.genero} · {torneo.formato} · {torneo.categoria} · {torneo.nivel}
       </p>
       <p style={{ fontSize: "13px" }}>
-        <Calendar size={13} style={{ verticalAlign: "-2px" }} /> {torneo.dia} · {torneo.horaInicio}-{torneo.horaFin} · {torneo.instalacion}
+        <Calendar size={14} style={{ verticalAlign: "-2px" }} /> {torneo.dia} · {torneo.horaInicio}-{torneo.horaFin} · {torneo.instalacion}
       </p>
-      <p style={{ fontSize: "13px", color: "#64748B" }}>Organiza <b>{torneo.organizadorClubName}</b></p>
+      <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Organiza <b>{torneo.organizadorClubName}</b></p>
       <p style={{ fontSize: "13px" }}>
-        <Users size={13} style={{ verticalAlign: "-2px" }} /> {(torneo.participantes || []).length} / {torneo.maxEquipos} equipos apuntados
+        <Users size={14} style={{ verticalAlign: "-2px" }} /> {(torneo.participantes || []).length} / {torneo.maxEquipos} equipos apuntados
         {(torneo.participantes || []).length > 0 && (
-          <span style={{ color: "#64748B" }}> — {(torneo.participantes || []).map((p) => p.clubName).join(", ")}</span>
+          <span style={{ color: "var(--text-secondary)" }}> — {(torneo.participantes || []).map((p) => p.clubName).join(", ")}</span>
         )}
       </p>
       {yaApuntado ? (
-        <button className="cl-btn cl-btn-ghost" onClick={retirarse}><X size={13} /> Retirarme</button>
+        <button className="cl-btn cl-btn-ghost" onClick={retirarse}><X size={14} /> Retirarme</button>
       ) : plazasLibres <= 0 ? (
         <p style={{ fontSize: "12px", color: "var(--clay)" }}>Plazas completas.</p>
       ) : !eligiendo ? (
@@ -306,9 +306,9 @@ function PanelTorneoOrganizado({ torneo, teamsPorClub }) {
           {torneo.estado === "abierto" ? "ABIERTO" : "PROGRAMADO"}
         </span>
       </div>
-      <p style={{ fontSize: "13px", color: "#64748B" }}>{torneo.dia} · {torneo.horaInicio}-{torneo.horaFin} · {torneo.instalacion}</p>
+      <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{torneo.dia} · {torneo.horaInicio}-{torneo.horaFin} · {torneo.instalacion}</p>
       <p style={{ fontSize: "13px" }}>
-        <Users size={13} style={{ verticalAlign: "-2px" }} /> {participantes.map((p) => p.clubName).join(", ") || "Nadie apuntado todavía"}
+        <Users size={14} style={{ verticalAlign: "-2px" }} /> {participantes.map((p) => p.clubName).join(", ") || "Nadie apuntado todavía"}
       </p>
 
       {torneo.estado === "abierto" && !programando && (
@@ -318,7 +318,7 @@ function PanelTorneoOrganizado({ torneo, teamsPorClub }) {
       )}
 
       {programando && (
-        <div style={{ marginTop: "8px", background: "#F5F3EC", padding: "8px", borderRadius: "4px" }}>
+        <div style={{ marginTop: "8px", background: "#F5F3EC", padding: "10px", borderRadius: "8px" }}>
           {emparejamientos.map((e, i) => (
             <div key={i} className="cl-row" style={{ flexWrap: "wrap", marginBottom: "6px" }}>
               <select className="cl-input" value={e.equipoAIdx} onChange={(ev) => cambiarEmparejamiento(i, "equipoAIdx", ev.target.value)}>
@@ -335,14 +335,14 @@ function PanelTorneoOrganizado({ torneo, teamsPorClub }) {
                 {HORARIOS_VALIDOS.map((h) => <option key={h} value={h}>{h}</option>)}
               </select>
               <input className="cl-input" style={{ width: "auto" }} value={e.campo} onChange={(ev) => cambiarEmparejamiento(i, "campo", ev.target.value)} placeholder="Campo" />
-              <button className="cl-btn cl-btn-ghost" onClick={() => quitarEmparejamiento(i)}><X size={13} /></button>
+              <button className="cl-btn cl-btn-ghost" onClick={() => quitarEmparejamiento(i)}><X size={14} /></button>
             </div>
           ))}
-          <button className="cl-btn cl-btn-ghost" onClick={añadirEmparejamiento}><Plus size={13} /> Añadir partido</button>
+          <button className="cl-btn cl-btn-ghost" onClick={añadirEmparejamiento}><Plus size={14} /> Añadir partido</button>
           {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
           <div className="cl-row" style={{ marginTop: "8px" }}>
             <button className="cl-btn cl-btn-primary" onClick={confirmarPrograma} disabled={guardando}>
-              <Check size={13} /> {guardando ? "Guardando..." : "Confirmar calendario"}
+              <Check size={14} /> {guardando ? "Guardando..." : "Confirmar calendario"}
             </button>
             <button className="cl-btn cl-btn-ghost" onClick={() => setProgramando(false)}>Cancelar</button>
           </div>
@@ -383,7 +383,7 @@ export default function TorneosView({ uid, clubName, telefono, email, misEquipos
 
       <h3 className="cl-display" style={{ fontSize: "18px", color: "var(--pitch-dark)", marginTop: "20px" }}>{t("torneos.abiertos")}</h3>
       {torneosAbiertos.length === 0 ? (
-        <p style={{ fontSize: "13px", color: "#64748B" }}>No hay ningún torneo abierto ahora mismo.</p>
+        <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>No hay ningún torneo abierto ahora mismo.</p>
       ) : (
         torneosAbiertos.map((t) => (
           <TarjetaTorneoAbierto key={t.id} torneo={t} uid={uid} clubName={clubName} telefono={telefono} email={email} misEquipos={misEquipos} />

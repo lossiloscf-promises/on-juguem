@@ -29,6 +29,11 @@
   --ink: var(--text);
   --gold: var(--secondary);
   --clay: var(--danger);
+
+  /* Curvas de easing para animaciones de interfaz — ease-out reforzado para
+     elementos que entran/responden, ease-in-out para movimiento en pantalla. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 * { box-sizing: border-box; }
@@ -49,7 +54,27 @@ body {
 .cl-display { font-family: 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.01em; }
 .cl-mono { font-family: 'Inter', sans-serif; font-weight: 500; }
 
-.cl-shell { min-height: 100vh; padding-bottom: 84px; }
+.cl-shell { min-height: 100vh; padding-bottom: 84px; animation: cl-fade-in 300ms var(--ease-out) both; }
+@keyframes cl-fade-in { from { opacity: 0; } to { opacity: 1; } }
+/* Reutilizable para contenido que sustituye a un estado de carga dentro de un
+   .cl-shell que ya estaba montado (así no depende de que el shell entero se
+   vuelva a montar para evitar el salto brusco). */
+.cl-fade-in { animation: cl-fade-in 300ms var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) {
+  .cl-shell, .cl-fade-in { animation: none; }
+}
+
+/* Transición entre pestañas (Mi Club / Busco Rival / Cuadrante / ...) vía la
+   View Transitions API nativa — cross-fade simple, salida más rápida que la
+   entrada (la salida es una reacción del sistema, la entrada es lo que el
+   usuario está mirando). */
+@keyframes cl-vt-fade-out { to { opacity: 0; } }
+@keyframes cl-vt-fade-in { from { opacity: 0; } }
+::view-transition-old(root) { animation: cl-vt-fade-out 150ms ease both; }
+::view-transition-new(root) { animation: cl-vt-fade-in 200ms var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}
 
 .cl-header {
   background: white;
@@ -164,9 +189,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, transform 150ms var(--ease-out), box-shadow 0.15s ease;
 }
-.cl-btn:active { transform: scale(0.98); }
+.cl-btn:active { transform: scale(0.97); transition-duration: 100ms; }
 .cl-btn-primary { background: var(--primary); color: white; box-shadow: 0 1px 2px rgba(15, 76, 129, 0.25); }
 .cl-btn-primary:hover { background: var(--primary-dark); }
 .cl-btn-gold { background: var(--secondary); color: white; box-shadow: 0 1px 2px rgba(22, 163, 74, 0.25); }
@@ -287,6 +312,67 @@ body {
 .cl-print-title { margin-bottom: 12px; }
 .cl-table { min-width: 700px; }
 
+/* Celdas clicables del cuadrante — feedback de elevación al pasar el ratón
+   (solo en dispositivos con hover real, para no dejar un estado "pegado" al
+   tocar en móvil) y de presión al tocar. */
+.cl-slot-cell {
+  cursor: pointer;
+  transition: transform 150ms var(--ease-out), box-shadow 150ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cl-slot-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.10), 0 2px 4px rgba(15, 23, 42, 0.06);
+  }
+}
+.cl-slot-cell:active { transform: scale(0.97); transition-duration: 100ms; }
+
+/* Panel de gestión de un partido (se abre bajo la fila del equipo al pinchar
+   una celda) — entra con un despliegue suave en vez de aparecer de golpe. */
+.cl-panel-cell {
+  transform-origin: top center;
+  animation: cl-panel-open 220ms var(--ease-out) both;
+}
+@keyframes cl-panel-open {
+  from { opacity: 0; transform: translateY(-6px) scaleY(0.96); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cl-panel-cell { animation: none; }
+}
+
+/* Tarjeta de club en el directorio — mismo efecto que antes (hecho a mano vía
+   JS con onMouseEnter/onMouseLeave), pero como regla CSS reutilizable y
+   gateada a hover real. */
+.cl-club-card { cursor: pointer; transition: transform 150ms var(--ease-out), box-shadow 150ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .cl-club-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(15, 23, 42, 0.10), 0 2px 4px rgba(15, 23, 42, 0.06); }
+}
+.cl-club-card:active { transform: scale(0.98); transition-duration: 100ms; }
+
+/* Subtítulo de sección secundaria/de configuración (menos peso que un título
+   de sección principal, para diferenciar "lo que vienes a hacer" de "ajustes
+   que tocas de vez en cuando"). */
+.cl-subsection-title { font-size: 16px; font-weight: 600; color: var(--pitch-dark); margin-top: 20px; }
+
+/* Modal (p.ej. Política de privacidad) — el fondo hace fade y el contenido
+   escala desde el centro (no desde un disparador concreto, por eso el
+   transform-origin se queda en el centro, a diferencia de un popover). */
+.cl-modal-backdrop { animation: cl-modal-backdrop-in 200ms ease both; }
+@keyframes cl-modal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+.cl-modal { animation: cl-modal-in 220ms var(--ease-out) both; transform-origin: center; }
+@keyframes cl-modal-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cl-modal-backdrop, .cl-modal { animation: none; }
+}
+
+/* Botón de zona peligrosa — mismo tamaño/forma que cl-btn, pero con peso
+   visual de advertencia real en vez de solo el borde de la tarjeta. */
+.cl-btn-danger { background: var(--danger); color: white; box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25); }
+.cl-btn-danger:hover { background: #B91C1C; }
 
 @media print {
   .no-print, .cl-header, .cl-tabs { display: none !important; }

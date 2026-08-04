@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { t } from "../i18n";
-import { ArrowLeft, Search, LayoutGrid, X } from "lucide-react";
+import { ArrowLeft, Search, LayoutGrid, X, MapPin, Handshake } from "lucide-react";
 import { useClubesOficiales } from "../hooks/useClubesOficiales";
 import { useAllTeams, cerrarComoVisitante, hayConflictoDeHorario } from "../hooks/useClubData";
 import { useClubProfile, useTodosLosClubes } from "../hooks/useAuth";
@@ -95,7 +95,7 @@ function TusGestionesComoVisitante({ uid, allSlots }) {
           <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--clay)" }}>
             PARTIDOS QUE TIENES QUE CERRAR ({porCerrar.length})
           </h2>
-          <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "8px" }}>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
             Se decidió jugar en vuestro campo — di día, hora y campo exactos cuando lo tengas claro.
           </p>
           {porCerrar.map((s) => (
@@ -163,18 +163,15 @@ function DirectorioClubes({ clubes, onEntrar }) {
       </div>
 
       {ordenados.length === 0 && (
-        <p className="cl-ticket" style={{ textAlign: "center", color: "#64748B" }}>Todavía no hay otros clubes registrados.</p>
+        <p className="cl-ticket" style={{ textAlign: "center", color: "var(--text-secondary)" }}>Todavía no hay otros clubes registrados.</p>
       )}
 
       <div className="cl-grid-2">
         {ordenados.map((c) => (
           <div
             key={c.ownerUid}
-            className="cl-ticket"
-            style={{ cursor: "pointer", transition: "box-shadow 0.15s ease, transform 0.1s ease" }}
+            className="cl-ticket cl-club-card"
             onClick={() => onEntrar(c.ownerUid, c.clubName)}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 14px rgba(15,23,42,0.09)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = ""; e.currentTarget.style.transform = ""; }}
           >
             <div className="cl-row" style={{ justifyContent: "space-between", marginBottom: "10px" }}>
               <span className="cl-row" style={{ gap: "10px" }}>
@@ -188,14 +185,16 @@ function DirectorioClubes({ clubes, onEntrar }) {
                 <span className="cl-display" style={{ fontSize: "16px", fontWeight: 700 }}>{c.clubName}</span>
               </span>
             </div>
-            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
-              {c.numEquipos} equipo{c.numEquipos !== 1 ? "s" : ""}
+            <p style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 6px", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>
+              <span>{c.numEquipos} equipo{c.numEquipos !== 1 ? "s" : ""}</span>
               {c.distanciaKm != null && (
-                <span> {" · 📍 "}{c.distanciaKm < 1 ? "menos de 1 km" : `${c.distanciaKm} km`}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                  · <MapPin size={12} /> {c.distanciaKm < 1 ? "menos de 1 km" : `${c.distanciaKm} km`}
+                </span>
               )}
               {c.afinidad > 0 && (
-                <span style={{ fontWeight: 600, color: "var(--secondary)" }}>
-                  {" · 🤝 "}{c.afinidad} posible{c.afinidad !== 1 ? "s" : ""}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", fontWeight: 600, color: "var(--secondary)" }}>
+                  · <Handshake size={12} /> {c.afinidad} posible{c.afinidad !== 1 ? "s" : ""}
                 </span>
               )}
             </p>
@@ -265,7 +264,7 @@ function FiltroMultiple({ label, opciones, seleccionados, onCambiar, disabled })
         className="cl-input"
         style={{ maxHeight: "120px", overflowY: "auto", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}
       >
-        {opciones.length === 0 && <span style={{ fontSize: "12px", color: "#64748B" }}>—</span>}
+        {opciones.length === 0 && <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>—</span>}
         {opciones.map((op) => (
           <label key={op} className="cl-row" style={{ fontSize: "13px", padding: "2px 0", cursor: disabled ? "default" : "pointer" }}>
             <input type="checkbox" disabled={disabled} checked={seleccionados.includes(op)} onChange={() => alternar(op)} />
@@ -387,14 +386,14 @@ function BusquedaPorFiltros({ uid, allSlots }) {
 
       <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("busco_rival.resultados")} ({visible.length})</h2>
       {visible.length === 0 && (
-        <p className="cl-ticket" style={{ textAlign: "center", color: "#64748B" }}>No hay huecos libres que coincidan con tu búsqueda.</p>
+        <p className="cl-ticket" style={{ textAlign: "center", color: "var(--text-secondary)" }}>No hay huecos libres que coincidan con tu búsqueda.</p>
       )}
       <div className="cl-grid-2">
         {visible.map((s) => (
           <div key={s.id} className="cl-ticket" style={{ marginBottom: 0 }}>
             <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
             <span className="cl-display" style={{ fontSize: "19px" }}>{s.clubName} · {s.categoria}</span>
-            <p className="cl-mono" style={{ fontSize: "12px", color: "#64748B" }}>{s.genero} · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · nivel {s.nivel}</p>
+            <p className="cl-mono" style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{s.genero} · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · nivel {s.nivel}</p>
             <p style={{ fontSize: "13px" }}>{s.jornadaLabel}</p>
             {(s.ownerTelefono || s.ownerEmail) && (
               <p className="cl-mono" style={{ fontSize: "12px", color: "var(--pitch)" }}>Contacto: {s.ownerTelefono} {s.ownerEmail}</p>
@@ -408,6 +407,13 @@ function BusquedaPorFiltros({ uid, allSlots }) {
 
 export default function ClubView({ uid, clubName, telefono, email, allSlots, misEquipos, misJornadas, misVerificado, miProfile }) {
   const [modoVista, setModoVista] = useState("directorio"); // directorio | filtros
+  const cambiarModoVista = (nuevoModo) => {
+    if (typeof document !== "undefined" && document.startViewTransition) {
+      document.startViewTransition(() => setModoVista(nuevoModo));
+    } else {
+      setModoVista(nuevoModo);
+    }
+  };
   const [clubEntrado, setClubEntrado] = useState(null); // { uid, clubName } | null
   const allTeams = useAllTeams();
 
@@ -499,10 +505,10 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
       ) : (
         <>
           <div className="cl-subtabs" style={{ marginBottom: "16px" }}>
-            <button className={`cl-subtab ${modoVista === "directorio" ? "active" : ""}`} onClick={() => setModoVista("directorio")}>
+            <button className={`cl-subtab ${modoVista === "directorio" ? "active" : ""}`} onClick={() => cambiarModoVista("directorio")}>
               <LayoutGrid size={14} style={{ marginRight: "4px" }} /> {t("busco_rival.explorar")}
             </button>
-            <button className={`cl-subtab ${modoVista === "filtros" ? "active" : ""}`} onClick={() => setModoVista("filtros")}>
+            <button className={`cl-subtab ${modoVista === "filtros" ? "active" : ""}`} onClick={() => cambiarModoVista("filtros")}>
               <Search size={14} style={{ marginRight: "4px" }} /> {t("busco_rival.filtros")}
             </button>
           </div>

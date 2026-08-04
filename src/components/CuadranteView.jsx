@@ -1,6 +1,6 @@
 import { useState, Fragment } from "react";
 import ExcelJS from "exceljs";
-import { Printer, FileSpreadsheet, Check, X, Home, Plane, History } from "lucide-react";
+import { Printer, FileSpreadsheet, Check, X, Home, Plane, History, Sparkles, MessageCircle, CalendarPlus, AlertTriangle, Clock, MapPin } from "lucide-react";
 import { FASES, groupColor, compararEquipos, ORDEN_EDAD, ESTADO_INFO, COLOR_CANCELACION_PENDIENTE, HORARIOS_VALIDOS, contactoParaCategoria, tieneContactoParaCategoria } from "../constants";
 import { useClubProfile } from "../hooks/useAuth";
 import { diaCoincideConJornada, tieneJornadaCoincidente, rangoFechasDeJornada } from "../validaciones";
@@ -35,11 +35,11 @@ function HistorialDelHueco({ slotId }) {
   if (!slotId || historial.length === 0) return null;
   return (
     <div style={{ marginTop: "10px", borderTop: "1px dashed var(--line)", paddingTop: "8px" }}>
-      <button className="cl-btn cl-btn-ghost" style={{ fontSize: "11px", padding: "3px 8px" }} onClick={() => setAbierto(!abierto)}>
-        <History size={12} /> {abierto ? "Ocultar historial" : `Ver historial (${historial.length})`}
+      <button className="cl-btn cl-btn-ghost" style={{ fontSize: "11px", padding: "4px 8px" }} onClick={() => setAbierto(!abierto)}>
+        <History size={14} /> {abierto ? "Ocultar historial" : `Ver historial (${historial.length})`}
       </button>
       {abierto && (
-        <ul style={{ fontSize: "11px", color: "#64748B", marginTop: "6px", paddingLeft: "16px" }}>
+        <ul style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "8px", paddingLeft: "16px" }}>
           {historial.map((h) => (
             <li key={h.id}>
               {h.quienClubName && <b>{h.quienClubName}: </b>}{h.accion}
@@ -144,7 +144,7 @@ function SelectorEquipoPropio({ grupoCelda, misEquipos, onElegir }) {
   const [elegido, setElegido] = useState(ordenados[0]?.id || "");
 
   if (misEquipos.length === 0) {
-    return <p style={{ fontSize: "12px", color: "#64748B" }}>Necesitas crear un equipo tuyo antes de poder pedir este hueco.</p>;
+    return <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Necesitas crear un equipo tuyo antes de poder pedir este hueco.</p>;
   }
 
   return (
@@ -270,14 +270,14 @@ function BotonWhatsApp({ otroClubUid, genero, formato, datosPartido }) {
   if (!abierto) {
     return (
       <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setAbierto(true)}>
-        💬 WhatsApp
+        <MessageCircle size={14} /> WhatsApp
       </button>
     );
   }
 
   return (
-    <div style={{ marginTop: "8px", background: "#EAF3EC", padding: "8px", borderRadius: "4px" }}>
-      <select className="cl-input" value={tipo} onChange={(e) => setTipo(e.target.value)} style={{ marginBottom: "6px" }}>
+    <div style={{ marginTop: "8px", background: "#EAF3EC", padding: "10px", borderRadius: "8px" }}>
+      <select className="cl-input" value={tipo} onChange={(e) => setTipo(e.target.value)} style={{ marginBottom: "8px" }}>
         <option value="primer_contacto">Primer contacto</option>
         <option value="recordatorio">Recordatorio</option>
         <option value="cambio_ultima_hora">Aviso de cambio</option>
@@ -285,7 +285,7 @@ function BotonWhatsApp({ otroClubUid, genero, formato, datosPartido }) {
       </select>
       <div className="cl-row">
         <button className="cl-btn cl-btn-gold" onClick={generar} disabled={cargando}>
-          {cargando ? "Redactando..." : "✨ Redactar con IA"}
+          <Sparkles size={14} /> {cargando ? "Redactando..." : "Redactar con IA"}
         </button>
         <button className="cl-btn cl-btn-ghost" onClick={() => setAbierto(false)}>Cerrar</button>
       </div>
@@ -336,7 +336,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   if (propuestaPorMi) {
     const d = slot.sedePropuestaDetalles;
     return (
-      <p style={{ fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
+      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "6px" }}>
         Has propuesto jugar {etiqueta(slot.sedePropuesta)}
         {d ? ` el ${d.diaExacto} ${d.horaExacta} en ${d.campoExacto}` : ""} — esperando a que {nombreOtraParte} lo acepte.{" "}
         <a href="#" onClick={(e) => { e.preventDefault(); ejecutar(() => rechazarSede(slot.id)); }}>Retirar propuesta</a>
@@ -346,7 +346,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
   if (propuestaPorElRival) {
     const d = slot.sedePropuestaDetalles;
     return (
-      <div style={{ marginTop: "6px", background: "#FBEFD9", padding: "8px", borderRadius: "4px" }}>
+      <div style={{ marginTop: "6px", background: "#FBEFD9", padding: "10px", borderRadius: "8px" }}>
         <p style={{ fontSize: "13px" }}>
           <b>{nombreOtraParte}</b> propone jugar {etiqueta(slot.sedePropuesta)}
           {d ? ` el ${d.diaExacto} ${d.horaExacta} en ${d.campoExacto} (queda cerrado al aceptar)` : ""}.
@@ -396,7 +396,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
     const etiquetaCambio = yaEsMiCampo ? etiqueta(sedeSuCampo) : etiqueta(sedeMiCampo);
     return (
       <button className="cl-btn cl-btn-ghost" style={{ marginTop: "6px" }} onClick={() => setEditando(true)}>
-        <Plane size={13} /> Proponer jugar {etiquetaCambio}
+        <Plane size={14} /> Proponer jugar {etiquetaCambio}
       </button>
     );
   }
@@ -409,7 +409,7 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
         </p>
       )}
       {!yaEsMiCampo && (
-        <div style={{ background: "#F5F3EC", padding: "8px", borderRadius: "4px", marginBottom: "8px" }}>
+        <div style={{ background: "#F5F3EC", padding: "10px", borderRadius: "8px", marginBottom: "8px" }}>
           <p style={{ fontSize: "12px", fontWeight: 700, marginBottom: "4px" }}>Proponer {etiqueta(sedeMiCampo)}</p>
           <div className="cl-row" style={{ flexWrap: "wrap" }}>
             <input type="date" className="cl-input" style={{ width: "auto" }} value={dia} min={rango.min} max={rango.max} onChange={(e) => setDia(e.target.value)} />
@@ -455,7 +455,7 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
 
   if (propuestaPorMi) {
     return (
-      <p style={{ fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
+      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "6px" }}>
         Has propuesto cambiar a {slot.cambioPropuesto?.diaExacto} {slot.cambioPropuesto?.horaExacta} en {slot.cambioPropuesto?.campoExacto} —
         esperando a que {nombreOtraParte} lo acepte.{" "}
         <a href="#" onClick={(e) => { e.preventDefault(); ejecutar(() => rechazarCambioHorario(slot.id)); }}>Retirar propuesta</a>
@@ -464,7 +464,7 @@ export function GestionCambioHorario({ slot, uid, ejecutar, allSlots }) {
   }
   if (propuestaPorElRival) {
     return (
-      <div style={{ marginTop: "6px", background: "#FBEFD9", padding: "8px", borderRadius: "4px" }}>
+      <div style={{ marginTop: "6px", background: "#FBEFD9", padding: "10px", borderRadius: "8px" }}>
         <p style={{ fontSize: "13px" }}>
           <b>{nombreOtraParte}</b> propone cambiar a {slot.cambioPropuesto?.diaExacto} {slot.cambioPropuesto?.horaExacta} en {slot.cambioPropuesto?.campoExacto}
         </p>
@@ -525,7 +525,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
   if (propuestaPorMi) {
     return (
       <div style={{ marginTop: "8px" }}>
-        <p style={{ fontSize: "12px", color: "#64748B" }}>Has propuesto cancelar — esperando a que {nombreOtraParte || "la otra parte"} lo acepte o lo rechace.</p>
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Has propuesto cancelar — esperando a que {nombreOtraParte || "la otra parte"} lo acepte o lo rechace.</p>
         <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rechazarCancelacion(slot.id))}>
           Retirar mi propuesta
         </button>
@@ -534,14 +534,14 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
   }
   if (propuestaPorElRival) {
     return (
-      <div style={{ marginTop: "8px", background: "#FBEFD9", padding: "8px", borderRadius: "4px" }}>
+      <div style={{ marginTop: "8px", background: "#FBEFD9", padding: "10px", borderRadius: "8px" }}>
         <p style={{ fontSize: "13px" }}><b>{nombreOtraParte}</b> ha propuesto cancelar este partido.</p>
         <div className="cl-row" style={{ marginTop: "6px" }}>
           <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarCancelacion(slot.id))}>
-            <Check size={13} /> Aceptar cancelación
+            <Check size={14} /> Aceptar cancelación
           </button>
           <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rechazarCancelacion(slot.id))}>
-            <X size={13} /> Rechazar
+            <X size={14} /> Rechazar
           </button>
         </div>
       </div>
@@ -557,7 +557,7 @@ export function GestionCancelacion({ slot, uid, ejecutar }) {
         }
       }}
     >
-      <X size={13} /> Proponer cancelar este partido
+      <X size={14} /> Proponer cancelar este partido
     </button>
   );
 }
@@ -696,7 +696,7 @@ export default function CuadranteView({
       )}
 
       {teams.length === 0 || jornadas.length === 0 ? (
-        <p className="cl-ticket" style={{ textAlign: "center", color: "#64748B" }}>
+        <p className="cl-ticket" style={{ textAlign: "center", color: "var(--text-secondary)" }}>
           {modo === "ajeno" ? "Este club todavía no tiene equipos o jornadas publicadas." : "Necesitas al menos un equipo y una jornada creada para ver el cuadrante."}
         </p>
       ) : (
@@ -717,7 +717,7 @@ export default function CuadranteView({
                         <span style={{ width: "4px", height: "14px", background: groupColor(t.grupo), display: "inline-block" }} />
                         <div>
                           <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` ${t.identificador}` : ""}</div>
-                          <div className="cl-mono" style={{ fontSize: "11px", color: "#64748B" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
+                          <div className="cl-mono" style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
                         </div>
                       </div>
                     </td>
@@ -748,6 +748,7 @@ export default function CuadranteView({
                         <td
                           key={j.id}
                           data-label={j.label}
+                          className={clicable ? "cl-slot-cell" : ""}
                           onClick={() => clicable && setCeldaAbierta(activa ? null : `${t.id}:${j.id}`)}
                           style={{
                             background: hayCancelacionPendiente ? COLOR_CANCELACION_PENDIENTE : CELL_BG[s?.status || "vacio"],
@@ -757,16 +758,22 @@ export default function CuadranteView({
                           }}
                         >
                           {hayCancelacionPendiente && (
-                            <div style={{ fontSize: "10px", fontWeight: 700, color: "var(--clay)" }}>⚠️ CANCELACIÓN</div>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "3px", fontSize: "10px", fontWeight: 700, color: "var(--clay)" }}>
+                              <AlertTriangle size={11} /> CANCELACIÓN
+                            </div>
                           )}
                           {!hayCancelacionPendiente && hayCambioPendiente && (
-                            <div style={{ fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>🕓 CAMBIO PROPUESTO</div>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "3px", fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>
+                              <Clock size={11} /> CAMBIO PROPUESTO
+                            </div>
                           )}
                           {!hayCancelacionPendiente && !hayCambioPendiente && haySedePendiente && (
-                            <div style={{ fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>📍 SEDE PROPUESTA</div>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "3px", fontSize: "10px", fontWeight: 700, color: "#8B5CF6" }}>
+                              <MapPin size={11} /> SEDE PROPUESTA
+                            </div>
                           )}
                           <div style={{ fontSize: "12px", fontWeight: c.texto ? 600 : 400 }}>{c.texto}</div>
-                          {c.sub && <div className="cl-mono" style={{ fontSize: "10px", color: "#64748B" }}>{c.sub}</div>}
+                          {c.sub && <div className="cl-mono" style={{ fontSize: "10px", color: "var(--text-secondary)" }}>{c.sub}</div>}
                         </td>
                       );
                     })}
@@ -860,7 +867,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoDueño && s?.status === "pactado" && s.sede === "visitante" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#64748B" }}>
+                              <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
                                 Pactado contra <b>{s.requestedByClubName}</b> — falta que ellos cierren día/hora/campo
                                 (juegan en su campo, así que lo deciden ellos).
                               </p>
@@ -878,7 +885,7 @@ export default function CuadranteView({
                                   className="cl-btn cl-btn-ghost"
                                   style={{ marginBottom: "6px", display: "inline-flex" }}
                                 >
-                                  📅 Añadir a Google Calendar
+                                  <CalendarPlus size={14} /> Añadir a Google Calendar
                                 </a>
                               )}
                               <GestionCambioHorario slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
@@ -893,8 +900,8 @@ export default function CuadranteView({
                             </>
                           )}
                           {mostrarComoDueño && s?.avisoEquipoBorrado && (
-                            <div style={{ marginTop: "8px", background: "#FDECEA", padding: "8px", borderRadius: "4px" }}>
-                              <p style={{ fontSize: "13px" }}>⚠️ {s.avisoTexto}</p>
+                            <div style={{ marginTop: "8px", background: "#FDECEA", padding: "10px", borderRadius: "8px" }}>
+                              <p style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}><AlertTriangle size={14} /> {s.avisoTexto}</p>
                               <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => descartarAviso(s.id))}>
                                 Entendido
                               </button>
@@ -905,7 +912,7 @@ export default function CuadranteView({
                               propio cuadrante, o vista entrando en "Busco rival" sobre ese club. */}
                           {mostrarComoSolicitante && s.status === "pendiente" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#64748B" }}>
+                              <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
                                 Solicitud enviada a <b>{s.clubName}</b> — esperando a que acepten o rechacen.
                               </p>
                               <BotonWhatsApp otroClubUid={s.ownerUid} genero={s.genero} formato={s.formato} datosPartido={{ miClub: misClubName, rivalClub: s.clubName, grupo: s.grupo, jornada: s.jornadaLabel }} />
@@ -921,7 +928,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoSolicitante && s.status === "pactado" && s.sede === "visitante" && (
                             <>
-                              <p style={{ fontSize: "13px", color: "#64748B" }}>Se decidió jugar en vuestro campo — cerrad día, hora y campo.</p>
+                              <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Se decidió jugar en vuestro campo — cerrad día, hora y campo.</p>
                               <FormularioCierreInline
                                 slot={s}
                                 allSlots={allSlots}
@@ -935,7 +942,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoSolicitante && s.status === "pactado" && s.sede === "local" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#64748B" }}>
+                              <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
                                 Pactado con <b>{s.clubName}</b> — juega en su campo, falta que ellos cierren día/hora/campo.
                               </p>
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
@@ -945,7 +952,7 @@ export default function CuadranteView({
                           )}
                           {mostrarComoSolicitante && s.status === "confirmado" && (
                             <div>
-                              <p style={{ fontSize: "13px", color: "#64748B" }}>
+                              <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
                                 Cerrado con <b>{s.clubName}</b> · {s.diaExacto} {s.horaExacta} · {s.campoExacto}
                               </p>
                               {enlaceGoogleCalendar(s, misClubName, s.clubName) && (
@@ -955,7 +962,7 @@ export default function CuadranteView({
                                   className="cl-btn cl-btn-ghost"
                                   style={{ marginBottom: "6px", display: "inline-flex" }}
                                 >
-                                  📅 Añadir a Google Calendar
+                                  <CalendarPlus size={14} /> Añadir a Google Calendar
                                 </a>
                               )}
                               <GestionCambioHorario slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />

@@ -33,7 +33,7 @@ export default function App() {
         <div className="cl-main">
           <div className="cl-auth-box cl-ticket" style={{ textAlign: "center" }}>
             <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>UN MOMENTO...</h2>
-            <p style={{ fontSize: "14px", color: "#64748B", marginTop: "10px" }}>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginTop: "10px" }}>
               {estadoApp.mensaje || "Estamos mejorando la aplicación — en breves momentos podrás volver a utilizarla."}
             </p>
           </div>
@@ -48,6 +48,16 @@ export default function App() {
     comprobarNombreDuplicado, reenviarVerificacion, verificarClub,
   } = useAuth();
   const [role, setRole] = useState("coordinador");
+  // Cambia de pestaña con una transición suave de cross-fade cuando el
+  // navegador la soporta (API nativa, sin librerías) — degrada a un cambio
+  // instantáneo en los navegadores que todavía no la implementan.
+  const cambiarRole = (nuevoRole) => {
+    if (typeof document !== "undefined" && document.startViewTransition) {
+      document.startViewTransition(() => setRole(nuevoRole));
+    } else {
+      setRole(nuevoRole);
+    }
+  };
   const [avisoVerificacion, setAvisoVerificacion] = useState("");
   const [identidadLista, setIdentidadLista] = useState(!!getIdentidadActual());
 
@@ -153,7 +163,7 @@ export default function App() {
     <div className="cl-shell">
       <Header
         role={role}
-        setRole={setRole}
+        setRole={cambiarRole}
         loggedIn={true}
         clubName={profile.clubName}
         escudoUrl={profile.escudoUrl}
@@ -279,7 +289,7 @@ function PantallaActivarNotificaciones({ uid, esNueva, onListo }) {
       <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>
         {esNueva ? "¡CLUB CREADO!" : "ACTIVA LAS NOTIFICACIONES"}
       </h2>
-      <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "16px" }}>
+      <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "16px" }}>
         Un último paso muy importante — activa los avisos en este dispositivo para enterarte al momento de
         solicitudes nuevas, aceptaciones y cancelaciones. Es la mejor forma de no llevarte un disgusto por no
         haberte enterado a tiempo.
@@ -309,11 +319,11 @@ function PantallaQuienEres({ clubName, escudoUrl, opciones, onListo }) {
   return (
     <div className="cl-auth-box cl-ticket">
       <h2 className="cl-display" style={{ fontSize: "24px", color: "var(--pitch-dark)" }}>{t("identidad.titulo")}</h2>
-      <p style={{ fontSize: "13px", color: "#64748B", marginBottom: "12px" }}>
+      <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "12px" }}>
         {clubName} — {t("identidad.explicacion")}
       </p>
       {!escudoUrl && (
-        <p style={{ fontSize: "12px", color: "var(--clay)", background: "#FDECEA", padding: "8px", borderRadius: "4px", marginBottom: "12px" }}>
+        <p style={{ fontSize: "12px", color: "var(--clay)", background: "#FDECEA", padding: "10px", borderRadius: "8px", marginBottom: "12px" }}>
           ⚠️ Todavía no has subido el escudo del club — puedes hacerlo cuando quieras en Ajustes.
         </p>
       )}

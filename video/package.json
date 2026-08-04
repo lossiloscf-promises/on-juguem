@@ -1,0 +1,22 @@
+{
+  "name": "on-juguem-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vídeo de presentación de On Juguem (Remotion, aislado del proyecto React principal)",
+  "scripts": {
+    "start": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts OnJuguemPromo out/on-juguem-promo.mp4 --codec h264 --crf 16",
+    "still": "remotion still src/index.ts OnJuguemPromo"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.505",
+    "@remotion/google-fonts": "4.0.505",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.505"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "typescript": "5.6.3"
+  }
+}

@@ -12,6 +12,28 @@ React 19 + Vite frontend, deployed as a static PWA to GitHub Pages. Firebase (Au
 
 Always invoke the `frontend-design` skill (installed at `.agents/skills/frontend-design`) before designing or reshaping any UI in this repo — new components under `src/components/`, changes to `src/styles.css`, the PWA manifest/icons in `vite.config.js`, or any visual/layout/typography decision. Use it by default for this kind of work, not just when explicitly asked for a "design" pass; it steers away from templated AI-default looks and toward choices deliberately grounded in this app's own subject matter (grassroots football, coordinators, matchday scheduling), not generic SaaS visuals.
 
+## Design-taste skills (`leonxlnx/taste-skill` install)
+
+`npx skills add leonxlnx/taste-skill` installed 13 separate skills under `.agents/skills/`, not one. They are not interchangeable — some target this kind of existing branded product app, some target brand-new marketing landing pages, and two are opposite aesthetic presets. Pick the one that fits the request; do not stack multiple design-taste skills on one task.
+
+**For work on the existing app itself** (any screen under `src/components/`, the cuadrante, forms, admin panel) — use these, on top of `frontend-design` above, not instead of it:
+- `redesign-existing-projects` — audits current UI for generic/AI-default patterns and upgrades it without breaking functionality or the established look. This is the closest match to "polish On Juguem's interface" requests.
+- `high-end-visual-design` — general premium-quality baseline (fonts, spacing, shadows, card structure, motion) to raise the floor on a screen without changing its identity.
+
+**For a marketing/landing page for On Juguem** (a page that is *not* the in-app product UI — e.g. a public site to promote the app before login) — use:
+- `design-taste-frontend` — current default version; explicitly for landing pages/portfolios/redesigns, explicitly *not* for dashboards or multi-step product UI, so don't reach for it on in-app screens.
+- `design-taste-frontend-v1` — old version, kept only for exact backward compatibility. Don't use unless asked for "v1" by name.
+
+**Only invoke on explicit request, never as a default** — both would clash with the established blue `#0F4C81` / green `#16A34A` rounded-card identity, so only use if the user names the look directly:
+- `industrial-brutalist-ui` — raw/mechanical/tactical-terminal aesthetic.
+- `minimalist-ui` — warm monochrome editorial minimalism.
+
+**Image-generation-first skills** (`brandkit`, `image-to-code`, `imagegen-frontend-mobile`, `imagegen-frontend-web`) — these generate reference images before/instead of writing code and may depend on an image-generation capability that can cost money (same caveat as the `impeccable` skill's OpenAI fallback — see memory/behavior below). Confirm with the user before generating images, same as any paid-API step.
+
+**`gpt-taste`** — heavy-motion landing-page skill built around GSAP ScrollTrigger. GSAP is not currently a dependency of this project (see `package.json`) — if this skill is invoked, tell the user GSAP is required and why before installing it, per standing project rule.
+
+**`full-output-enforcement`** — not design-specific; a general instruction to avoid truncating output on large generation tasks. Fine to apply whenever relevant, design or not.
+
 ## App video / motion graphics work
 
 Always invoke the `remotion-motion-graphics` skill (installed at `.agents/skills/remotion-motion-graphics`) by default whenever asked to design, create, or edit a video for the app — promo/launch videos, intros/outros, feature demos, animated captions, or any Remotion-based motion graphics. Read it before writing any Remotion code; it exists specifically to avoid generic/amateur-looking output.

@@ -100,9 +100,9 @@ export default function TemporadaView({ uid, jornadas, slots, teams }) {
             {FASES.map((f) => <option key={f} value={f}>{f}</option>)}
           </select>
           <button className="cl-btn cl-btn-primary" onClick={handleAdd} style={{ justifyContent: "center", width: "100%" }}>
-            <Plus size={15} /> Añadir jornada
+            <Plus size={14} /> Añadir jornada
           </button>
-          <p style={{ fontSize: "12px", color: "#64748B", marginTop: "8px" }}>
+          <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "8px" }}>
             No hace falta que sea un fin de semana — añade cualquier fecha suelta si algún equipo quiere jugar entre semana.
           </p>
         </div>
@@ -115,7 +115,7 @@ export default function TemporadaView({ uid, jornadas, slots, teams }) {
             <button className="cl-btn cl-btn-primary" onClick={rellenarHuecosQueFaltan} disabled={rellenando} style={{ marginBottom: "8px" }}>
               {rellenando ? "Revisando..." : "Rellenar huecos que faltan"}
             </button>
-            <p style={{ fontSize: "11px", color: "#64748B", marginBottom: "10px" }}>
+            <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "10px" }}>
               Repasa todos tus equipos y jornadas, y crea como "disponible" cualquier combinación que se haya quedado
               sin hueco (por ejemplo, si un equipo se creó antes de que existiera alguna jornada). No toca nada de lo que ya exista.
             </p>
@@ -141,7 +141,7 @@ export default function TemporadaView({ uid, jornadas, slots, teams }) {
         {error && (
           <p className="cl-ticket" style={{ color: "var(--clay)", borderColor: "var(--clay)", fontSize: "13px" }}>{error}</p>
         )}
-        {jornadas.length === 0 && <p style={{ color: "#64748B" }}>Todavía no has añadido ninguna jornada.</p>}
+        {jornadas.length === 0 && <p style={{ color: "var(--text-secondary)" }}>Todavía no has añadido ninguna jornada.</p>}
         {FASES.map((f) => {
           const delFase = jornadas.filter((j) => j.fase === f);
           if (delFase.length === 0) return null;
@@ -152,7 +152,7 @@ export default function TemporadaView({ uid, jornadas, slots, teams }) {
                 <div key={j.id} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
                   <span>{j.label}</span>
                   <button className="cl-btn cl-btn-ghost" onClick={() => handleDelete(j)} style={{ padding: "4px 8px" }}>
-                    <Trash2 size={13} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               ))}

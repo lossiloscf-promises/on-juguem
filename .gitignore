@@ -17,6 +17,13 @@ dist-ssr
 .claude/skills
 .claude/settings.local.json
 
+# Vídeo de presentación (proyecto Remotion aislado en video/) — el material
+# de audio bruto y los renders no se suben al repo.
+assets-video/
+video/node_modules
+video/out
+video/public/audio
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

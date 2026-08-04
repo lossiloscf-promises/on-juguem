@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useClubesOficiales, crearSolicitudClub } from "../hooks/useClubesOficiales";
@@ -38,8 +39,8 @@ function BuscadorDeClub({ clubElegido, setClubElegido }) {
     return (
       <div>
         <label className="cl-label">{t("login.tu_club")}</label>
-        <div className="cl-row" style={{ justifyContent: "space-between", background: "#EAF3EC", padding: "8px 10px", borderRadius: "4px" }}>
-          <span>✅ {clubElegido.nombre}</span>
+        <div className="cl-row" style={{ justifyContent: "space-between", background: "#EAF3EC", padding: "10px 12px", borderRadius: "8px" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><CheckCircle2 size={16} style={{ color: "var(--secondary)" }} /> {clubElegido.nombre}</span>
           <button type="button" className="cl-btn cl-btn-ghost" style={{ padding: "2px 8px" }} onClick={() => setClubElegido(null)}>
             Cambiar
           </button>
@@ -58,7 +59,7 @@ function BuscadorDeClub({ clubElegido, setClubElegido }) {
     }
     return (
       <div className="cl-ticket">
-        <p style={{ fontSize: "12px", color: "#64748B", marginBottom: "8px" }}>
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
           Dinos el nombre de tu club y un contacto, y lo añadimos a la lista para que puedas registrarte.
         </p>
         <input className="cl-input" placeholder="Nombre del club" value={nombreSolicitado} onChange={(e) => setNombreSolicitado(e.target.value)} maxLength={100} style={{ marginBottom: "6px" }} />
@@ -92,11 +93,11 @@ function BuscadorDeClub({ clubElegido, setClubElegido }) {
                 style={{ padding: "6px 4px", cursor: "pointer", borderBottom: "1px solid var(--line)" }}
                 onClick={() => { setClubElegido(c); setMostrarLista(false); setTexto(""); }}
               >
-                {c.nombre} {c.localidad && <span style={{ color: "#64748B", fontSize: "12px" }}>· {c.localidad}</span>}
+                {c.nombre} {c.localidad && <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>· {c.localidad}</span>}
               </div>
             ))
           ) : (
-            <p style={{ fontSize: "13px", color: "#64748B" }}>No aparece ningún club con ese nombre.</p>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>No aparece ningún club con ese nombre.</p>
           )}
           <button type="button" className="cl-btn cl-btn-ghost" style={{ marginTop: "6px", width: "100%", justifyContent: "center" }} onClick={() => { setPidiendoAlta(true); setMostrarLista(false); }}>
             Mi club no está en la lista
