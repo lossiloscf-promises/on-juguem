@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { t } from "../i18n";
-import { Save, Trash2, Plus, Download, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Save, Trash2, Plus, Download, AlertTriangle, CheckCircle2, Shield, Upload, User, MapPin, Copy, RotateCcw } from "lucide-react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
@@ -96,13 +96,13 @@ function PanelEscudo({ uid, profile, onEscudoCambiado, titulo }) {
         {profile.escudoUrl ? (
           <img src={profile.escudoUrl} alt="Escudo del club" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "8px", border: "1px solid var(--line)" }} />
         ) : (
-          <div style={{ width: "64px", height: "64px", borderRadius: "8px", border: "1px dashed var(--line)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "var(--text-secondary)" }}>
-            Sin escudo
+          <div style={{ width: "64px", height: "64px", borderRadius: "8px", background: "linear-gradient(155deg, var(--pitch), var(--pitch-dark))", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+            <Shield size={26} />
           </div>
         )}
         <div>
           <label className="cl-btn cl-btn-primary" style={{ cursor: "pointer", display: "inline-flex" }}>
-            {subiendo ? "Subiendo..." : profile.escudoUrl ? "Cambiar escudo" : "Subir escudo"}
+            <Upload size={14} /> {subiendo ? "Subiendo..." : profile.escudoUrl ? "Cambiar escudo" : "Subir escudo"}
             <input type="file" accept="image/*" onChange={elegirArchivo} disabled={subiendo} style={{ display: "none" }} />
           </label>
           {profile.escudoUrl && (
@@ -150,8 +150,11 @@ function PanelCoordinadores({ uid, profile, onGuardar, titulo, descripcion }) {
       {titulo && <h2 className="cl-settings-title">{titulo}</h2>}
       {descripcion && <p className="cl-settings-desc">{descripcion}</p>}
       {CLAVES_COORDINADOR.map((c) => (
-        <div key={c.clave} style={{ marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid var(--line)" }}>
-          <label className="cl-label">{c.label.toUpperCase()}</label>
+        <div key={c.clave} className="cl-coord-row">
+          <div className="cl-coord-row-head">
+            <User size={14} />
+            <label className="cl-label" style={{ marginBottom: 0 }}>{c.label.toUpperCase()}</label>
+          </div>
           <div className="cl-row" style={{ flexWrap: "wrap" }}>
             <input
               className="cl-input"
@@ -163,19 +166,19 @@ function PanelCoordinadores({ uid, profile, onGuardar, titulo, descripcion }) {
             />
             <input
               className="cl-input"
-              placeholder="Email"
-              value={datos[c.clave].email}
-              onChange={(e) => cambiar(c.clave, "email", e.target.value)}
-              maxLength={100}
-              style={{ minWidth: "180px" }}
-            />
-            <input
-              className="cl-input"
               placeholder="Teléfono"
               value={datos[c.clave].telefono}
               onChange={(e) => cambiar(c.clave, "telefono", e.target.value)}
               maxLength={20}
               style={{ minWidth: "140px" }}
+            />
+            <input
+              className="cl-input"
+              placeholder="Email"
+              value={datos[c.clave].email}
+              onChange={(e) => cambiar(c.clave, "email", e.target.value)}
+              maxLength={100}
+              style={{ minWidth: "180px" }}
             />
           </div>
         </div>
@@ -217,7 +220,7 @@ function PanelLimpiarTemporada({ uid, titulo }) {
             tus equipos, sus niveles y tu calendario de jornadas no se tocan. Pensado para empezar una temporada de cero.
           </p>
           <button className="cl-btn cl-btn-ghost" onClick={() => setConfirmando(true)}>
-            Limpiar pre/postemporada
+            <RotateCcw size={14} /> Limpiar pre/postemporada
           </button>
         </>
       ) : (
@@ -362,7 +365,23 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           <p className="cl-settings-desc">
             Guarda aquí los campos que usáis habitualmente, para elegirlos rápido al cerrar un partido en vez de escribirlos cada vez.
           </p>
-          <div className="cl-row" style={{ marginBottom: "10px", flexWrap: "wrap" }}>
+          {instalaciones.length === 0 ? (
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Todavía no has añadido ninguna.</p>
+          ) : (
+            instalaciones.map((i) => (
+              <div key={i.id} className="cl-row" style={{ justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                  <MapPin size={15} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
+                  <span style={{ fontSize: "13px" }}>{i.nombre}{i.direccion && <span style={{ color: "var(--text-secondary)" }}> · {i.direccion}</span>}</span>
+                </span>
+                <button className="cl-btn cl-btn-ghost" style={{ padding: "2px 6px" }} onClick={() => deleteInstalacion(i.id)}>
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))
+          )}
+          {errorInstalacion && <p style={{ color: "var(--clay)", fontSize: "12px", margin: "10px 0 0" }}>{errorInstalacion}</p>}
+          <div className="cl-row" style={{ marginTop: "14px", flexWrap: "wrap" }}>
             <input
               className="cl-input"
               placeholder="Nombre (ej. Camp Municipal Silla — pista 1)"
@@ -379,19 +398,6 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
             />
             <button className="cl-btn cl-btn-primary" onClick={añadirInstalacion}><Plus size={14} /> Añadir</button>
           </div>
-          {errorInstalacion && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{errorInstalacion}</p>}
-          {instalaciones.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Todavía no has añadido ninguna.</p>
-          ) : (
-            instalaciones.map((i) => (
-              <div key={i.id} className="cl-row" style={{ justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
-                <span style={{ fontSize: "13px" }}>{i.nombre}{i.direccion && <span style={{ color: "var(--text-secondary)" }}> · {i.direccion}</span>}</span>
-                <button className="cl-btn cl-btn-ghost" style={{ padding: "2px 6px" }} onClick={() => deleteInstalacion(i.id)}>
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            ))
-          )}
         </div>
         </section>
 
@@ -419,7 +425,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
                 setTimeout(() => setEnlaceCopiado(false), 2000);
               }}
             >
-              {enlaceCopiado ? "¡Copiado!" : "Copiar enlace"}
+              <Copy size={14} /> {enlaceCopiado ? "¡Copiado!" : "Copiar enlace"}
             </button>
           </div>
         </div>

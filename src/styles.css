@@ -371,6 +371,14 @@ body {
 .cl-ticket-danger { border-color: var(--danger); background: var(--danger-bg); }
 .cl-ticket-danger .cl-settings-title { color: var(--danger); }
 
+/* Bloque de un coordinador (dentro de "Coordinadores por categoría") — cada
+   coordinador es su propia tarjeta con borde propio, no solo una línea
+   divisoria, para que el icono de cabecera tenga un contenedor claro. */
+.cl-coord-row { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.cl-coord-row:last-child { margin-bottom: 0; }
+.cl-coord-row-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--pitch); }
+.cl-coord-row-head svg { flex-shrink: 0; }
+
 /* Modal (p.ej. Política de privacidad) — el fondo hace fade y el contenido
    escala desde el centro (no desde un disparador concreto, por eso el
    transform-origin se queda en el centro, a diferencia de un popover). */
