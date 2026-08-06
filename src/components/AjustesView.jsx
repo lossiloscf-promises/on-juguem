@@ -59,7 +59,7 @@ function PanelNotificaciones({ uid, titulo }) {
   );
 }
 
-function PanelEscudo({ uid, profile, onEscudoCambiado, titulo }) {
+function PanelEscudo({ uid, profile, onEscudoCambiado }) {
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState("");
 
@@ -90,9 +90,8 @@ function PanelEscudo({ uid, profile, onEscudoCambiado, titulo }) {
   };
 
   return (
-    <div className="cl-ticket">
-      {titulo && <h2 className="cl-settings-title" style={{ marginBottom: "12px" }}>{titulo}</h2>}
-      <div className="cl-row" style={{ alignItems: "center" }}>
+    <>
+      <div className="cl-row" style={{ alignItems: "center", marginBottom: "16px" }}>
         {profile.escudoUrl ? (
           <img src={profile.escudoUrl} alt="Escudo del club" style={{ width: "64px", height: "64px", objectFit: "contain", borderRadius: "8px", border: "1px solid var(--line)" }} />
         ) : (
@@ -108,11 +107,11 @@ function PanelEscudo({ uid, profile, onEscudoCambiado, titulo }) {
           {profile.escudoUrl && (
             <button className="cl-btn cl-btn-ghost" onClick={quitar} style={{ marginLeft: "6px" }}>Quitar</button>
           )}
+          <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "6px 0 0" }}>PNG o JPG, máx. 2 MB.</p>
         </div>
       </div>
-      <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "6px" }}>Imagen cuadrada, máximo 2 MB. Se ve en el directorio de clubes y en el enlace público.</p>
-      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "4px" }}>{error}</p>}
-    </div>
+      {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{error}</p>}
+    </>
   );
 }
 
@@ -309,19 +308,14 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
   return (
     <div>
       <div className="cl-settings-wrap">
-        <div className="cl-ticket" style={{ background: "#EAF3EC", borderColor: "var(--pitch)" }}>
-          <p style={{ fontSize: "13px" }}>
-            <Download size={14} style={{ verticalAlign: "-2px" }} />{" "}
-            <a href={`${window.location.pathname.replace(/\/$/, "")}/On-Juguem-Manual.pdf`} target="_blank" rel="noreferrer" download>
-              <b>Descargar el manual completo de instrucciones (PDF)</b>
-            </a>
-          </p>
-        </div>
+        <h1 className="cl-settings-page-title cl-display">{t("ajustes.titulo")}</h1>
+        <p className="cl-settings-page-desc">Datos del club, coordinadores e instalaciones.</p>
 
         <section className="cl-settings-section">
           <div className="cl-ticket">
             <h2 className="cl-settings-title">{t("ajustes.datos_contacto")}</h2>
             <p className="cl-settings-desc">Estos datos identifican a tu club dentro de On Juguem.</p>
+            <PanelEscudo uid={uid} profile={profile} onEscudoCambiado={onEscudoCambiado} />
             <label className="cl-label">NOMBRE DEL CLUB</label>
             <select className="cl-input" value={clubName} onChange={(e) => setClubName(e.target.value)} style={{ marginBottom: "8px" }}>
               <option value={clubName}>{clubName}</option>
@@ -406,10 +400,6 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         </section>
 
         <section className="cl-settings-section">
-          <PanelEscudo uid={uid} profile={profile} onEscudoCambiado={onEscudoCambiado} titulo={t("ajustes.escudo")} />
-        </section>
-
-        <section className="cl-settings-section">
         <div className="cl-ticket">
           <h2 className="cl-settings-title">{t("ajustes.enlace_publico")}</h2>
           <p className="cl-settings-desc">
@@ -467,6 +457,15 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
           </div>
         )}
         </section>
+
+        <div className="cl-ticket" style={{ background: "#EAF3EC", borderColor: "var(--pitch)" }}>
+          <p style={{ fontSize: "13px" }}>
+            <Download size={14} style={{ verticalAlign: "-2px" }} />{" "}
+            <a href={`${window.location.pathname.replace(/\/$/, "")}/On-Juguem-Manual.pdf`} target="_blank" rel="noreferrer" download>
+              <b>Descargar el manual completo de instrucciones (PDF)</b>
+            </a>
+          </p>
+        </div>
       </div>
 
       {verPolitica && <PoliticaPrivacidad onCerrar={() => setVerPolitica(false)} />}
