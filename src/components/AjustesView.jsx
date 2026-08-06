@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { t } from "../i18n";
-import { Save, Trash2, Plus, Download, AlertTriangle, CheckCircle2, Shield, Upload, User, MapPin, Copy, RotateCcw } from "lucide-react";
+import { Save, Trash2, Plus, Download, AlertTriangle, CheckCircle2, Shield, Upload, User, MapPin, Copy, RotateCcw, LogOut } from "lucide-react";
 import PoliticaPrivacidad from "./PoliticaPrivacidad";
 import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
@@ -247,7 +247,7 @@ function PanelLimpiarTemporada({ uid, titulo }) {
   );
 }
 
-export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta }) {
+export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta, onLogout }) {
   const instalaciones = useInstalaciones(uid);
   const [nuevaInstalacion, setNuevaInstalacion] = useState("");
   const [nuevaDireccion, setNuevaDireccion] = useState("");
@@ -466,6 +466,10 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
             </a>
           </p>
         </div>
+
+        <button className="cl-btn cl-btn-ghost" onClick={onLogout} style={{ marginTop: "18px" }}>
+          <LogOut size={14} /> Cerrar sesión
+        </button>
       </div>
 
       {verPolitica && <PoliticaPrivacidad onCerrar={() => setVerPolitica(false)} />}

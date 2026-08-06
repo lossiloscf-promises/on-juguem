@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, ShieldCheck, CalendarDays, Search, LayoutGrid, Trophy, SlidersHorizontal, LogOut } from "lucide-react";
+import { Shield, ShieldCheck, CalendarDays, Search, LayoutGrid, Trophy, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
@@ -168,7 +168,6 @@ export default function App() {
         clubName={profile.clubName}
         escudoUrl={profile.escudoUrl}
         esAdmin={profile.esAdmin}
-        onLogout={logout}
         avisos={mySlots.filter((s) =>
           s.status === "pendiente" ||
           (s.status === "pactado" && !s.sede) ||
@@ -254,6 +253,7 @@ export default function App() {
             onGuardarCoordinadores={(uid, datos) => updateCoordinadores(uid, datos)}
             onEscudoCambiado={actualizarEscudoLocal}
             onBorrarCuenta={(password) => deleteAccount(password)}
+            onLogout={logout}
           />
         )}
         {role === "admin" && profile.esAdmin && (
@@ -351,7 +351,7 @@ function PantallaQuienEres({ clubName, escudoUrl, opciones, onListo }) {
   );
 }
 
-function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos, avisosClub, esAdmin }) {
+function Header({ role, setRole, loggedIn, clubName, escudoUrl, avisos, avisosClub, esAdmin }) {
   const cambiarIdioma = (codigo) => {
     setIdioma(codigo);
     window.location.reload();
@@ -422,10 +422,6 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, onLogout, avisos
               ADMIN
             </button>
           )}
-          <button className="cl-tab" onClick={onLogout}>
-            <LogOut />
-            {t("nav.salir")}
-          </button>
         </nav>
       )}
     </>
