@@ -7,6 +7,7 @@ import { diaCoincideConJornada, tieneJornadaCoincidente, rangoFechasDeJornada } 
 import { useInstalaciones } from "../hooks/useInstalaciones";
 import { redactarMensajeWhatsApp } from "../hooks/useIA";
 import { t } from "../i18n";
+import AvisoGirarMovil from "./AvisoGirarMovil";
 import {
   requestBooking,
   rejectRequest,
@@ -700,7 +701,9 @@ export default function CuadranteView({
           {modo === "ajeno" ? "Este club todavía no tiene equipos o jornadas publicadas." : "Necesitas al menos un equipo y una jornada creada para ver el cuadrante."}
         </p>
       ) : (
-        <div className="cl-ticket" style={{ overflowX: "auto" }}>
+        <>
+          <AvisoGirarMovil storageKey="cl_aviso_girar_cuadrante_visto" texto="Gira el móvil para ver mejor el cuadrante" />
+          <div className="cl-ticket" style={{ overflowX: "auto" }}>
           <table className="cl-table">
             <thead>
               <tr>
@@ -1012,7 +1015,8 @@ export default function CuadranteView({
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

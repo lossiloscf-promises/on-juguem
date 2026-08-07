@@ -405,6 +405,53 @@ body {
 .cl-btn-danger { background: var(--danger); color: white; box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25); }
 .cl-btn-danger:hover { background: #B91C1C; }
 
+/* Aviso de "gira el móvil" — solo en pantallas estrechas (mismo criterio
+   de @media que ya usa .cl-tab para "es móvil"), encima de las tablas
+   anchas que se ven mejor en horizontal (cuadrante, resultados de busco
+   rival). Oculto por defecto en escritorio. */
+.cl-aviso-girar { display: none; }
+@media (max-width: 640px) {
+  .cl-aviso-girar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--st-disponible);
+    color: var(--st-disponible-ink);
+    border: 1px solid #BAE3FB;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+}
+.cl-aviso-girar span { flex: 1; }
+.cl-aviso-girar-icon {
+  flex-shrink: 0;
+  transform-origin: center;
+  animation: cl-girar-movil 2.4s ease-in-out infinite;
+}
+@keyframes cl-girar-movil {
+  0%, 15%  { transform: rotate(0deg); }
+  45%, 65% { transform: rotate(90deg); }
+  95%, 100% { transform: rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cl-aviso-girar-icon { animation: none; }
+}
+.cl-aviso-girar-cerrar {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  display: flex;
+  transition: background 150ms var(--ease-out);
+}
+.cl-aviso-girar-cerrar:hover { background: rgba(7, 89, 133, 0.14); }
+
 @media print {
   .no-print, .cl-header, .cl-tabs { display: none !important; }
   .cl-print-title { display: block !important; }

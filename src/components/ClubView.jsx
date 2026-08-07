@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { t } from "../i18n";
+import AvisoGirarMovil from "./AvisoGirarMovil";
 import { ArrowLeft, Search, LayoutGrid, X, MapPin, Handshake } from "lucide-react";
 import { useClubesOficiales } from "../hooks/useClubesOficiales";
 import { useAllTeams, cerrarComoVisitante, hayConflictoDeHorario } from "../hooks/useClubData";
@@ -383,6 +384,8 @@ function BusquedaPorFiltros({ uid, allSlots }) {
           </select>
         </div>
       </div>
+
+      <AvisoGirarMovil storageKey="cl_aviso_girar_resultados_visto" texto="Gira el móvil para ver mejor los resultados" />
 
       <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("busco_rival.resultados")} ({visible.length})</h2>
       {visible.length === 0 && (
