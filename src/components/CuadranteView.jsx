@@ -702,7 +702,7 @@ export default function CuadranteView({
         </p>
       ) : (
         <>
-          <AvisoGirarMovil storageKey="cl_aviso_girar_cuadrante_visto" texto="Gira el móvil para ver mejor el cuadrante" />
+          <AvisoGirarMovil texto="Gira el móvil para ver mejor el cuadrante" />
           <div className="cl-ticket" style={{ overflowX: "auto" }}>
           <table className="cl-table">
             <thead>

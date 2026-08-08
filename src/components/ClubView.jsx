@@ -385,7 +385,7 @@ function BusquedaPorFiltros({ uid, allSlots }) {
         </div>
       </div>
 
-      <AvisoGirarMovil storageKey="cl_aviso_girar_resultados_visto" texto="Gira el móvil para ver mejor los resultados" />
+      <AvisoGirarMovil texto="Gira el móvil para ver mejor los resultados" />
 
       <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("busco_rival.resultados")} ({visible.length})</h2>
       {visible.length === 0 && (
