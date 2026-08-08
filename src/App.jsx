@@ -380,7 +380,7 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, avisos, avisosCl
           </div>
           <select
             className="cl-input"
-            style={{ fontSize: "12px", padding: "6px 10px", width: "auto" }}
+            style={{ padding: "6px 10px", width: "auto" }}
             value={getIdioma()}
             onChange={(e) => cambiarIdioma(e.target.value)}
             title="Idioma"

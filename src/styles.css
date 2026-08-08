@@ -200,13 +200,16 @@ body {
 .cl-btn-ghost:hover { background: #F1F5F9; color: var(--text); border-color: #CBD5E1; }
 .cl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Inputs — minimalistas */
+/* Inputs — minimalistas. font-size a 16px (no 14px) a propósito: por
+   debajo de 16px, Safari en iOS hace zoom automático al enfocar el campo
+   y a veces se queda pegado ahí al navegar — 16px es el mínimo que evita
+   ese zoom, así que se aplica siempre, no solo en la media query móvil. */
 .cl-input {
   font-family: 'Inter', sans-serif;
   border: 1.5px solid var(--line);
   border-radius: 10px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 16px;
   background: white;
   width: 100%;
   color: var(--text);
