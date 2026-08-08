@@ -6,29 +6,42 @@ import { telefonoValido, LIMITES } from "../validaciones";
 import { useInstalaciones, addInstalacion, deleteInstalacion } from "../hooks/useInstalaciones";
 import { CLAVES_COORDINADOR } from "../constants";
 import { subirEscudo, borrarEscudo } from "../hooks/useEscudo";
-import { activarNotificaciones, notificacionesSoportadas } from "../hooks/useNotificaciones";
+import { activarNotificaciones, desactivarNotificaciones, notificacionesSoportadas, estaActivoEnEsteDispositivo, tokenDeEsteDispositivo } from "../hooks/useNotificaciones";
 import { limpiarTemporada } from "../hooks/useClubData";
 import { useClubesOficiales } from "../hooks/useClubesOficiales";
 
 
-function PanelNotificaciones({ uid, titulo }) {
-  const [estado, setEstado] = useState("inicial"); // inicial | activando | activado | error | no_soportado
+function PanelNotificaciones({ uid, titulo, profile, onFcmTokensCambiado }) {
+  // "activo" refleja el estado REAL de este dispositivo en Firestore (el
+  // token de localStorage sigue en profile.fcmTokensPorCategoria), no un
+  // estado de sesión — por eso se calcula desde profile en vez de arrancar
+  // siempre en un valor fijo.
+  const [activo, setActivo] = useState(() => estaActivoEnEsteDispositivo(profile?.fcmTokensPorCategoria));
+  const [procesando, setProcesando] = useState(false);
+  const [noSoportado, setNoSoportado] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    notificacionesSoportadas().then((ok) => { if (!ok) setEstado("no_soportado"); });
+    notificacionesSoportadas().then((ok) => { if (!ok) setNoSoportado(true); });
   }, []);
 
-  const activar = async () => {
-    setEstado("activando");
+  const alternar = async () => {
+    setProcesando(true);
     setError("");
     try {
-      await activarNotificaciones(uid);
-      setEstado("activado");
+      if (activo) {
+        const resultado = await desactivarNotificaciones(uid, tokenDeEsteDispositivo());
+        onFcmTokensCambiado?.(resultado.fcmTokensPorCategoria);
+        setActivo(false);
+      } else {
+        const resultado = await activarNotificaciones(uid);
+        onFcmTokensCambiado?.(resultado.fcmTokensPorCategoria);
+        setActivo(true);
+      }
     } catch (err) {
-      setError(err.message || "No se ha podido activar.");
-      setEstado("error");
+      setError(err.message || "No se ha podido cambiar el estado de las notificaciones.");
     }
+    setProcesando(false);
   };
 
   return (
@@ -38,21 +51,24 @@ function PanelNotificaciones({ uid, titulo }) {
         Activa los avisos en este dispositivo concreto para enterarte al momento de solicitudes nuevas, aceptaciones,
         propuestas de sede/horario y cancelaciones — sin tener que estar mirando la app.
       </p>
-      {estado === "no_soportado" && (
+      {noSoportado ? (
         <p style={{ fontSize: "12px", color: "var(--clay)" }}>
           Este navegador no admite notificaciones push. En iPhone, primero tienes que añadir la app a la pantalla de
           inicio (compartir → "Añadir a pantalla de inicio") y abrirla desde ahí.
         </p>
-      )}
-      {estado !== "no_soportado" && estado !== "activado" && (
-        <button className="cl-btn cl-btn-primary" onClick={activar} disabled={estado === "activando"}>
-          {estado === "activando" ? "Activando..." : "Activar notificaciones en este dispositivo"}
-        </button>
-      )}
-      {estado === "activado" && (
-        <p style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--pitch)" }}>
-          <CheckCircle2 size={14} /> Notificaciones activadas en este dispositivo.
-        </p>
+      ) : (
+        <>
+          <button className="cl-btn cl-btn-primary" onClick={alternar} disabled={procesando}>
+            {procesando
+              ? (activo ? "Desactivando..." : "Activando...")
+              : (activo ? "Desactivar notificaciones" : "Activar notificaciones")}
+          </button>
+          {activo && !procesando && (
+            <p style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--pitch)", marginTop: "8px" }}>
+              <CheckCircle2 size={14} /> Notificaciones activadas en este dispositivo.
+            </p>
+          )}
+        </>
       )}
       {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
     </div>
@@ -247,7 +263,7 @@ function PanelLimpiarTemporada({ uid, titulo }) {
   );
 }
 
-export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta, onLogout }) {
+export default function AjustesView({ uid, profile, onGuardarContacto, onGuardarCoordinadores, onEscudoCambiado, onBorrarCuenta, onLogout, onFcmTokensCambiado }) {
   const instalaciones = useInstalaciones(uid);
   const [nuevaInstalacion, setNuevaInstalacion] = useState("");
   const [nuevaDireccion, setNuevaDireccion] = useState("");
@@ -396,7 +412,7 @@ export default function AjustesView({ uid, profile, onGuardarContacto, onGuardar
         </section>
 
         <section className="cl-settings-section">
-          <PanelNotificaciones uid={uid} titulo={t("ajustes.notificaciones")} />
+          <PanelNotificaciones uid={uid} titulo={t("ajustes.notificaciones")} profile={profile} onFcmTokensCambiado={onFcmTokensCambiado} />
         </section>
 
         <section className="cl-settings-section">

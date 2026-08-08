@@ -1,8 +1,29 @@
 import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
-import { doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, updateDoc, getDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { app, db } from "../firebase";
 import { getIdentidadActual } from "../identidad";
 import { CLAVES_COORDINADOR } from "../constants";
+
+// El token de ESTE dispositivo concreto (no "algún dispositivo del club" —
+// cada navegador/móvil tiene el suyo). Vive en localStorage porque es un
+// dato del dispositivo, no de la cuenta.
+export function tokenDeEsteDispositivo() {
+  try {
+    return localStorage.getItem("cl_fcm_token");
+  } catch {
+    return null;
+  }
+}
+
+// Si este dispositivo concreto está realmente activado: su token debe
+// seguir presente en Firestore, en el perfil del club, bajo alguna
+// categoría. Que el club tenga otros dispositivos activados no cuenta —
+// cada dispositivo se comprueba por su propio token.
+export function estaActivoEnEsteDispositivo(fcmTokensPorCategoria) {
+  const token = tokenDeEsteDispositivo();
+  if (!token) return false;
+  return Object.values(fcmTokensPorCategoria || {}).some((arr) => Array.isArray(arr) && arr.includes(token));
+}
 
 // Clave pública VAPID de este proyecto (Firebase Console → Configuración del
 // proyecto → Cloud Messaging → Certificados push web). No es secreta.
@@ -57,19 +78,27 @@ export async function activarNotificaciones(uid) {
 
   const clave = claveDelDispositivoActual();
   await updateDoc(doc(db, "users", uid), { [`fcmTokensPorCategoria.${clave}`]: arrayUnion(token) });
-  return token;
+
+  // Devolvemos el mapa ya actualizado (no solo el token) para que quien
+  // llame pueda refrescar el perfil que tiene en memoria al instante, sin
+  // esperar a un recargo de página ni a un listener en vivo.
+  const snap = await getDoc(doc(db, "users", uid));
+  return { token, fcmTokensPorCategoria: snap.data()?.fcmTokensPorCategoria || {} };
 }
 
 // Quita este dispositivo de TODAS las categorías donde pudiera estar
 // guardado (no siempre se sabe bajo cuál se activó, así que se limpia de
 // todas por si acaso — quitar algo que no está en un sitio no da error).
 export async function desactivarNotificaciones(uid, token) {
-  if (!token) return;
+  if (!token) return { fcmTokensPorCategoria: {} };
   const actualizacion = {};
   CLAVES_COORDINADOR.forEach((c) => {
     actualizacion[`fcmTokensPorCategoria.${c.clave}`] = arrayRemove(token);
   });
   await updateDoc(doc(db, "users", uid), actualizacion);
+
+  const snap = await getDoc(doc(db, "users", uid));
+  return { fcmTokensPorCategoria: snap.data()?.fcmTokensPorCategoria || {} };
 }
 
 // Borra TODOS los dispositivos guardados del club de golpe — útil para

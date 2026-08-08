@@ -90,6 +90,14 @@ export function useAuth() {
     setProfile((prev) => ({ ...prev, escudoUrl }));
   };
 
+  // activarNotificaciones/desactivarNotificaciones (useNotificaciones.js)
+  // escriben en Firestore directamente, sin pasar por aquí — esto solo
+  // refresca el perfil que se ve en pantalla al momento, igual que
+  // actualizarEscudoLocal, para no depender de un recargo de página.
+  const actualizarFcmTokensLocal = (fcmTokensPorCategoria) => {
+    setProfile((prev) => ({ ...prev, fcmTokensPorCategoria }));
+  };
+
   // Borra la cuenta y todos los datos que le pertenecen: equipos, huecos
   // propios y calendario de jornadas. Requiere volver a confirmar la
   // contraseña (Firebase lo exige por seguridad para operaciones sensibles
@@ -122,7 +130,7 @@ export function useAuth() {
   return {
     user, profile, loading,
     signup, login, logout,
-    updateContact, updateCoordinadores, actualizarEscudoLocal, recuperarContrasena, deleteAccount,
+    updateContact, updateCoordinadores, actualizarEscudoLocal, actualizarFcmTokensLocal, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion,
     verificarClub,
   };

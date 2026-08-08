@@ -17,7 +17,7 @@ import AdminView from "./components/AdminView";
 import OnboardingWizard from "./components/OnboardingWizard";
 import TorneosView from "./components/TorneosView";
 import CuadrantePublico from "./components/CuadrantePublico";
-import { escucharEnPrimerPlano, activarNotificaciones } from "./hooks/useNotificaciones";
+import { escucharEnPrimerPlano, activarNotificaciones, estaActivoEnEsteDispositivo } from "./hooks/useNotificaciones";
 import { useEstadoApp } from "./hooks/useEstadoApp";
 import "./styles.css";
 
@@ -44,7 +44,7 @@ export default function App() {
 
   const {
     user, profile, loading, signup, login, logout,
-    updateContact, updateCoordinadores, actualizarEscudoLocal, recuperarContrasena, deleteAccount,
+    updateContact, updateCoordinadores, actualizarEscudoLocal, actualizarFcmTokensLocal, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion, verificarClub,
   } = useAuth();
   const [role, setRole] = useState("coordinador");
@@ -73,14 +73,13 @@ export default function App() {
     await signup(...args);
     setRecienRegistrado(true);
   };
-  // Para no repetir esto en cada pantalla dentro de la misma sesión una vez
-  // que ya se ha visto (aceptada o no) — pero si vuelve a entrar otro día y
-  // sigue sin tener ningún dispositivo guardado, se lo volvemos a ofrecer.
-  const [notifVistaEstaSesion, setNotifVistaEstaSesion] = useState(() => {
-    try { return sessionStorage.getItem("cl_notif_vista") === "1"; } catch { return false; }
-  });
+  // Para no repetir esto en cada pantalla mientras la app siga abierta una
+  // vez que ya se ha visto (aceptada o no) — puro estado de React, sin
+  // persistencia: si se recarga la página o se vuelve a entrar más tarde y
+  // este dispositivo sigue sin tener notificaciones activadas de verdad
+  // (ver estaActivoEnEsteDispositivo), se vuelve a ofrecer.
+  const [notifVistaEstaSesion, setNotifVistaEstaSesion] = useState(false);
   const marcarNotifVista = () => {
-    try { sessionStorage.setItem("cl_notif_vista", "1"); } catch { /* nada */ }
     setNotifVistaEstaSesion(true);
     setRecienRegistrado(false);
   };
@@ -114,16 +113,16 @@ export default function App() {
     );
   }
 
-  const tieneAlgunDispositivoActivado = !!(
-    profile.fcmTokensPorCategoria && Object.values(profile.fcmTokensPorCategoria).some((arr) => Array.isArray(arr) && arr.length > 0)
-  );
+  // Por-dispositivo, no por-club: que el club tenga otro móvil activado no
+  // significa que ESTE dispositivo (este navegador concreto) lo esté.
+  const notificacionesActivasAqui = estaActivoEnEsteDispositivo(profile.fcmTokensPorCategoria);
 
-  if (!tieneAlgunDispositivoActivado && !notifVistaEstaSesion) {
+  if (!notificacionesActivasAqui && !notifVistaEstaSesion) {
     return (
       <div className="cl-shell">
         <Header role={role} setRole={setRole} loggedIn={false} />
         <div className="cl-main">
-          <PantallaActivarNotificaciones uid={user.uid} esNueva={false} onListo={marcarNotifVista} />
+          <PantallaActivarNotificaciones uid={user.uid} esNueva={false} onListo={marcarNotifVista} onActivado={actualizarFcmTokensLocal} />
         </div>
       </div>
     );
@@ -254,6 +253,7 @@ export default function App() {
             onEscudoCambiado={actualizarEscudoLocal}
             onBorrarCuenta={(password) => deleteAccount(password)}
             onLogout={logout}
+            onFcmTokensCambiado={actualizarFcmTokensLocal}
           />
         )}
         {role === "admin" && profile.esAdmin && (
@@ -264,7 +264,7 @@ export default function App() {
   );
 }
 
-function PantallaActivarNotificaciones({ uid, esNueva, onListo }) {
+function PantallaActivarNotificaciones({ uid, esNueva, onListo, onActivado }) {
   const [estado, setEstado] = useState("inicial"); // inicial | activando | error
   const [error, setError] = useState("");
 
@@ -272,7 +272,8 @@ function PantallaActivarNotificaciones({ uid, esNueva, onListo }) {
     setEstado("activando");
     setError("");
     try {
-      await activarNotificaciones(uid);
+      const resultado = await activarNotificaciones(uid);
+      onActivado?.(resultado.fcmTokensPorCategoria);
       onListo();
     } catch (err) {
       // No dejamos a nadie encallado aquí para siempre: si el navegador no
