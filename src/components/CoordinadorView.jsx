@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { t } from "../i18n";
-import { Plus, Pencil, Trash2, Check, X, Sparkles, Home, Plane } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Sparkles, Home, Plane, Users, CalendarDays } from "lucide-react";
 import { addTeam, updateTeam, deleteTeam, crearHuecosLibresEnBloque } from "../hooks/useClubData";
 import { interpretarDisponibilidad } from "../hooks/useIA";
+import TemporadaView from "./TemporadaView";
 import {
   GENEROS,
   FORMATOS,
@@ -164,6 +165,10 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
 }
 
 export default function CoordinadorView({ uid, clubName, telefono, email, teams, slots, jornadas, allSlots }) {
+  // Interruptor de nivel superior — "Equipos" es lo que ya mostraba esta
+  // pantalla; "Calendario" es TemporadaView.jsx, ahora integrado aquí en
+  // vez de tener su propia pestaña en el menú inferior.
+  const [vista, setVista] = useState("equipos"); // equipos | calendario
   const [newGenero, setNewGenero] = useState(GENEROS[0]);
   const [newFormato, setNewFormato] = useState(FORMATOS[0]);
   const [newGrupo, setNewGrupo] = useState(defaultGrupo(FORMATOS[0]));
@@ -242,6 +247,19 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
   };
 
   return (
+    <div>
+      <div className="cl-subtabs" style={{ marginBottom: "16px" }}>
+        <button className={`cl-subtab ${vista === "equipos" ? "active" : ""}`} onClick={() => setVista("equipos")}>
+          <Users size={14} style={{ marginRight: "4px" }} /> {t("mi_club.equipos")}
+        </button>
+        <button className={`cl-subtab ${vista === "calendario" ? "active" : ""}`} onClick={() => setVista("calendario")}>
+          <CalendarDays size={14} style={{ marginRight: "4px" }} /> {t("mi_club.calendario")}
+        </button>
+      </div>
+
+      {vista === "calendario" ? (
+        <TemporadaView uid={uid} jornadas={jornadas} slots={slots} teams={teams} />
+      ) : (
     <div className="cl-grid-3">
       <div>
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("mi_club.anadir_equipo")}</h2>
@@ -320,6 +338,8 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
           />
         ))}
       </div>
+    </div>
+      )}
     </div>
   );
 }

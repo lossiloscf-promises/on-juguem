@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { t } from "../i18n";
 import AvisoGirarMovil from "./AvisoGirarMovil";
-import { ArrowLeft, Search, LayoutGrid, X, MapPin, Handshake } from "lucide-react";
+import { ArrowLeft, Search, LayoutGrid, X, MapPin, Handshake, Trophy } from "lucide-react";
 import { useClubesOficiales } from "../hooks/useClubesOficiales";
 import { useAllTeams, cerrarComoVisitante, hayConflictoDeHorario } from "../hooks/useClubData";
 import { useClubProfile, useTodosLosClubes } from "../hooks/useAuth";
@@ -9,6 +9,7 @@ import { useInstalaciones } from "../hooks/useInstalaciones";
 import { diaCoincideConJornada } from "../validaciones";
 import { useJornadas } from "../hooks/useJornadas";
 import CuadranteView, { GestionCancelacion } from "./CuadranteView";
+import TorneosView from "./TorneosView";
 import {
   GENEROS,
   FORMATOS,
@@ -408,7 +409,13 @@ function BusquedaPorFiltros({ uid, allSlots }) {
   );
 }
 
-export default function ClubView({ uid, clubName, telefono, email, allSlots, misEquipos, misJornadas, misVerificado, miProfile }) {
+export default function ClubView({ uid, clubName, telefono, email, allSlots, misEquipos, misJornadas, misVerificado, miProfile, teamsPorClub }) {
+  // Interruptor de nivel superior — "Rival individual" es todo lo que ya
+  // mostraba esta pantalla (con su propio interruptor interno Explorar |
+  // Filtros, sin cambios); "Torneos" es TorneosView.jsx, integrado aquí en
+  // vez de tener su propia pestaña en el menú inferior.
+  const [vistaBuscoRival, setVistaBuscoRival] = useState("individual"); // individual | torneos
+
   const [modoVista, setModoVista] = useState("directorio"); // directorio | filtros
   const cambiarModoVista = (nuevoModo) => {
     if (typeof document !== "undefined" && document.startViewTransition) {
@@ -420,14 +427,37 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
   const [clubEntrado, setClubEntrado] = useState(null); // { uid, clubName } | null
   const allTeams = useAllTeams();
 
+  const switchBuscoRival = (
+    <div className="cl-subtabs" style={{ marginBottom: "16px" }}>
+      <button className={`cl-subtab ${vistaBuscoRival === "individual" ? "active" : ""}`} onClick={() => setVistaBuscoRival("individual")}>
+        <Handshake size={14} style={{ marginRight: "4px" }} /> {t("busco_rival.rival_individual")}
+      </button>
+      <button className={`cl-subtab ${vistaBuscoRival === "torneos" ? "active" : ""}`} onClick={() => setVistaBuscoRival("torneos")}>
+        <Trophy size={14} style={{ marginRight: "4px" }} /> {t("busco_rival.torneos")}
+      </button>
+    </div>
+  );
+
+  if (vistaBuscoRival === "torneos") {
+    return (
+      <div>
+        {switchBuscoRival}
+        <TorneosView uid={uid} clubName={clubName} telefono={telefono} email={email} misEquipos={misEquipos} jornadas={misJornadas} teamsPorClub={teamsPorClub} />
+      </div>
+    );
+  }
+
   const tengoContactoGeneral = !!(miProfile?.coordinadores?.general?.telefono || miProfile?.coordinadores?.general?.email);
   if (!tengoContactoGeneral) {
     return (
-      <div className="cl-ticket" style={{ borderColor: "var(--gold)" }}>
-        <p style={{ fontSize: "14px" }}>
-          Antes de buscar rivales, rellena al menos el <b>Coordinador general</b> en
-          Ajustes → Coordinadores de contacto — así el rival sabe a quién dirigirse.
-        </p>
+      <div>
+        {switchBuscoRival}
+        <div className="cl-ticket" style={{ borderColor: "var(--gold)" }}>
+          <p style={{ fontSize: "14px" }}>
+            Antes de buscar rivales, rellena al menos el <b>Coordinador general</b> en
+            Ajustes → Coordinadores de contacto — así el rival sabe a quién dirigirse.
+          </p>
+        </div>
       </div>
     );
   }
@@ -488,6 +518,7 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
 
   return (
     <div>
+      {switchBuscoRival}
       <TusGestionesComoVisitante uid={uid} allSlots={allSlots} />
 
       {clubEntrado ? (

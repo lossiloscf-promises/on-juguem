@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, ShieldCheck, CalendarDays, Search, LayoutGrid, Trophy, SlidersHorizontal } from "lucide-react";
+import { Shield, ShieldCheck, Search, LayoutGrid, SlidersHorizontal } from "lucide-react";
 import { useAuth } from "./hooks/useAuth";
 import { useMyTeams, useMySlots, useAllSlots, useAllTeams } from "./hooks/useClubData";
 import { useJornadas } from "./hooks/useJornadas";
@@ -11,11 +11,9 @@ import Login from "./components/Login";
 import CoordinadorView from "./components/CoordinadorView";
 import ClubView from "./components/ClubView";
 import CuadranteView from "./components/CuadranteView";
-import TemporadaView from "./components/TemporadaView";
 import AjustesView from "./components/AjustesView";
 import AdminView from "./components/AdminView";
 import OnboardingWizard from "./components/OnboardingWizard";
-import TorneosView from "./components/TorneosView";
 import CuadrantePublico from "./components/CuadrantePublico";
 import { escucharEnPrimerPlano, activarNotificaciones, estaActivoEnEsteDispositivo } from "./hooks/useNotificaciones";
 import { useEstadoApp } from "./hooks/useEstadoApp";
@@ -206,7 +204,6 @@ export default function App() {
             allSlots={allSlots}
           />
         )}
-        {role === "temporada" && <TemporadaView uid={user.uid} jornadas={jornadas} slots={mySlots} teams={myTeams} />}
         {role === "club" && (
           <ClubView
             uid={user.uid}
@@ -218,6 +215,7 @@ export default function App() {
             misJornadas={jornadas}
             misVerificado={profile.verificado}
             miProfile={profile}
+            teamsPorClub={teamsPorClub}
           />
         )}
         {role === "cuadrante" && (
@@ -231,17 +229,6 @@ export default function App() {
             uid={user.uid}
             miProfile={profile}
             escudoUrl={profile.escudoUrl}
-          />
-        )}
-        {role === "torneos" && (
-          <TorneosView
-            uid={user.uid}
-            clubName={profile.clubName}
-            telefono={profile.telefono}
-            email={profile.email}
-            misEquipos={myTeams}
-            jornadas={jornadas}
-            teamsPorClub={teamsPorClub}
           />
         )}
         {role === "ajustes" && (
@@ -396,10 +383,6 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, avisos, avisosCl
             {t("nav.mi_club")}
             {avisos > 0 && <span className="cl-badge-aviso">{avisos}</span>}
           </button>
-          <button className={`cl-tab ${role === "temporada" ? "active" : ""}`} onClick={() => setRole("temporada")}>
-            <CalendarDays />
-            {t("nav.temporada")}
-          </button>
           <button className={`cl-tab ${role === "club" ? "active" : ""}`} onClick={() => setRole("club")}>
             <Search />
             {t("nav.busco_rival")}
@@ -408,10 +391,6 @@ function Header({ role, setRole, loggedIn, clubName, escudoUrl, avisos, avisosCl
           <button className={`cl-tab ${role === "cuadrante" ? "active" : ""}`} onClick={() => setRole("cuadrante")}>
             <LayoutGrid />
             {t("nav.cuadrante")}
-          </button>
-          <button className={`cl-tab ${role === "torneos" ? "active" : ""}`} onClick={() => setRole("torneos")}>
-            <Trophy />
-            {t("nav.torneos")}
           </button>
           <button className={`cl-tab ${role === "ajustes" ? "active" : ""}`} onClick={() => setRole("ajustes")}>
             <SlidersHorizontal />
