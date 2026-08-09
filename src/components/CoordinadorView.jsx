@@ -106,7 +106,13 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, c
             <div className="cl-team-avatar" style={{ background: color }}>{iniciales}</div>
             <div style={{ minWidth: 0 }}>
               <div className="cl-team-name">{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-              <span className="cl-cat-chip" style={{ background: color }}>{t.categoria} · {t.nivel}</span>
+              <span className="cl-cat-chip" style={{ background: color }}>
+                {/* La categoría completa se oculta en modo compacto (tarjeta
+                    estrecha) — se queda solo el nivel, mucho más corto, en
+                    vez de truncar con "…" un texto que dejaría de decir nada. */}
+                <span className="cl-cat-chip-categoria">{t.categoria} · </span>
+                {t.nivel}
+              </span>
             </div>
           </div>
 
@@ -122,14 +128,22 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, c
           )}
 
           {puntos.length > 0 && (
-            <div className="cl-mini-status">
-              {puntos.map((p) => (
-                <span key={p.clave} style={{ display: "inline-flex", alignItems: "center" }}>
-                  <span className="cl-mini-dot" style={{ background: p.color }} />
-                  <span className="cl-mini-count">{p.n} {p.n === 1 ? p.sing : p.plur}</span>
-                </span>
-              ))}
-            </div>
+            <>
+              {/* Desglose completo — se oculta vía @container cuando la
+                  tarjeta en sí (no la pantalla) se queda estrecha. */}
+              <div className="cl-mini-status cl-mini-status-full">
+                {puntos.map((p) => (
+                  <span key={p.clave} style={{ display: "inline-flex", alignItems: "center" }}>
+                    <span className="cl-mini-dot" style={{ background: p.color }} />
+                    <span className="cl-mini-count">{p.n} {p.n === 1 ? p.sing : p.plur}</span>
+                  </span>
+                ))}
+              </div>
+              {/* Versión resumida — solo el total, para tarjetas estrechas. */}
+              <div className="cl-mini-status-compact">
+                {puntos.reduce((acc, p) => acc + p.n, 0)} huecos
+              </div>
+            </>
           )}
 
           {(() => {
@@ -143,7 +157,7 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, c
             if (casa + fuera === 0) return null;
             const desequilibrado = Math.abs(casa - fuera) >= 2;
             return (
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap", marginTop: "8px" }} className="cl-mono">
+              <div className="cl-mono cl-team-meta">
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "14px", color: desequilibrado ? "var(--gold)" : "#888" }}>
                   <Home size={13} /> Casa: {casa}
                 </span>
@@ -393,34 +407,46 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
                     </div>
                     {errorIA && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{errorIA}</p>}
 
-                    <label className="cl-label">GÉNERO</label>
-                    <select className="cl-input" value={newGenero} onChange={(e) => handleGeneroChange(e.target.value)} style={{ marginBottom: "8px" }}>
-                      {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                    <label className="cl-label">FORMATO</label>
-                    <select className="cl-input" value={newFormato} onChange={(e) => handleFormatoChange(e.target.value)} style={{ marginBottom: "8px" }}>
-                      {FORMATOS.map((f) => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                    <label className="cl-label">GRUPO DE EDAD</label>
-                    <select className="cl-input" value={newGrupo} onChange={(e) => handleGrupoChange(e.target.value)} style={{ marginBottom: "8px" }}>
-                      {AGE_GROUPS_BY_FORMATO[newFormato].map((g) => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                    {necesitaAnyo(newGrupo) && (
-                      <>
-                        <label className="cl-label">AÑO</label>
-                        <select className="cl-input" value={newAnyo} onChange={(e) => setNewAnyo(e.target.value)} style={{ marginBottom: "8px" }}>
-                          {ANYOS.map((a) => <option key={a} value={a}>{a}</option>)}
+                    <div className="cl-team-form-fields">
+                      <div className="cl-team-form-field">
+                        <label className="cl-label">GÉNERO</label>
+                        <select className="cl-input" value={newGenero} onChange={(e) => handleGeneroChange(e.target.value)}>
+                          {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
                         </select>
-                      </>
-                    )}
-                    <label className="cl-label">CATEGORÍA / LIGA</label>
-                    <select className="cl-input" value={newCategoria} onChange={(e) => setNewCategoria(e.target.value)} style={{ marginBottom: "8px" }}>
-                      {CATEGORIAS[newGenero][newGrupo].map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <label className="cl-label">NIVEL DEL EQUIPO</label>
-                    <select className="cl-input" value={newNivel} onChange={(e) => setNewNivel(e.target.value)} style={{ marginBottom: "8px" }}>
-                      {NIVELES.map((n) => <option key={n} value={n}>{n}</option>)}
-                    </select>
+                      </div>
+                      <div className="cl-team-form-field">
+                        <label className="cl-label">FORMATO</label>
+                        <select className="cl-input" value={newFormato} onChange={(e) => handleFormatoChange(e.target.value)}>
+                          {FORMATOS.map((f) => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                      </div>
+                      <div className="cl-team-form-field">
+                        <label className="cl-label">GRUPO DE EDAD</label>
+                        <select className="cl-input" value={newGrupo} onChange={(e) => handleGrupoChange(e.target.value)}>
+                          {AGE_GROUPS_BY_FORMATO[newFormato].map((g) => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                      </div>
+                      {necesitaAnyo(newGrupo) && (
+                        <div className="cl-team-form-field">
+                          <label className="cl-label">AÑO</label>
+                          <select className="cl-input" value={newAnyo} onChange={(e) => setNewAnyo(e.target.value)}>
+                            {ANYOS.map((a) => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      <div className="cl-team-form-field">
+                        <label className="cl-label">CATEGORÍA / LIGA</label>
+                        <select className="cl-input" value={newCategoria} onChange={(e) => setNewCategoria(e.target.value)}>
+                          {CATEGORIAS[newGenero][newGrupo].map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="cl-team-form-field">
+                        <label className="cl-label">NIVEL DEL EQUIPO</label>
+                        <select className="cl-input" value={newNivel} onChange={(e) => setNewNivel(e.target.value)}>
+                          {NIVELES.map((n) => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                    </div>
                     <input
                       className="cl-input"
                       placeholder="Identificador (opcional, ej. A, B)"
