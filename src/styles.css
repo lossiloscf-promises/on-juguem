@@ -38,7 +38,10 @@
 
 * { box-sizing: border-box; }
 
-html, body { overflow-x: hidden; max-width: 100%; }
+/* overscroll-behavior-y: contain evita que el propio navegador dispare SU
+   pull-to-refresh nativo a la vez que el nuestro (doble disparo) — el
+   nuestro es el único que debe actuar. */
+html, body { overflow-x: hidden; max-width: 100%; overscroll-behavior-y: contain; }
 
 body {
   margin: 0;
@@ -551,6 +554,40 @@ body {
   transition: background 150ms var(--ease-out);
 }
 .cl-aviso-girar-cerrar:hover { background: rgba(7, 89, 133, 0.14); }
+
+/* Indicador de "deslizar para recargar" — solo en móvil (mismo corte que
+   .cl-tab/.cl-aviso-girar), oculto por completo en escritorio. La posición
+   vertical (cuánto se ha deslizado el dedo) se controla desde JS con un
+   transform en línea, así que aquí solo se fija todo lo demás. */
+.cl-ptr { position: fixed; top: -50px; left: 50%; z-index: 100; display: none; pointer-events: none; }
+@media (max-width: 640px) {
+  .cl-ptr { display: block; }
+}
+/* Solo mientras NO se está arrastrando activamente (al soltar, con o sin
+   llegar al umbral) — durante el arrastre el indicador sigue el dedo 1:1,
+   sin transición, para no ir con retraso respecto al dedo. */
+.cl-ptr-animado { transition: transform 200ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  .cl-ptr-animado { transition: none; }
+}
+.cl-ptr-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  transition: background 150ms var(--ease-out);
+}
+.cl-ptr-badge.lista { background: var(--secondary); }
+@keyframes cl-ptr-spin { to { transform: rotate(360deg); } }
+.cl-ptr-spin { animation: cl-ptr-spin 700ms linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .cl-ptr-spin { animation: none; }
+}
 
 @media print {
   .no-print, .cl-header, .cl-tabs { display: none !important; }
