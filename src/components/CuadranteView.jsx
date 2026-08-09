@@ -25,6 +25,7 @@ import {
   rechazarCambioHorario,
   descartarAviso,
   hayConflictoDeHorario,
+  avisoDesequilibrioCasaFuera,
   setDisponibilidad,
   eliminarHuecoDeEquipo,
   useHistorialDeSlot,
@@ -84,7 +85,10 @@ function contenidoCelda(slot, modo) {
 }
 
 // Formulario compacto para fijar día/hora/campo (reutilizado al cerrar en casa).
-function FormularioCierreInline({ slot, allSlots, onConfirmar, uid }) {
+// "equipoQueCierra" siempre queda en casa al usar este formulario (tanto al
+// cerrar como dueño en su propio campo, como al cerrar como solicitante en
+// el campo que reservó) — de ahí el nuevoEsCasa=true fijo en el aviso.
+function FormularioCierreInline({ slot, allSlots, onConfirmar, uid, equipoQueCierra }) {
   const instalaciones = useInstalaciones(uid);
   const [dia, setDia] = useState("");
   const [hora, setHora] = useState("");
@@ -102,6 +106,8 @@ function FormularioCierreInline({ slot, allSlots, onConfirmar, uid }) {
     }
     const conflicto = hayConflictoDeHorario(allSlots, { campoExacto: campo, diaExacto: dia, horaExacta: hora, grupo: slot.grupo }, slot.id);
     if (conflicto) return setError(`Ese campo ya tiene un partido a las ${conflicto.horaExacta}.`);
+    const aviso = avisoDesequilibrioCasaFuera(allSlots, equipoQueCierra, true);
+    if (aviso && !window.confirm(aviso)) return;
     setError("");
     setGuardando(true);
     try {
@@ -353,7 +359,24 @@ export function GestionSede({ slot, uid, ejecutar, allSlots }) {
           {d ? ` el ${d.diaExacto} ${d.horaExacta} en ${d.campoExacto} (queda cerrado al aceptar)` : ""}.
         </p>
         <div className="cl-row" style={{ marginTop: "4px" }}>
-          <button className="cl-btn cl-btn-primary" onClick={() => ejecutar(() => aceptarSede(slot.id, slot.sedePropuesta, d))}>Aceptar</button>
+          <button
+            className="cl-btn cl-btn-primary"
+            onClick={() => {
+              // Aceptar una propuesta que YA trae día/hora/campo cierra el
+              // partido al momento (queda "fuera" para quien acepta, siempre
+              // — está aceptando jugar en el campo del otro). Si la
+              // propuesta no trae detalles, esto solo fija la sede y sigue
+              // "pactado" — el cierre real llega después por otra vía, así
+              // que no hace falta avisar todavía.
+              if (d) {
+                const aviso = avisoDesequilibrioCasaFuera(allSlots, soyDueño ? slot.teamId : slot.requestedByTeamId, false);
+                if (aviso && !window.confirm(aviso)) return;
+              }
+              ejecutar(() => aceptarSede(slot.id, slot.sedePropuesta, d));
+            }}
+          >
+            Aceptar
+          </button>
           <button className="cl-btn cl-btn-ghost" onClick={() => ejecutar(() => rechazarSede(slot.id))}>Rechazar</button>
         </div>
       </div>
@@ -861,6 +884,7 @@ export default function CuadranteView({
                                 slot={s}
                                 allSlots={allSlots}
                                 uid={uid}
+                                equipoQueCierra={s.teamId}
                                 onConfirmar={(datos) => cerrarComoLocal(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
                               />
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />
@@ -936,6 +960,7 @@ export default function CuadranteView({
                                 slot={s}
                                 allSlots={allSlots}
                                 uid={uid}
+                                equipoQueCierra={s.requestedByTeamId}
                                 onConfirmar={(datos) => cerrarComoVisitante(s.id, { ...datos, grupo: s.grupo, teamId: s.teamId }, allSlots)}
                               />
                               <GestionSede slot={s} uid={uid} ejecutar={ejecutar} allSlots={allSlots} />

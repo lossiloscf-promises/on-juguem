@@ -531,6 +531,40 @@ export function hayOtroPartidoMismoDia(allSlots, { teamId, diaExacto }, slotIdEx
   return conflicto || null;
 }
 
+// Últimos N partidos YA CERRADOS (confirmado) de un equipo concreto, con el
+// lado (casa/fuera) calculado desde la perspectiva de ESE equipo — misma
+// polaridad invertida que el balance casa/fuera que existió antes en "Mi
+// club": si el equipo es dueño del hueco, sede "local" es casa; si el
+// equipo reservó el hueco de otro club, sede "visitante" es casa (se juega
+// en su propio campo, aunque el documento lo llame "visitante" porque esa
+// etiqueta es relativa al dueño del hueco, no a quien reservó). Se ordenan
+// por diaExacto (fecha real del partido), el más reciente primero.
+export function ultimosPartidosDeEquipo(allSlots, teamId, n = 2) {
+  const propios = allSlots
+    .filter((s) => s.teamId === teamId && s.status === "confirmado")
+    .map((s) => ({ ...s, esCasa: s.sede === "local" }));
+  const externos = allSlots
+    .filter((s) => s.requestedByTeamId === teamId && s.status === "confirmado")
+    .map((s) => ({ ...s, esCasa: s.sede === "visitante" }));
+  return [...propios, ...externos]
+    .sort((a, b) => (b.diaExacto || "").localeCompare(a.diaExacto || ""))
+    .slice(0, n);
+}
+
+// Si los últimos 2 partidos cerrados de un equipo fueron ambos del mismo
+// lado que el que se está a punto de cerrar ahora, devuelve el texto del
+// aviso a confirmar con el usuario; si no, null. No bloquea nada — quien
+// llama decide si sigue adelante o cancela.
+export function avisoDesequilibrioCasaFuera(allSlots, teamId, nuevoEsCasa) {
+  const ultimos = ultimosPartidosDeEquipo(allSlots, teamId, 2);
+  if (ultimos.length < 2) return null;
+  if (ultimos.every((p) => p.esCasa === nuevoEsCasa)) {
+    const lado = nuevoEsCasa ? "en casa" : "fuera";
+    return `Este equipo lleva 2 partidos seguidos ${lado}. ¿Seguro que quieres cerrar este también ${lado}?`;
+  }
+  return null;
+}
+
 // Reúne, a partir de lo que ya tenemos cargado en el navegador, qué otros huecos
 // PODRÍAN chocar con este cierre (mismo campo/hora, o mismo equipo el mismo día).
 // Estos candidatos son los que luego se vuelven a comprobar de verdad, uno a uno,
