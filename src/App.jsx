@@ -45,11 +45,16 @@ export default function App() {
     updateContact, updateCoordinadores, actualizarEscudoLocal, actualizarFcmTokensLocal, recuperarContrasena, deleteAccount,
     comprobarNombreDuplicado, reenviarVerificacion, verificarClub,
   } = useAuth();
-  const [role, setRole] = useState("coordinador");
+  // La pestaña activa se guarda en localStorage para que sobreviva a una
+  // recarga completa de página (F5, o el pull-to-refresh) — sin esto, cada
+  // recarga volvía siempre a "Mi Club" sea cual sea la pestaña donde
+  // estuviera el usuario.
+  const [role, setRole] = useState(() => localStorage.getItem("cl_pestana_activa") || "coordinador");
   // Cambia de pestaña con una transición suave de cross-fade cuando el
   // navegador la soporta (API nativa, sin librerías) — degrada a un cambio
   // instantáneo en los navegadores que todavía no la implementan.
   const cambiarRole = (nuevoRole) => {
+    localStorage.setItem("cl_pestana_activa", nuevoRole);
     if (typeof document !== "undefined" && document.startViewTransition) {
       document.startViewTransition(() => setRole(nuevoRole));
     } else {
