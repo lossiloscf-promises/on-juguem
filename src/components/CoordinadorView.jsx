@@ -29,6 +29,15 @@ function coordinadorDeEquipo(miProfile, equipo) {
   return { asignado, contacto: asignado ? contactoParaCategoria(miProfile, equipo.genero, equipo.formato) : null };
 }
 
+// Nombres de liga que se acortan SOLO al pintar la tarjeta de equipo — el
+// valor real (guardado en Firestore, usado en constants.js, WhatsApp,
+// cuadrante, etc.) no cambia, esto es un alias puramente visual para que la
+// tarjeta no crezca por un nombre desproporcionadamente largo.
+const ALIAS_CATEGORIA_TARJETA = {
+  "Lliga Caixa Popular Valenta F8": "Lliga Valenta",
+};
+const categoriaParaTarjeta = (categoria) => ALIAS_CATEGORIA_TARJETA[categoria] || categoria;
+
 const defaultGrupo = (formato) => AGE_GROUPS_BY_FORMATO[formato][0];
 const defaultCategoria = (genero, grupo) => CATEGORIAS[genero][grupo][0];
 const necesitaAnyo = (grupo) => AGE_GROUPS_WITH_ANYO.includes(grupo);
@@ -89,13 +98,14 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid }) {
 
   if (!editando) {
     const color = groupColor(t.grupo);
+    const simboloGenero = t.genero === "Femenino" ? "♀" : "♂";
 
     return (
       <div className="cl-team-card">
         <div className="cl-cat-strip" style={{ background: color }} />
         <div className="cl-team-card-body">
-          <div className="cl-team-name">{t.grupo}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-          <div className="cl-team-subline">{t.categoria}</div>
+          <div className="cl-team-name">{simboloGenero} {t.grupo}{t.identificador ? ` · ${t.identificador}` : ""}</div>
+          <div className="cl-team-subline">{categoriaParaTarjeta(t.categoria)}</div>
           <div className="cl-team-subline">{t.anyo ? `${t.anyo} · ` : ""}{t.nivel}</div>
           {error && <p style={{ color: "var(--clay)", fontSize: "14px", marginTop: "6px" }}>{error}</p>}
         </div>
