@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { t } from "../i18n";
-import { Plus, Pencil, Trash2, Check, X, Sparkles, Home, Plane, Users, CalendarDays, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Sparkles, Users, CalendarDays } from "lucide-react";
 import { addTeam, updateTeam, deleteTeam, crearHuecosLibresEnBloque } from "../hooks/useClubData";
 import { interpretarDisponibilidad } from "../hooks/useIA";
 import TemporadaView from "./TemporadaView";
@@ -33,7 +33,7 @@ const defaultGrupo = (formato) => AGE_GROUPS_BY_FORMATO[formato][0];
 const defaultCategoria = (genero, grupo) => CATEGORIAS[genero][grupo][0];
 const necesitaAnyo = (grupo) => AGE_GROUPS_WITH_ANYO.includes(grupo);
 
-function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, coordinador }) {
+function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid }) {
   const [editando, setEditando] = useState(false);
   const [nivel, setNivel] = useState(t.nivel);
   const [identificador, setIdentificador] = useState(t.identificador || "");
@@ -89,91 +89,14 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, c
 
   if (!editando) {
     const color = groupColor(t.grupo);
-    const iniciales = t.identificador
-      ? `${t.grupo.charAt(0)}${t.identificador.trim().charAt(0)}`.toUpperCase()
-      : t.grupo.slice(0, 2).toUpperCase();
-    const puntos = [
-      { clave: "confirmado", color: "var(--st-cerrado-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "confirmado").length, sing: "cerrado", plur: "cerrados" },
-      { clave: "pactado", color: "var(--st-pactado-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "pactado").length, sing: "pactado", plur: "pactados" },
-      { clave: "pendiente", color: "var(--st-pendiente-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "pendiente").length, sing: "pendiente", plur: "pendientes" },
-      { clave: "libre", color: "var(--st-disponible-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "libre").length, sing: "libre", plur: "libres" },
-    ].filter((p) => p.n > 0);
 
     return (
       <div className="cl-team-card">
+        <div className="cl-cat-strip" style={{ background: color }} />
         <div className="cl-team-card-body">
-          <div className="cl-team-top">
-            <div className="cl-team-avatar" style={{ background: color }}>{iniciales}</div>
-            <div style={{ minWidth: 0 }}>
-              <div className="cl-team-name">{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-              <span className="cl-cat-chip" style={{ background: color }}>
-                {/* La categoría completa se oculta en modo compacto (tarjeta
-                    estrecha) — se queda solo el nivel, mucho más corto, en
-                    vez de truncar con "…" un texto que dejaría de decir nada. */}
-                <span className="cl-cat-chip-categoria">{t.categoria} · </span>
-                {t.nivel}
-              </span>
-            </div>
-          </div>
-
-          <div className="cl-team-divider" />
-
-          {coordinador?.asignado ? (
-            <>
-              <div className="cl-coord-label">Coordinador</div>
-              <div className="cl-coord-name">{coordinador.contacto?.nombre}{coordinador.contacto?.telefono ? ` · ${coordinador.contacto.telefono}` : ""}</div>
-            </>
-          ) : (
-            <span className="cl-coord-missing"><AlertTriangle size={11} /> Sin coordinador</span>
-          )}
-
-          {puntos.length > 0 && (
-            <>
-              {/* Desglose completo — se oculta vía @container cuando la
-                  tarjeta en sí (no la pantalla) se queda estrecha. */}
-              <div className="cl-mini-status cl-mini-status-full">
-                {puntos.map((p) => (
-                  <span key={p.clave} style={{ display: "inline-flex", alignItems: "center" }}>
-                    <span className="cl-mini-dot" style={{ background: p.color }} />
-                    <span className="cl-mini-count">{p.n} {p.n === 1 ? p.sing : p.plur}</span>
-                  </span>
-                ))}
-              </div>
-              {/* Versión resumida — solo el total, para tarjetas estrechas. */}
-              <div className="cl-mini-status-compact">
-                {puntos.reduce((acc, p) => acc + p.n, 0)} huecos
-              </div>
-            </>
-          )}
-
-          {(() => {
-            // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
-            // Cuenta tanto los partidos donde este equipo es el dueño del hueco
-            // como aquellos donde reservó él en el cuadrante de otro club.
-            const confirmadosPropios = slotsDeEsteEquipo.filter((s) => s.status === "confirmado");
-            const confirmadosFuera = (allSlots || []).filter((s) => s.requestedByTeamId === t.id && s.status === "confirmado");
-            const casa = confirmadosPropios.filter((s) => s.sede === "local").length + confirmadosFuera.filter((s) => s.sede === "visitante").length;
-            const fuera = confirmadosPropios.filter((s) => s.sede === "visitante").length + confirmadosFuera.filter((s) => s.sede === "local").length;
-            if (casa + fuera === 0) return null;
-            const desequilibrado = Math.abs(casa - fuera) >= 2;
-            return (
-              <div className="cl-mono cl-team-meta">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "14px", color: desequilibrado ? "var(--gold)" : "#888" }}>
-                  <Home size={13} /> Casa: {casa}
-                </span>
-                <span style={{ fontSize: "14px", color: desequilibrado ? "var(--gold)" : "#888" }}>·</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "14px", color: desequilibrado ? "var(--gold)" : "#888" }}>
-                  <Plane size={13} /> Fuera: {fuera}
-                </span>
-                {desequilibrado && (
-                  <span style={{ fontSize: "14px", color: "var(--gold)" }}>
-                    {casa > fuera ? "— considera buscar más partidos fuera" : "— considera buscar más partidos en casa"}
-                  </span>
-                )}
-              </div>
-            );
-          })()}
-
+          <div className="cl-team-name">{t.grupo}{t.identificador ? ` · ${t.identificador}` : ""}</div>
+          <div className="cl-team-subline">{t.categoria}</div>
+          <div className="cl-team-subline">{t.anyo ? `${t.anyo} · ` : ""}{t.nivel}</div>
           {error && <p style={{ color: "var(--clay)", fontSize: "14px", marginTop: "6px" }}>{error}</p>}
         </div>
 
@@ -228,7 +151,7 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, c
   );
 }
 
-export default function CoordinadorView({ uid, clubName, telefono, email, teams, slots, jornadas, allSlots, miProfile }) {
+export default function CoordinadorView({ uid, clubName, telefono, email, teams, slots, jornadas, miProfile }) {
   // Interruptor de nivel superior — "Equipos" es lo que ya mostraba esta
   // pantalla; "Calendario" es TemporadaView.jsx, ahora integrado aquí en
   // vez de tener su propia pestaña en el menú inferior.
@@ -378,8 +301,6 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
                     t={tm}
                     uid={uid}
                     slotsDeEsteEquipo={slots.filter((s) => s.teamId === tm.id)}
-                    allSlots={allSlots}
-                    coordinador={coordinadorDeEquipo(miProfile, tm)}
                     onGuardado={() => {}}
                   />
                 ))}

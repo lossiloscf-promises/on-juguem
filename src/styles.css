@@ -286,27 +286,14 @@ body {
 
 /* Rejilla de tarjetas de equipo — auto-fit con un ancho mínimo por tarjeta,
    en vez de un número de columnas fijo por breakpoint. La prioridad es la
-   FORMA de la tarjeta (cuadrada o apaisada, nunca más alta que ancha): con
-   letra sin reducir, una columna estrecha forzaría el contenido a apilarse
-   en muchas líneas y la tarjeta saldría alargada verticalmente. El ancho
-   mínimo (300px) tiene margen sobre el umbral real medido con Playwright
-   (~283px, con el contenido más largo posible: nombre+año largo, categoría
-   larga, coordinador con nombre largo, 4 estados de huecos a la vez, aviso
-   de casa/fuera desequilibrado) — por debajo de ese umbral la tarjeta se
-   vuelve más alta que ancha. Por debajo de 2×300px+gap de ancho disponible
-   (~610px), auto-fit deja una sola columna que ocupa todo el ancho, en vez
-   de dos columnas estrechas.
-   En móvil (mismo corte de 640px que ya usa .cl-tab para "es móvil" en el
-   resto de la app) el mínimo baja a 174px — el techo real medido con
-   Playwright para que quepan 2 columnas de verdad a 390px de viewport
-   (iPhone estándar: 358px de ancho de contenido, 2×174+10gap=358). El
-   contenido de la tarjeta se resume por debajo de 230px de ancho de
-   tarjeta (ver @container más abajo) para poder mantenerse apaisada a
-   ese ancho sin desbordarse. */
-.cl-team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--team-card-minw, 300px), 1fr)); gap: 10px; margin-bottom: 18px; }
-@media (max-width: 640px) {
-  .cl-team-grid { --team-card-minw: 174px; }
-}
+   FORMA de la tarjeta (cuadrada o apaisada, nunca más alta que ancha). Con
+   la tarjeta reducida a franja de color + 3 líneas de texto + botones (sin
+   coordinador, sin resumen de huecos, sin Casa/Fuera), ya no hace falta
+   distinguir un modo "compacto" de uno "completo" — el mismo ancho mínimo
+   (150px, medido con Playwright como el punto en que este contenido tan
+   ligero se mantiene apaisado con el texto más largo posible) vale igual
+   en móvil que en escritorio. */
+.cl-team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
 .cl-team-card-editing { grid-column: 1 / -1; }
 
 /* La tarjeta es una fila: el contenido a la izquierda (flexible) y una
@@ -316,64 +303,23 @@ body {
    formulario de edición/alta (cl-team-card-editing) lo anula y vuelve a
    flujo normal en bloque, porque su contenido son varios campos apilados,
    no un cuerpo+franja de botones — con flex se apretujaban todos en una
-   sola fila horizontal ilegible. */
-.cl-team-card { display: flex; gap: 8px; background: white; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03); container-type: inline-size; container-name: team-card; }
+   sola fila horizontal ilegible.
+   position:relative + overflow:hidden porque el color de grupo se pinta
+   con una franja lateral absoluta (.cl-cat-strip) — mismo patrón que ya
+   usan .cl-ticket en ClubView.jsx/TorneosView.jsx, reutilizado tal cual en
+   vez de inventar un color nuevo (groupColor sigue siendo la única fuente
+   de color por grupo de edad en toda la app). */
+.cl-team-card { display: flex; gap: 8px; background: white; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03); position: relative; overflow: hidden; }
 .cl-team-card-editing { display: block; }
 .cl-team-card-body { flex: 1; min-width: 0; }
 .cl-team-card-actions { display: flex; flex-direction: column; gap: 6px; flex: none; }
-.cl-team-top { display: flex; align-items: center; gap: 10px; }
-.cl-team-avatar { width: 38px; height: 38px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; }
 
 /* Mismo tamaño de fuente en todo el contenido de la tarjeta (nombre,
-   categoría, coordinador, resumen de huecos) — sin reducir nada respecto a
-   los tamaños anteriores, para que nada se vuelva ilegible en móvil. El
-   único texto que se queda más pequeño a propósito es la etiqueta auxiliar
-   "COORDINADOR" (cl-coord-label): es una etiqueta estructural en mayúsculas,
-   no contenido, igual que cl-label en el resto de la app. */
+   categoría, año/nivel) — sin reducir nada en móvil. */
 .cl-team-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
-/* Chip de categoría/nivel — esquinas redondeadas moderadas, no una píldora
-   ovalada, para que combine con el radio del resto de tarjetas/botones. */
-.cl-cat-chip { display: inline-flex; align-items: center; font-size: 14px; font-weight: 600; letter-spacing: .01em; text-transform: uppercase; color: white; padding: 3px 10px; border-radius: 9px; width: fit-content; margin-top: 4px; line-height: 1.3; }
+.cl-team-subline { font-size: 14px; font-weight: 500; color: var(--text-secondary); line-height: 1.3; margin-top: 2px; }
 .cl-team-icon-btn { width: 28px; height: 28px; border-radius: 9px; border: 1px solid var(--line); background: #FBFCFD; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); flex: none; }
 .cl-team-icon-btn:hover { border-color: var(--primary); color: var(--primary); }
-
-.cl-team-divider { height: 1px; background: var(--line); margin: 10px 0; }
-.cl-coord-label { font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); }
-/* Una sola línea siempre, con "…" si no cabe, en vez de partirse en dos
-   líneas — vale para cualquier ancho, no solo móvil, así que no hace falta
-   una @container aparte para esto. */
-.cl-coord-name { font-size: 14px; font-weight: 500; margin-top: 2px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cl-coord-missing { display: inline-flex; align-items: center; gap: 5px; color: var(--st-pendiente-ink); background: var(--st-pendiente); padding: 4px 10px; border-radius: 999px; font-size: 14px; font-weight: 600; }
-
-.cl-mini-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
-.cl-mini-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-.cl-mini-count { font-size: 14px; color: var(--text-secondary); font-weight: 500; margin-left: 5px; }
-
-/* Resumen de huecos en versión compacta (solo el total) — oculto por
-   defecto, se muestra en vez del desglose completo cuando la propia
-   tarjeta (no la pantalla) es estrecha. Usar el ancho REAL de la tarjeta
-   (container query) en vez de un @media de viewport es lo correcto aquí:
-   la tarjeta puede ser estrecha por ir en 2 columnas en móvil, o por una
-   ventana de escritorio estrecha — en ambos casos debe resumirse igual. */
-.cl-mini-status-compact { display: none; font-size: 14px; color: var(--text-secondary); font-weight: 500; margin-top: 10px; }
-/* El layout (display/gap/wrap) vive en la clase, no en un style en línea,
-   a propósito: un style en línea gana siempre a una regla de @container,
-   así que ocultarlo desde ahí no funcionaría. */
-.cl-team-meta { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
-@container team-card (max-width: 230px) {
-  /* El coordinador (etiqueta + nombre + teléfono) desaparece del todo en
-     compacto — probado con Playwright: ni siquiera resumido cabía sin
-     empujar la tarjeta a vertical o desbordar el chip. El badge "Sin
-     coordinador" (cl-coord-missing) NO se toca aquí: es un aviso, no un
-     dato de contacto, así que se queda siempre visible. */
-  .cl-coord-label, .cl-coord-name { display: none; }
-  .cl-mini-status-full { display: none; }
-  .cl-mini-status-compact { display: block; }
-  .cl-team-meta { display: none; }
-  .cl-team-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cl-cat-chip-categoria { display: none; }
-  .cl-cat-chip { display: block; width: auto; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-}
 
 .cl-add-team-more { border: 1.5px dashed var(--line); border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-secondary); font-weight: 600; font-size: 13px; width: 100%; background: transparent; }
 .cl-add-team-more:hover { border-color: var(--primary); color: var(--primary); }
