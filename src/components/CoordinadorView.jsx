@@ -101,67 +101,72 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, c
 
     return (
       <div className="cl-team-card">
-        <div className="cl-team-top">
-          <div className="cl-team-avatar" style={{ background: color }}>{iniciales}</div>
-          <div style={{ minWidth: 0 }}>
-            <div className="cl-team-name">{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-            <span className="cl-cat-chip" style={{ background: color }}>{t.categoria} · {t.nivel}</span>
+        <div className="cl-team-card-body">
+          <div className="cl-team-top">
+            <div className="cl-team-avatar" style={{ background: color }}>{iniciales}</div>
+            <div style={{ minWidth: 0 }}>
+              <div className="cl-team-name">{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
+              <span className="cl-cat-chip" style={{ background: color }}>{t.categoria} · {t.nivel}</span>
+            </div>
           </div>
+
+          <div className="cl-team-divider" />
+
+          {coordinador?.asignado ? (
+            <>
+              <div className="cl-coord-label">Coordinador</div>
+              <div className="cl-coord-name">{coordinador.contacto?.nombre}{coordinador.contacto?.telefono ? ` · ${coordinador.contacto.telefono}` : ""}</div>
+            </>
+          ) : (
+            <span className="cl-coord-missing"><AlertTriangle size={11} /> Sin coordinador</span>
+          )}
+
+          {puntos.length > 0 && (
+            <div className="cl-mini-status">
+              {puntos.map((p) => (
+                <span key={p.clave} style={{ display: "inline-flex", alignItems: "center" }}>
+                  <span className="cl-mini-dot" style={{ background: p.color }} />
+                  <span className="cl-mini-count">{p.n} {p.n === 1 ? p.sing : p.plur}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {(() => {
+            // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
+            // Cuenta tanto los partidos donde este equipo es el dueño del hueco
+            // como aquellos donde reservó él en el cuadrante de otro club.
+            const confirmadosPropios = slotsDeEsteEquipo.filter((s) => s.status === "confirmado");
+            const confirmadosFuera = (allSlots || []).filter((s) => s.requestedByTeamId === t.id && s.status === "confirmado");
+            const casa = confirmadosPropios.filter((s) => s.sede === "local").length + confirmadosFuera.filter((s) => s.sede === "visitante").length;
+            const fuera = confirmadosPropios.filter((s) => s.sede === "visitante").length + confirmadosFuera.filter((s) => s.sede === "local").length;
+            if (casa + fuera === 0) return null;
+            const desequilibrado = Math.abs(casa - fuera) >= 2;
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap", marginTop: "8px" }} className="cl-mono">
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "14px", color: desequilibrado ? "var(--gold)" : "#888" }}>
+                  <Home size={13} /> Casa: {casa}
+                </span>
+                <span style={{ fontSize: "14px", color: desequilibrado ? "var(--gold)" : "#888" }}>·</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "14px", color: desequilibrado ? "var(--gold)" : "#888" }}>
+                  <Plane size={13} /> Fuera: {fuera}
+                </span>
+                {desequilibrado && (
+                  <span style={{ fontSize: "14px", color: "var(--gold)" }}>
+                    {casa > fuera ? "— considera buscar más partidos fuera" : "— considera buscar más partidos en casa"}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
+          {error && <p style={{ color: "var(--clay)", fontSize: "14px", marginTop: "6px" }}>{error}</p>}
+        </div>
+
+        <div className="cl-team-card-actions">
           <button className="cl-team-icon-btn" onClick={() => setEditando(true)} aria-label="Editar equipo"><Pencil size={14} /></button>
           <button className="cl-team-icon-btn" onClick={borrar} aria-label="Borrar equipo"><Trash2 size={14} /></button>
         </div>
-
-        <div className="cl-team-divider" />
-
-        {coordinador?.asignado ? (
-          <>
-            <div className="cl-coord-label">Coordinador</div>
-            <div className="cl-coord-name">{coordinador.contacto?.nombre}{coordinador.contacto?.telefono ? ` · ${coordinador.contacto.telefono}` : ""}</div>
-          </>
-        ) : (
-          <span className="cl-coord-missing"><AlertTriangle size={11} /> Sin coordinador</span>
-        )}
-
-        {puntos.length > 0 && (
-          <div className="cl-mini-status">
-            {puntos.map((p) => (
-              <span key={p.clave} style={{ display: "inline-flex", alignItems: "center" }}>
-                <span className="cl-mini-dot" style={{ background: p.color }} />
-                <span className="cl-mini-count">{p.n} {p.n === 1 ? p.sing : p.plur}</span>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {(() => {
-          // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
-          // Cuenta tanto los partidos donde este equipo es el dueño del hueco
-          // como aquellos donde reservó él en el cuadrante de otro club.
-          const confirmadosPropios = slotsDeEsteEquipo.filter((s) => s.status === "confirmado");
-          const confirmadosFuera = (allSlots || []).filter((s) => s.requestedByTeamId === t.id && s.status === "confirmado");
-          const casa = confirmadosPropios.filter((s) => s.sede === "local").length + confirmadosFuera.filter((s) => s.sede === "visitante").length;
-          const fuera = confirmadosPropios.filter((s) => s.sede === "visitante").length + confirmadosFuera.filter((s) => s.sede === "local").length;
-          if (casa + fuera === 0) return null;
-          const desequilibrado = Math.abs(casa - fuera) >= 2;
-          return (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap", marginTop: "8px" }} className="cl-mono">
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
-                <Home size={11} /> Casa: {casa}
-              </span>
-              <span style={{ fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>·</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
-                <Plane size={11} /> Fuera: {fuera}
-              </span>
-              {desequilibrado && (
-                <span style={{ fontSize: "11px", color: "var(--gold)" }}>
-                  {casa > fuera ? "— considera buscar más partidos fuera" : "— considera buscar más partidos en casa"}
-                </span>
-              )}
-            </div>
-          );
-        })()}
-
-        {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
       </div>
     );
   }
