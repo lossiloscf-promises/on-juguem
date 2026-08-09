@@ -426,6 +426,14 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
   };
   const [clubEntrado, setClubEntrado] = useState(null); // { uid, clubName } | null
   const allTeams = useAllTeams();
+  // Todos los hooks se llaman siempre, sin condición, aquí arriba — antes
+  // de CUALQUIER return anticipado (el de "torneos" más abajo y el de
+  // "rellena coordinador general" después de ese). Si un hook se llama solo
+  // en algunas ramas, React se queja de "Rendered fewer hooks than
+  // expected" en cuanto cambias de una rama a otra sin desmontar el
+  // componente — que es justo lo que hace este interruptor.
+  const todosLosPerfiles = useTodosLosClubes();
+  const clubesOficiales = useClubesOficiales();
 
   const switchBuscoRival = (
     <div className="cl-subtabs" style={{ marginBottom: "16px" }}>
@@ -480,13 +488,11 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
     return total;
   };
 
-  const todosLosPerfiles = useTodosLosClubes();
   const escudoPorUid = Object.fromEntries(todosLosPerfiles.map((p) => [p.uid, p.escudoUrl]));
 
   // Coordenadas de cada localidad, para calcular distancias reales — se
   // buscan por nombre de club en la lista oficial (que es donde se
   // geocodificó cada localidad una vez).
-  const clubesOficiales = useClubesOficiales();
   const coordsPorNombre = Object.fromEntries(
     clubesOficiales.filter((c) => c.lat != null && c.lng != null).map((c) => [c.nombreLower, { lat: c.lat, lng: c.lng }])
   );
