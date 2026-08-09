@@ -202,6 +202,7 @@ export default function App() {
             slots={mySlots}
             jornadas={jornadas}
             allSlots={allSlots}
+            miProfile={profile}
           />
         )}
         {role === "club" && (

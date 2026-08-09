@@ -264,6 +264,65 @@ body {
 .cl-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cl-field { flex: 1; min-width: 140px; }
 
+/* "Mi club" — vista Equipos: cabecera de página, resumen numérico y tarjetas
+   de equipo en rejilla, agrupadas por formato. Reutiliza los tokens de color
+   de estado que ya existen (cl-stamp-*, --st-*-ink) para los puntos del
+   mini-resumen en vez de inventar una paleta nueva. */
+.cl-page-title { font-size: 24px; line-height: 1; margin: 0 0 5px; color: var(--pitch-dark); }
+.cl-page-desc { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 20px; }
+
+.cl-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+.cl-stat-tile { background: white; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.cl-stat-num { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 26px; line-height: 1; color: var(--pitch-dark); }
+.cl-stat-label { font-size: 11.5px; color: var(--text-secondary); margin-top: 3px; }
+@media (min-width: 560px) {
+  .cl-stat-row { grid-template-columns: repeat(4, 1fr); }
+}
+
+.cl-section-title { display: flex; align-items: baseline; gap: 8px; margin: 22px 0 10px; }
+.cl-section-title:first-child { margin-top: 0; }
+.cl-section-title h3 { font-size: 12px; margin: 0; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); }
+.cl-section-title .cl-rule { flex: 1; height: 1px; background: var(--line); }
+
+/* Rejilla de tarjetas de equipo — 1 columna en muy estrecho, 2 en móvil
+   ancho/tablet, 3 en escritorio, 4 en pantallas anchas (ya no reserva una
+   columna fija para el formulario de alta, que ahora vive dentro de la
+   propia rejilla, así que hay más ancho disponible para las tarjetas). La
+   tarjeta en modo edición o el formulario de alta ocupan todo el ancho
+   (grid-column: 1 / -1) porque tienen varios selects y no caben cómodos en
+   una columna estrecha. */
+.cl-team-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 18px; }
+@media (min-width: 480px) {
+  .cl-team-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 860px) {
+  .cl-team-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+@media (min-width: 1200px) {
+  .cl-team-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.cl-team-card-editing { grid-column: 1 / -1; }
+
+.cl-team-card { background: white; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03); }
+.cl-team-top { display: flex; align-items: center; gap: 10px; }
+.cl-team-avatar { width: 38px; height: 38px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; }
+.cl-team-name { font-size: 14px; font-weight: 600; line-height: 1.25; }
+.cl-cat-chip { display: inline-flex; align-items: center; font-size: 9.5px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: white; padding: 2px 7px; border-radius: 999px; width: fit-content; margin-top: 4px; }
+.cl-team-icon-btn { margin-left: auto; width: 28px; height: 28px; border-radius: 9px; border: 1px solid var(--line); background: #FBFCFD; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); flex: none; }
+.cl-team-icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.cl-team-divider { height: 1px; background: var(--line); margin: 10px 0; }
+.cl-coord-label { font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); }
+.cl-coord-name { font-size: 12px; font-weight: 500; margin-top: 2px; }
+.cl-coord-missing { display: inline-flex; align-items: center; gap: 5px; color: var(--st-pendiente-ink); background: var(--st-pendiente); padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+
+.cl-mini-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.cl-mini-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.cl-mini-count { font-size: 11px; color: var(--text-secondary); font-weight: 500; margin-left: 5px; }
+
+.cl-add-team-more { border: 1.5px dashed var(--line); border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--text-secondary); font-weight: 600; font-size: 13px; width: 100%; background: transparent; }
+.cl-add-team-more:hover { border-color: var(--primary); color: var(--primary); }
+
 .cl-auth-box {
   max-width: 380px;
   margin: 48px auto;

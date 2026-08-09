@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { t } from "../i18n";
-import { Plus, Pencil, Trash2, Check, X, Sparkles, Home, Plane, Users, CalendarDays } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Sparkles, Home, Plane, Users, CalendarDays, AlertTriangle } from "lucide-react";
 import { addTeam, updateTeam, deleteTeam, crearHuecosLibresEnBloque } from "../hooks/useClubData";
 import { interpretarDisponibilidad } from "../hooks/useIA";
 import TemporadaView from "./TemporadaView";
@@ -14,13 +14,26 @@ import {
   NIVELES,
   compararEquipos,
   groupColor,
+  claveCoordinador,
+  contactoParaCategoria,
 } from "../constants";
+
+// Devuelve si este equipo tiene un coordinador asignado (específico de su
+// categoría o el general del club) y, si lo tiene, su contacto — para la
+// tarjeta de equipo y para el recuento "Sin coordinador" del resumen.
+function coordinadorDeEquipo(miProfile, equipo) {
+  const clave = claveCoordinador(equipo.genero, equipo.formato);
+  const especifico = miProfile?.coordinadores?.[clave];
+  const general = miProfile?.coordinadores?.general;
+  const asignado = !!(especifico?.telefono || especifico?.email || general?.telefono || general?.email);
+  return { asignado, contacto: asignado ? contactoParaCategoria(miProfile, equipo.genero, equipo.formato) : null };
+}
 
 const defaultGrupo = (formato) => AGE_GROUPS_BY_FORMATO[formato][0];
 const defaultCategoria = (genero, grupo) => CATEGORIAS[genero][grupo][0];
 const necesitaAnyo = (grupo) => AGE_GROUPS_WITH_ANYO.includes(grupo);
 
-function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots }) {
+function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots, coordinador }) {
   const [editando, setEditando] = useState(false);
   const [nivel, setNivel] = useState(t.nivel);
   const [identificador, setIdentificador] = useState(t.identificador || "");
@@ -75,54 +88,86 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
   };
 
   if (!editando) {
+    const color = groupColor(t.grupo);
+    const iniciales = t.identificador
+      ? `${t.grupo.charAt(0)}${t.identificador.trim().charAt(0)}`.toUpperCase()
+      : t.grupo.slice(0, 2).toUpperCase();
+    const puntos = [
+      { clave: "confirmado", color: "var(--st-cerrado-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "confirmado").length, sing: "cerrado", plur: "cerrados" },
+      { clave: "pactado", color: "var(--st-pactado-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "pactado").length, sing: "pactado", plur: "pactados" },
+      { clave: "pendiente", color: "var(--st-pendiente-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "pendiente").length, sing: "pendiente", plur: "pendientes" },
+      { clave: "libre", color: "var(--st-disponible-ink)", n: slotsDeEsteEquipo.filter((s) => s.status === "libre").length, sing: "libre", plur: "libres" },
+    ].filter((p) => p.n > 0);
+
     return (
-      <div className="cl-ticket">
-        <div className="cl-cat-strip" style={{ background: groupColor(t.grupo) }} />
-        <div className="cl-row" style={{ justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontWeight: 700 }}>{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
-            <div className="cl-mono" style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{t.genero} · {t.categoria} · {t.nivel}</div>
-            {(() => {
-              // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
-              // Cuenta tanto los partidos donde este equipo es el dueño del hueco
-              // como aquellos donde reservó él en el cuadrante de otro club.
-              const confirmadosPropios = slotsDeEsteEquipo.filter((s) => s.status === "confirmado");
-              const confirmadosFuera = (allSlots || []).filter((s) => s.requestedByTeamId === t.id && s.status === "confirmado");
-              const casa = confirmadosPropios.filter((s) => s.sede === "local").length + confirmadosFuera.filter((s) => s.sede === "visitante").length;
-              const fuera = confirmadosPropios.filter((s) => s.sede === "visitante").length + confirmadosFuera.filter((s) => s.sede === "local").length;
-              if (casa + fuera === 0) return null;
-              const desequilibrado = Math.abs(casa - fuera) >= 2;
-              return (
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap" }} className="cl-mono">
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
-                    <Home size={11} /> Casa: {casa}
-                  </span>
-                  <span style={{ fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>·</span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
-                    <Plane size={11} /> Fuera: {fuera}
-                  </span>
-                  {desequilibrado && (
-                    <span style={{ fontSize: "11px", color: "var(--gold)" }}>
-                      {casa > fuera ? "— considera buscar más partidos fuera" : "— considera buscar más partidos en casa"}
-                    </span>
-                  )}
-                </div>
-              );
-            })()}
+      <div className="cl-team-card">
+        <div className="cl-team-top">
+          <div className="cl-team-avatar" style={{ background: color }}>{iniciales}</div>
+          <div style={{ minWidth: 0 }}>
+            <div className="cl-team-name">{t.grupo}{t.anyo ? ` (${t.anyo})` : ""}{t.identificador ? ` · ${t.identificador}` : ""}</div>
+            <span className="cl-cat-chip" style={{ background: color }}>{t.categoria} · {t.nivel}</span>
           </div>
-          <div className="cl-row">
-            <button className="cl-btn cl-btn-ghost" onClick={() => setEditando(true)}><Pencil size={14} /> Editar</button>
-            <button className="cl-btn cl-btn-ghost" onClick={borrar}><Trash2 size={14} /> Borrar</button>
-          </div>
+          <button className="cl-team-icon-btn" onClick={() => setEditando(true)} aria-label="Editar equipo"><Pencil size={14} /></button>
+          <button className="cl-team-icon-btn" onClick={borrar} aria-label="Borrar equipo"><Trash2 size={14} /></button>
         </div>
+
+        <div className="cl-team-divider" />
+
+        {coordinador?.asignado ? (
+          <>
+            <div className="cl-coord-label">Coordinador</div>
+            <div className="cl-coord-name">{coordinador.contacto?.nombre}{coordinador.contacto?.telefono ? ` · ${coordinador.contacto.telefono}` : ""}</div>
+          </>
+        ) : (
+          <span className="cl-coord-missing"><AlertTriangle size={11} /> Sin coordinador</span>
+        )}
+
+        {puntos.length > 0 && (
+          <div className="cl-mini-status">
+            {puntos.map((p) => (
+              <span key={p.clave} style={{ display: "inline-flex", alignItems: "center" }}>
+                <span className="cl-mini-dot" style={{ background: p.color }} />
+                <span className="cl-mini-count">{p.n} {p.n === 1 ? p.sing : p.plur}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {(() => {
+          // Casa = jugado en el propio campo; Fuera = jugado en campo rival.
+          // Cuenta tanto los partidos donde este equipo es el dueño del hueco
+          // como aquellos donde reservó él en el cuadrante de otro club.
+          const confirmadosPropios = slotsDeEsteEquipo.filter((s) => s.status === "confirmado");
+          const confirmadosFuera = (allSlots || []).filter((s) => s.requestedByTeamId === t.id && s.status === "confirmado");
+          const casa = confirmadosPropios.filter((s) => s.sede === "local").length + confirmadosFuera.filter((s) => s.sede === "visitante").length;
+          const fuera = confirmadosPropios.filter((s) => s.sede === "visitante").length + confirmadosFuera.filter((s) => s.sede === "local").length;
+          if (casa + fuera === 0) return null;
+          const desequilibrado = Math.abs(casa - fuera) >= 2;
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap", marginTop: "8px" }} className="cl-mono">
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
+                <Home size={11} /> Casa: {casa}
+              </span>
+              <span style={{ fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>·</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "2px", fontSize: "11px", color: desequilibrado ? "var(--gold)" : "#888" }}>
+                <Plane size={11} /> Fuera: {fuera}
+              </span>
+              {desequilibrado && (
+                <span style={{ fontSize: "11px", color: "var(--gold)" }}>
+                  {casa > fuera ? "— considera buscar más partidos fuera" : "— considera buscar más partidos en casa"}
+                </span>
+              )}
+            </div>
+          );
+        })()}
+
         {error && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{error}</p>}
       </div>
     );
   }
 
   return (
-    <div className="cl-ticket">
-      <div className="cl-cat-strip" style={{ background: groupColor(t.grupo) }} />
+    <div className="cl-team-card cl-team-card-editing">
       {tieneHuecos && (
         <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>
           Este equipo ya tiene huecos publicados — solo puedes cambiar nivel e identificador.
@@ -164,11 +209,17 @@ function FilaEquipoEditable({ t, slotsDeEsteEquipo, onGuardado, uid, allSlots })
   );
 }
 
-export default function CoordinadorView({ uid, clubName, telefono, email, teams, slots, jornadas, allSlots }) {
+export default function CoordinadorView({ uid, clubName, telefono, email, teams, slots, jornadas, allSlots, miProfile }) {
   // Interruptor de nivel superior — "Equipos" es lo que ya mostraba esta
   // pantalla; "Calendario" es TemporadaView.jsx, ahora integrado aquí en
   // vez de tener su propia pestaña en el menú inferior.
   const [vista, setVista] = useState("equipos"); // equipos | calendario
+  // El formulario de alta vive dentro de la rejilla, en el hueco de la
+  // sección de formato a la que pertenece — no hay una posición fija propia,
+  // se calcula comparando newFormato con el formato de cada sección (así si
+  // el usuario cambia el desplegable FORMATO estando abierto, el formulario
+  // salta de sección automáticamente en vez de quedarse "huérfano").
+  const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [newGenero, setNewGenero] = useState(GENEROS[0]);
   const [newFormato, setNewFormato] = useState(FORMATOS[0]);
   const [newGrupo, setNewGrupo] = useState(defaultGrupo(FORMATOS[0]));
@@ -260,84 +311,142 @@ export default function CoordinadorView({ uid, clubName, telefono, email, teams,
       {vista === "calendario" ? (
         <TemporadaView uid={uid} jornadas={jornadas} slots={slots} teams={teams} />
       ) : (
-    <div className="cl-grid-3">
-      <div>
-        <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("mi_club.anadir_equipo")}</h2>
-        <div className="cl-ticket">
-          <div className="cl-row" style={{ marginBottom: "8px" }}>
-            <input
-              className="cl-input"
-              placeholder="✨ O descríbelo: 'Juvenil A, nivel medio'"
-              value={textoIA}
-              onChange={(e) => setTextoIA(e.target.value)}
-              maxLength={300}
-            />
-            <button className="cl-btn cl-btn-gold" onClick={rellenarConIA} disabled={usandoIA}>
-              <Sparkles size={14} /> {usandoIA ? "..." : "Rellenar"}
-            </button>
-          </div>
-          {errorIA && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{errorIA}</p>}
+    <div>
+      <h1 className="cl-page-title cl-display">Mi club</h1>
+      <p className="cl-page-desc">Tus equipos, coordinadores y disponibilidad publicada.</p>
 
-          <label className="cl-label">GÉNERO</label>
-          <select className="cl-input" value={newGenero} onChange={(e) => handleGeneroChange(e.target.value)} style={{ marginBottom: "8px" }}>
-            {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
-          <label className="cl-label">FORMATO</label>
-          <select className="cl-input" value={newFormato} onChange={(e) => handleFormatoChange(e.target.value)} style={{ marginBottom: "8px" }}>
-            {FORMATOS.map((f) => <option key={f} value={f}>{f}</option>)}
-          </select>
-          <label className="cl-label">GRUPO DE EDAD</label>
-          <select className="cl-input" value={newGrupo} onChange={(e) => handleGrupoChange(e.target.value)} style={{ marginBottom: "8px" }}>
-            {AGE_GROUPS_BY_FORMATO[newFormato].map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
-          {necesitaAnyo(newGrupo) && (
-            <>
-              <label className="cl-label">AÑO</label>
-              <select className="cl-input" value={newAnyo} onChange={(e) => setNewAnyo(e.target.value)} style={{ marginBottom: "8px" }}>
-                {ANYOS.map((a) => <option key={a} value={a}>{a}</option>)}
-              </select>
-            </>
-          )}
-          <label className="cl-label">CATEGORÍA / LIGA</label>
-          <select className="cl-input" value={newCategoria} onChange={(e) => setNewCategoria(e.target.value)} style={{ marginBottom: "8px" }}>
-            {CATEGORIAS[newGenero][newGrupo].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <label className="cl-label">NIVEL DEL EQUIPO</label>
-          <select className="cl-input" value={newNivel} onChange={(e) => setNewNivel(e.target.value)} style={{ marginBottom: "8px" }}>
-            {NIVELES.map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-          <input
-            className="cl-input"
-            placeholder="Identificador (opcional, ej. A, B)"
-            value={newIdentificador}
-            onChange={(e) => setNewIdentificador(e.target.value)}
-            maxLength={30}
-            style={{ marginBottom: "8px" }}
-          />
-          <button className="cl-btn cl-btn-primary" onClick={handleAddTeam} style={{ justifyContent: "center", width: "100%" }}>
-            <Plus size={14} /> Añadir equipo
-          </button>
-          {addError && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{addError}</p>}
+      <div className="cl-stat-row">
+        <div className="cl-stat-tile">
+          <div className="cl-stat-num">{teams.length}</div>
+          <div className="cl-stat-label">Equipos activos</div>
+        </div>
+        <div className="cl-stat-tile">
+          <div className="cl-stat-num">{slots.length}</div>
+          <div className="cl-stat-label">Huecos publicados</div>
+        </div>
+        <div className="cl-stat-tile">
+          <div className="cl-stat-num">{slots.filter((s) => s.status === "confirmado").length}</div>
+          <div className="cl-stat-label">Partidos cerrados</div>
+        </div>
+        <div className="cl-stat-tile">
+          <div className="cl-stat-num" style={{ color: teams.some((tm) => !coordinadorDeEquipo(miProfile, tm).asignado) ? "var(--st-pendiente-ink)" : undefined }}>
+            {teams.filter((tm) => !coordinadorDeEquipo(miProfile, tm).asignado).length}
+          </div>
+          <div className="cl-stat-label">Sin coordinador</div>
         </div>
       </div>
 
-      <div>
+    <div>
         <h2 className="cl-display" style={{ fontSize: "22px", color: "var(--pitch-dark)" }}>{t("mi_club.titulo")}</h2>
         {teams.length === 0 && <p style={{ color: "var(--text-secondary)" }}>Aún no has añadido ningún equipo.</p>}
         <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>
           Para marcar disponibilidad, gestionar solicitudes y cerrar partidos, ve a la pestaña <b>CUADRANTE</b>.
         </p>
-        {[...teams].sort(compararEquipos).map((t) => (
-          <FilaEquipoEditable
-            key={t.id}
-            t={t}
-            uid={uid}
-            slotsDeEsteEquipo={slots.filter((s) => s.teamId === t.id)}
-            allSlots={allSlots}
-            onGuardado={() => {}}
-          />
-        ))}
-      </div>
+
+        {FORMATOS.map((formato) => {
+          const equiposFormato = teams.filter((tm) => tm.formato === formato).sort(compararEquipos);
+          const formularioAqui = formularioAbierto && newFormato === formato;
+          return (
+            <div key={formato}>
+              <div className="cl-section-title">
+                <h3>{formato}</h3>
+                <div className="cl-rule" />
+              </div>
+              <div className="cl-team-grid">
+                {equiposFormato.map((tm) => (
+                  <FilaEquipoEditable
+                    key={tm.id}
+                    t={tm}
+                    uid={uid}
+                    slotsDeEsteEquipo={slots.filter((s) => s.teamId === tm.id)}
+                    allSlots={allSlots}
+                    coordinador={coordinadorDeEquipo(miProfile, tm)}
+                    onGuardado={() => {}}
+                  />
+                ))}
+
+                {formularioAqui ? (
+                  <div className="cl-team-card cl-team-card-editing cl-panel-cell">
+                    <div className="cl-row" style={{ justifyContent: "space-between", marginBottom: "10px" }}>
+                      <span className="cl-team-name">Añadir equipo de {formato}</span>
+                      <button className="cl-team-icon-btn" onClick={() => setFormularioAbierto(false)} aria-label="Cerrar formulario">
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div className="cl-row" style={{ marginBottom: "8px" }}>
+                      <input
+                        className="cl-input"
+                        placeholder="✨ O descríbelo: 'Juvenil A, nivel medio'"
+                        value={textoIA}
+                        onChange={(e) => setTextoIA(e.target.value)}
+                        maxLength={300}
+                      />
+                      <button className="cl-btn cl-btn-gold" onClick={rellenarConIA} disabled={usandoIA}>
+                        <Sparkles size={14} /> {usandoIA ? "..." : "Rellenar"}
+                      </button>
+                    </div>
+                    {errorIA && <p style={{ color: "var(--clay)", fontSize: "12px", marginBottom: "8px" }}>{errorIA}</p>}
+
+                    <label className="cl-label">GÉNERO</label>
+                    <select className="cl-input" value={newGenero} onChange={(e) => handleGeneroChange(e.target.value)} style={{ marginBottom: "8px" }}>
+                      {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                    <label className="cl-label">FORMATO</label>
+                    <select className="cl-input" value={newFormato} onChange={(e) => handleFormatoChange(e.target.value)} style={{ marginBottom: "8px" }}>
+                      {FORMATOS.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                    <label className="cl-label">GRUPO DE EDAD</label>
+                    <select className="cl-input" value={newGrupo} onChange={(e) => handleGrupoChange(e.target.value)} style={{ marginBottom: "8px" }}>
+                      {AGE_GROUPS_BY_FORMATO[newFormato].map((g) => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                    {necesitaAnyo(newGrupo) && (
+                      <>
+                        <label className="cl-label">AÑO</label>
+                        <select className="cl-input" value={newAnyo} onChange={(e) => setNewAnyo(e.target.value)} style={{ marginBottom: "8px" }}>
+                          {ANYOS.map((a) => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                      </>
+                    )}
+                    <label className="cl-label">CATEGORÍA / LIGA</label>
+                    <select className="cl-input" value={newCategoria} onChange={(e) => setNewCategoria(e.target.value)} style={{ marginBottom: "8px" }}>
+                      {CATEGORIAS[newGenero][newGrupo].map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <label className="cl-label">NIVEL DEL EQUIPO</label>
+                    <select className="cl-input" value={newNivel} onChange={(e) => setNewNivel(e.target.value)} style={{ marginBottom: "8px" }}>
+                      {NIVELES.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <input
+                      className="cl-input"
+                      placeholder="Identificador (opcional, ej. A, B)"
+                      value={newIdentificador}
+                      onChange={(e) => setNewIdentificador(e.target.value)}
+                      maxLength={30}
+                      style={{ marginBottom: "8px" }}
+                    />
+                    <div className="cl-row">
+                      <button className="cl-btn cl-btn-primary" onClick={handleAddTeam}>
+                        <Plus size={14} /> Añadir equipo
+                      </button>
+                      <button className="cl-btn cl-btn-ghost" onClick={() => setFormularioAbierto(false)}>
+                        <X size={14} /> Cancelar
+                      </button>
+                    </div>
+                    {addError && <p style={{ color: "var(--clay)", fontSize: "12px", marginTop: "6px" }}>{addError}</p>}
+                  </div>
+                ) : (
+                  <button
+                    className="cl-add-team-more"
+                    onClick={() => { handleFormatoChange(formato); setFormularioAbierto(true); }}
+                  >
+                    <Plus size={14} /> {equiposFormato.length > 0 ? "Añadir otro equipo de" : "Añadir equipo de"} {formato}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+    </div>
     </div>
       )}
     </div>
