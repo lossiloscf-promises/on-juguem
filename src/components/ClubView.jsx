@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { t } from "../i18n";
 import AvisoGirarMovil from "./AvisoGirarMovil";
-import { ArrowLeft, Search, LayoutGrid, X, MapPin, Handshake, Trophy } from "lucide-react";
+import { ArrowLeft, Search, LayoutGrid, X, MapPin, Handshake, Trophy, Shield, CalendarDays, Phone } from "lucide-react";
 import { useClubesOficiales } from "../hooks/useClubesOficiales";
 import { useAllTeams, cerrarComoVisitante, hayConflictoDeHorario } from "../hooks/useClubData";
 import { useClubProfile, useTodosLosClubes } from "../hooks/useAuth";
@@ -260,18 +260,21 @@ function FiltroMultiple({ label, opciones, seleccionados, onCambiar, disabled })
     onCambiar(seleccionados.includes(op) ? seleccionados.filter((x) => x !== op) : [...seleccionados, op]);
   };
   return (
-    <div className="cl-field" style={{ position: "relative" }}>
+    <div className="cl-field">
       <label className="cl-label">{label}{seleccionados.length > 0 ? ` (${seleccionados.length})` : ""}</label>
-      <div
-        className="cl-input"
-        style={{ maxHeight: "120px", overflowY: "auto", cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.5 : 1 }}
-      >
+      <div className="cl-chiprow">
         {opciones.length === 0 && <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>—</span>}
         {opciones.map((op) => (
-          <label key={op} className="cl-row" style={{ fontSize: "13px", padding: "2px 0", cursor: disabled ? "default" : "pointer" }}>
-            <input type="checkbox" disabled={disabled} checked={seleccionados.includes(op)} onChange={() => alternar(op)} />
+          <button
+            key={op}
+            type="button"
+            className={`cl-pillbtn ${seleccionados.includes(op) ? "active" : ""}`}
+            disabled={disabled}
+            aria-pressed={seleccionados.includes(op)}
+            onClick={() => alternar(op)}
+          >
             {op}
-          </label>
+          </button>
         ))}
       </div>
     </div>
@@ -323,17 +326,51 @@ function BusquedaPorFiltros({ uid, allSlots }) {
       <div className="cl-ticket cl-row" style={{ flexWrap: "wrap" }}>
         <div className="cl-field">
           <label className="cl-label">GÉNERO</label>
-          <select className="cl-input" value={filterGenero} onChange={(e) => { setFilterGenero(e.target.value); setFilterCategorias([]); }}>
-            <option>Todos</option>
-            {GENEROS.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
+          <div className="cl-chiprow">
+            <button
+              type="button"
+              className={`cl-pillbtn ${filterGenero === "Todos" ? "active" : ""}`}
+              aria-pressed={filterGenero === "Todos"}
+              onClick={() => { setFilterGenero("Todos"); setFilterCategorias([]); }}
+            >
+              Todos
+            </button>
+            {GENEROS.map((g) => (
+              <button
+                key={g}
+                type="button"
+                className={`cl-pillbtn ${filterGenero === g ? "active" : ""}`}
+                aria-pressed={filterGenero === g}
+                onClick={() => { setFilterGenero(g); setFilterCategorias([]); }}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="cl-field">
           <label className="cl-label">FORMATO</label>
-          <select className="cl-input" value={filterFormato} onChange={(e) => { setFilterFormato(e.target.value); setFilterGrupo("Todos"); setFilterCategorias([]); }}>
-            <option>Todos</option>
-            {FORMATOS.map((f) => <option key={f} value={f}>{f}</option>)}
-          </select>
+          <div className="cl-chiprow">
+            <button
+              type="button"
+              className={`cl-pillbtn ${filterFormato === "Todos" ? "active" : ""}`}
+              aria-pressed={filterFormato === "Todos"}
+              onClick={() => { setFilterFormato("Todos"); setFilterGrupo("Todos"); setFilterCategorias([]); }}
+            >
+              Todos
+            </button>
+            {FORMATOS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                className={`cl-pillbtn ${filterFormato === f ? "active" : ""}`}
+                aria-pressed={filterFormato === f}
+                onClick={() => { setFilterFormato(f); setFilterGrupo("Todos"); setFilterCategorias([]); }}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="cl-field">
           <label className="cl-label">GRUPO DE EDAD</label>
@@ -394,14 +431,25 @@ function BusquedaPorFiltros({ uid, allSlots }) {
       )}
       <div className="cl-grid-2">
         {visible.map((s) => (
-          <div key={s.id} className="cl-ticket" style={{ marginBottom: 0 }}>
-            <div className="cl-cat-strip" style={{ background: groupColor(s.grupo) }} />
-            <span className="cl-display" style={{ fontSize: "19px" }}>{s.clubName} · {s.categoria}</span>
-            <p className="cl-mono" style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{s.genero} · {s.grupo}{s.anyo ? ` (${s.anyo})` : ""} · nivel {s.nivel}</p>
-            <p style={{ fontSize: "13px" }}>{s.jornadaLabel}</p>
-            {(s.ownerTelefono || s.ownerEmail) && (
-              <p className="cl-mono" style={{ fontSize: "12px", color: "var(--pitch)" }}>Contacto: {s.ownerTelefono} {s.ownerEmail}</p>
-            )}
+          <div key={s.id} className="cl-result-card">
+            <div className="cl-result-top">
+              <div className="cl-result-crest"><Shield size={18} /></div>
+              <div style={{ minWidth: 0 }}>
+                <div className="cl-result-club">{s.clubName}</div>
+                <div className="cl-result-team">{s.grupo}{s.anyo ? ` (${s.anyo})` : ""}{s.identificador ? ` ${s.identificador}` : ""}</div>
+                <span className="cl-result-chip" style={{ background: groupColor(s.grupo) }}>{s.grupo} · {s.formato}</span>
+              </div>
+            </div>
+            <div className="cl-perforation">
+              <div className="cl-result-line"><CalendarDays size={14} /> {s.jornadaLabel}</div>
+              <div className="cl-result-line"><Trophy size={14} /> {s.genero} · {s.categoria}</div>
+              <div className="cl-result-foot">
+                <span className="cl-level-tag">Nivel {s.nivel}</span>
+                {(s.ownerTelefono || s.ownerEmail) && (
+                  <span className="cl-result-line" style={{ margin: 0 }}><Phone size={14} /> {s.ownerTelefono} {s.ownerEmail}</span>
+                )}
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -544,6 +592,9 @@ export default function ClubView({ uid, clubName, telefono, email, allSlots, mis
         />
       ) : (
         <>
+          <h1 className="cl-page-title cl-display">Busco rival</h1>
+          <p className="cl-page-desc">Huecos libres de otros clubes para tus equipos.</p>
+
           <div className="cl-subtabs" style={{ marginBottom: "16px" }}>
             <button className={`cl-subtab ${modoVista === "directorio" ? "active" : ""}`} onClick={() => cambiarModoVista("directorio")}>
               <LayoutGrid size={14} style={{ marginRight: "4px" }} /> {t("busco_rival.explorar")}
